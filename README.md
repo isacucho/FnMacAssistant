@@ -1,14 +1,12 @@
 # FnMacAssistant
 Welcome to Fortnite Assistant! An easy to use assistant that helps you download the latest Fortnite IPA and applies the necessary patches for it to work properly.
 <hr/>
-Requirments:
-
-Have Sideloadly installed on your mac
-
-Mac must be on MacOS 15.0 or later
-
+Requirments: <br/>
+Have Sideloadly installed on your mac <br/>
+Mac must be on MacOS 15.0 or later <br/>
 A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
+<hr/>
 
 note: The game can be played with keyboard and mouse, but a controller is needed to login and to interact with the lobby (ready up, select gamemode, change skin, etc.) 
 
