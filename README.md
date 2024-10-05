@@ -13,16 +13,15 @@ note: The game can be played with keyboard and mouse, but a controller is needed
 note 2: The screen size will be in an iPad's screen size format, so you may see black bars on the edges of your screen. I haven't found a way to make the game fullscreen yet. 
 
 If anyone manages to solve any of this two issues, open a request and I'll try to implement it!
-
-
+<hr/>
 Instructions:
 
 1. download and install [Sideloadly](https://sideloadly.io)
 
 2. Download the newest version of FnMacAssistant and unzip it.
 
-Credit to:
+<hr/>
 
-Vedma1337 for the Fortnite IPAs (https://github.com/vedma1337/EGS-IPA)
-
+Credit to: <br/>
+Vedma1337 for the Fortnite IPAs (https://github.com/vedma1337/EGS-IPA) <br/>
 Drohy for the patch that makes fortnite work on macOS and for the inspiration to make this app. (https://github.com/Drohy/FortniteMAC)
