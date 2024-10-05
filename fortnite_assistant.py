@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import threading
 
-# Function to get the latest release assets from GitHub
+# Function to get the latest release assets from GitHub and file size
 def get_latest_release_assets():
     api_url = "https://api.github.com/repos/vedma1337/EGS-IPA/releases/latest"
     try:
@@ -13,9 +13,14 @@ def get_latest_release_assets():
         response.raise_for_status()
 
         release_data = response.json()
-        # Get all .ipa assets
+        # Get all .ipa assets along with their sizes
         ipa_files = [
-            asset for asset in release_data.get('assets', [])
+            {
+                'name': asset['name'],
+                'browser_download_url': asset['browser_download_url'],
+                'size': asset['size']  # size in bytes from the API
+            }
+            for asset in release_data.get('assets', [])
             if asset['name'].endswith('.ipa')
         ]
         return ipa_files
@@ -24,11 +29,8 @@ def get_latest_release_assets():
         return []
 
 # Function to download the selected IPA file with progress bar
-def download_ipa(selected_ipa_url, selected_ipa_name):
+def download_ipa(selected_ipa_url, selected_ipa_name, file_size):
     download_path = os.path.expanduser(f"~/Downloads/{selected_ipa_name}")
-
-    # Define the estimated file size if content-length is missing (254 MB in bytes)
-    estimated_total_size = 254 * 1024 * 1024  # 254 MB in bytes
 
     # Show the progress bar and label when the download starts
     progress_bar.pack(pady=10)
@@ -39,14 +41,6 @@ def download_ipa(selected_ipa_url, selected_ipa_name):
     root.update()
 
     try:
-        # Get the file size in bytes (if available)
-        response = requests.head(selected_ipa_url)
-        total_size = int(response.headers.get('content-length', 0))
-
-        # If content-length is missing, use the estimated size
-        if total_size == 0:
-            total_size = estimated_total_size
-
         # Stream the file in chunks and update the progress bar
         response = requests.get(selected_ipa_url, stream=True)
         response.raise_for_status()
@@ -61,13 +55,13 @@ def download_ipa(selected_ipa_url, selected_ipa_name):
                     ipa_file.write(chunk)
                     downloaded_size += len(chunk)
 
-                    # Update the progress bar and label
-                    percentage = (downloaded_size / total_size) * 100
+                    # Update the progress bar and label using the actual file size
+                    percentage = (downloaded_size / file_size) * 100
                     progress_var.set(percentage)
 
                     # Update the label with MB downloaded
                     mb_downloaded = downloaded_size / (1024 * 1024)  # Convert to MB
-                    total_mb = total_size / (1024 * 1024)
+                    total_mb = file_size / (1024 * 1024)
                     progress_label.config(text=f"Downloaded {mb_downloaded:.2f} MB of {total_mb:.2f} MB")
 
                     # Force the GUI to update during the download
@@ -75,8 +69,8 @@ def download_ipa(selected_ipa_url, selected_ipa_name):
 
         # Show success message with reminders
         message = (
-            f"IPA {selected_ipa_name} downloaded to ~/Downloads.\n\n"
-            "Please sideload it using Sideloadly.\n\n"
+            f"{selected_ipa_name} was downloaded to ~/Downloads.\n\n"
+            "Please sideload it using Sideloadly, then return to the asisstant to patch the app.\n\n"
             "Remember: You will need to sideload and patch the game every 7 days."
         )
         messagebox.showinfo("Download Complete", message)
@@ -87,9 +81,11 @@ def download_ipa(selected_ipa_url, selected_ipa_name):
 def start_download():
     selected_ipa = ipa_combobox.get()
     if selected_ipa and selected_ipa in ipa_files_dict:
-        selected_ipa_url = ipa_files_dict[selected_ipa]['browser_download_url']
-        selected_ipa_name = ipa_files_dict[selected_ipa]['name']
-        download_thread = threading.Thread(target=download_ipa, args=(selected_ipa_url, selected_ipa_name))
+        selected_ipa_data = ipa_files_dict[selected_ipa]
+        selected_ipa_url = selected_ipa_data['browser_download_url']
+        selected_ipa_name = selected_ipa_data['name']
+        file_size = selected_ipa_data['size']  # File size in bytes
+        download_thread = threading.Thread(target=download_ipa, args=(selected_ipa_url, selected_ipa_name, file_size))
         download_thread.start()
     else:
         messagebox.showerror("Error", "Please select a valid IPA file.")
@@ -103,7 +99,7 @@ def populate_ipa_dropdown():
         ipa_combobox['values'] = list(ipa_files_dict.keys())
         ipa_combobox.current(0)  # Set the default selection to the first IPA file
 
-# Function to patch the app
+# Function to patch the app (no changes here)
 def patch_app():
     provision_url = "https://github.com/Drohy/FortniteMAC/raw/04890b0778751d20afd5330d4346972e99b9c1f5/FILES/embedded.mobileprovision"
     temp_path = "/tmp/embedded.mobileprovision"
@@ -144,7 +140,7 @@ def patch_app():
 
 # Create the main application window
 root = tk.Tk()
-root.title("Fortnite Helper")
+root.title("FnMacAssistant")
 root.geometry("500x350")  # Adjust the window size
 
 # Create the IPA selection dropdown (combobox)
