@@ -19,5 +19,6 @@ Instructions:
 2. Download the newest version of FnMacAssistant and unzip it.
 
 Credit to:
+
 Vedma1337 for the Fortnite IPAs (https://github.com/vedma1337/EGS-IPA)
 Drohy for the patch that makes fortnite work on macOS and for the inspiration to make this app. (https://github.com/Drohy/FortniteMAC)
