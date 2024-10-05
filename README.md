@@ -18,7 +18,7 @@ Instructions:
 
 1. download and install [Sideloadly](https://sideloadly.io)
 
-2. Download the newest version of FnMacAssistant and unzip it.
+2. Download the newest version of FnMacAssistant from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it.
 
 <hr/>
 
