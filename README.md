@@ -2,8 +2,7 @@
 Welcome to Fortnite Assistant! An easy to use assistant that helps you download the latest Fortnite IPA and applies the necessary patches for it to work properly.
 <hr/>
 <h2>Buy me a coffee</h2>
-If you found this program useful and want to support me, buy me a coffee!
-
+If you found this program useful and want to support me, buy me a coffee! <br/>
 <a href="https://www.buymeacoffee.com/Isacucho" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 <hr/>
 <h2>Requirments:</h2> 
