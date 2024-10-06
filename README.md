@@ -1,7 +1,7 @@
 # FnMacAssistant
 Welcome to Fortnite Assistant! An easy to use assistant that helps you download the latest Fortnite IPA and applies the necessary patches for it to work properly.
 <hr/>
-<h2>Requirments:</h2> <br/>
+<h2>Requirments:</h2> 
 Have Sideloadly installed on your mac <br/>
 Mac must be on MacOS 15.0 or later <br/>
 A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
