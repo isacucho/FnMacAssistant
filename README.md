@@ -14,8 +14,8 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 If anyone manages to solve any of this two issues, open a request and I'll try to implement it!
 <hr/>
-Instructions:
 
+<h2>Instructions:</h2>
 1. download and install [Sideloadly](https://sideloadly.io)
 
 2. Download the newest version of FnMacAssistant from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it.
