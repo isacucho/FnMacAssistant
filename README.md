@@ -16,12 +16,25 @@ If anyone manages to solve any of this two issues, open a request and I'll try t
 <hr/>
 
 <h2>Instructions:</h2>
-1. download and install [Sideloadly](https://sideloadly.io)
+
+1. Download and install [Sideloadly](https://sideloadly.io)
 
 2. Download the newest version of FnMacAssistant from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it.
 
+3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
+
+4. You will get a 'Could not verify' pop-up. That is because the app isn't lisenced by Apple. That would cost a fortune and it is not worth it. To open the app, go to _Settings > Privacy & Security_ and click on the _open anyway_ button.
+
+5. Select the IPA version from the dropdown menu, and click the _Download IPA_ button to download it.
+
+6. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
+
+7. Return to FnMacAssistant and click on the _Patch App_ button. (This will patch the embedded.mobileprovision to _/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app_)
+
+8. Open fortnite and enjoy!
+
 <hr/>
 
-Credit to: <br/>
+<h2>Credits:</h2>
 Vedma1337 for the Fortnite IPAs (https://github.com/vedma1337/EGS-IPA) <br/>
 Drohy for the patch that makes fortnite work on macOS and for the inspiration to make this app. (https://github.com/Drohy/FortniteMAC)
