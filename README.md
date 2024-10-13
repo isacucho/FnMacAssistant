@@ -41,5 +41,5 @@ If anyone manages to solve any of this two issues, open a request and I'll try t
 <hr/>
 
 <h2>Credits:</h2>
-Vedma1337 for the Fortnite IPAs (https://github.com/vedma1337/EGS-IPA) <br/>
-Drohy for the patch that makes fortnite work on macOS and for the inspiration to make this app. (https://github.com/Drohy/FortniteMAC)
+The guys at the CelestialiOS Discord server for the Fortnite IPAs. https://discord.gg/celestialios<br/>
+Drohy for the patch that makes fortnite work on macOS and for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
