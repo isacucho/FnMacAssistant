@@ -69,7 +69,7 @@ def download_ipa(selected_ipa_url, selected_ipa_name, file_size):
 
         # Show success message with reminders
         message = (
-            f"{selected_ipa_name} was downloaded to ~/Downloads.\n\n"
+            f"{selected_ipa_name} was downloaded to your Downloads folder.\n\n"
             "Please sideload it using Sideloadly, then return to the asisstant to patch the app.\n\n"
             "Remember: You will need to sideload and patch the game every 7 days."
         )
