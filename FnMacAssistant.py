@@ -7,7 +7,7 @@ import threading
 
 # Function to get the latest release assets from GitHub and file size
 def get_latest_release_assets():
-    api_url = "https://api.github.com/repos/vedma1337/EGS-IPA/releases/latest"
+    api_url = "https://api.github.com/repos/isacucho/FnMacIPAs/releases/latest"
     try:
         response = requests.get(api_url)
         response.raise_for_status()
