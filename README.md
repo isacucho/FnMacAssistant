@@ -1,8 +1,7 @@
 # FnMacAssistant
 Welcome to FnMacAssistant! An easy to use assistant that helps you download the latest Fortnite IPA and applies the necessary patches for it to work properly.
-<hr/>
 <img width="612" alt="Screenshot 2024-10-13 at 3 51 23 p m" src="https://github.com/user-attachments/assets/df141825-7a77-4c31-a0e0-d2724364dca2">
-
+<hr/>
 <h2>Buy me a coffee</h2>
 If you found this program useful and want to support me, buy me a coffee! 
 <br/><br/>
