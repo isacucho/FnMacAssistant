@@ -26,12 +26,18 @@ If anyone manages to solve the controller issue, open a request (or PM me on dis
 
 1. Download and install [Sideloadly](https://sideloadly.io)
 
-2. Download the newest version of FnMacAssistant from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it.
+2. Download the newest version of FnMacAssistant (if you have knowledge on python, you can use it, but if not, download the zipped app) from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it.
 
 3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
 
-4. You will get a 'Could not verify' pop-up. That is because the app isn't lisenced by Apple. That would cost a fortune and it is not worth it. To open the app, go to _Settings > Privacy & Security_ and click on the _open anyway_ button.
-
+4. You may get a "FnMacAssistant.app is damaged and can’t be opened. You should move it to the Trash.". That is completely normal, and the only way to bypass it would be to buy an apple developer account to sign the app. To open the app, copy and paste the following commands on terminal:
+```
+cd downloads
+xattr -dr com.apple.quarantine FnMacAssistant.app
+```
+(If you moved the app from your downloads folder, change the _downloads_ on `cd downloads` for the folder where the app is located)
+Alternatively, you can download and run the python version of the app.
+ 
 5. Select the IPA version from the dropdown menu, and click the _Download IPA_ button to download it.
 
 6. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
