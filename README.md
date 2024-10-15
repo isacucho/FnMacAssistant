@@ -17,6 +17,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 **note:** The game can be played with keyboard and mouse, but a controller is needed to login and to interact with the lobby (ready up, select gamemode, change skin, etc.) 
 
 ~~**note 2:** The screen size will be in an iPad's screen size format, so you may see black bars on the edges of your screen. I haven't found a way to make the game fullscreen yet.~~ <br>
+
 The Fortnite fullscreen patch is now live! Make sure to select the Fullscreen IPA when downloading with FnMasAssistant for it to work.
 
 If anyone manages to solve the controller issue, open a request (or PM me on discord) and I'll try to implement it!
@@ -38,7 +39,7 @@ xattr -dr com.apple.quarantine FnMacAssistant.app
 (If you moved the app from your downloads folder, change the _downloads_ on `cd downloads` for the folder where the app is located)
 Alternatively, you can download and run the python version of the app.
  
-5. Select the IPA version from the dropdown menu, and click the _Download IPA_ button to download it.
+5. Select your desired IPA (Fullscreen or regular), and click the _Download IPA_ button to download it.
 
 6. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
 
