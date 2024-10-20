@@ -101,7 +101,7 @@ def populate_ipa_dropdown():
 
 # Function to patch the app (no changes here)
 def patch_app():
-    provision_url = "https://github.com/Drohy/FortniteMAC/raw/04890b0778751d20afd5330d4346972e99b9c1f5/FILES/embedded.mobileprovision"
+    provision_url = "https://github.com/isacucho/FnMacAssistant/raw/main/files/embedded.mobileprovision"
     temp_path = "/tmp/embedded.mobileprovision"
     fortnite_app_path = "/Applications/Fortnite.app"
     fortnite_1_app_path = "/Applications/Fortnite-1.app"
