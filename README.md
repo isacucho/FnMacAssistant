@@ -27,7 +27,7 @@ If anyone manages to solve the controller issue, open a request (or PM me on dis
 
 1. Download and install [Sideloadly](https://sideloadly.io)
 
-2. Download the newest version of FnMacAssistant (if you have knowledge on python, you can use it, but if not, download the zipped app) from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it.
+2. Download the newest version of the FnMacAssistant App from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it. (if you have knowledge on python, you can use the python version by cloning this repository) 
 
 3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
 
