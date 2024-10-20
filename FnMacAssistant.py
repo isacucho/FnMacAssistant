@@ -140,6 +140,8 @@ def patch_app():
 
 # Create the main application window
 root = tk.Tk()
+root.lift()
+root.focus_force()
 root.title("FnMacAssistant")
 root.geometry("500x350")  # Adjust the window size
 
