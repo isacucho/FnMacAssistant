@@ -51,4 +51,4 @@ Alternatively, you can download and run the python version of the app.
 
 <h2>Credits:</h2>
 The guys at the CelestialiOS Discord server for the Fortnite IPAs. https://discord.gg/celestialios<br/>
-Drohy for the patch that makes fortnite work on macOS and for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
+Drohy for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
