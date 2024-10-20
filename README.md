@@ -24,6 +24,8 @@ If anyone manages to solve the controller issue, open a request (or PM me on dis
 <hr/>
 
 <h2>Instructions:</h2>
+(Video tutorial is in the way, just waiting to be edited. Should be up later today or tomorrow.)
+
 
 1. Download and install [Sideloadly](https://sideloadly.io)
 
@@ -43,11 +45,12 @@ Alternatively, you can download and run the python version of the app.
 
 6. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
 
-7. Return to FnMacAssistant and click on the _Patch App_ button. (This will patch the embedded.mobileprovision to _/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app_)
+7. Return to FnMacAssistant and click on the _Patch App_ button. (This will patch the embedded.mobileprovision to _/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app_, and remove old app if it exists)
 
 8. Open fortnite and enjoy!
 
 <hr/>
+
 
 <h2>Credits:</h2>
 The guys at the CelestialiOS Discord server for the Fortnite IPAs. https://discord.gg/celestialios<br/>
