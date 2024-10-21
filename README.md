@@ -45,11 +45,14 @@ Alternatively, you can download and run the python version of the app.
 
 6. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
 
-7. Return to FnMacAssistant and click on the _Patch App_ button. (This will patch the embedded.mobileprovision to _/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app_, and remove old app if it exists)
+7. Open the Fortnite app. It should crash after a few seconds.
 
-8. Open fortnite and enjoy!
+8. Return to FnMacAssistant and click on the _Patch App_ button. (This will patch the embedded.mobileprovision to _/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app_, and remove old app if it exists)
+
+9. Open fortnite and enjoy!
 
 <hr/>
+
 
 
 <h2>Credits:</h2>
