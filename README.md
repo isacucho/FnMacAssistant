@@ -53,7 +53,20 @@ Alternatively, you can download and run the python version of the app.
 
 <hr/>
 
+<h2>Troubleshooting</h2>
 
+**“Fortnite” cannot be opened because the developer did not intend for it to be run on this Mac.**
+
+
+If you get this message, do the following steps:
+1. delete fortnite.app from your applications folder
+2. Install the Fortnite IPA again using sideloadly
+3. Open Fortnite. You should see the Epic Games logo for a few seconds, then the app will crash.
+4. Go to FnMacAssistant and press the 'Patch App' button.
+5. Open Fortnite again. This time it shouldn't crash!
+
+If you still get the same message after following this steps, contact me on Discord: _@isacucho_ and I'll do my best to help!
+<hr/>
 
 <h2>Credits:</h2>
 The guys at the CelestialiOS Discord server for the Fortnite IPAs. https://discord.gg/celestialios<br/>
