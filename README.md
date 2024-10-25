@@ -7,6 +7,7 @@ If you found this program useful and want to support me, buy me a coffee!
 <br/><br/>
 <a href="https://www.buymeacoffee.com/Isacucho" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 <hr/>
+<h1>Fortnite v31.41 is being released as soon as the IPA is decrypted.</h1>
 <h2>Requirments:</h2> 
 Have Sideloadly installed on your mac <br/>
 Mac must be on MacOS 15.0 or later <br/>
