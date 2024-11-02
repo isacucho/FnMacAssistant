@@ -1,6 +1,4 @@
 # FnMacAssistant
-
-<h1>A new Fortnite Update is being released. Please be patient while the IPA is extracted and the fullscreen patch is applied.</h1>
 Welcome to FnMacAssistant! An easy to use assistant that helps you download the latest Fortnite IPA and applies the necessary patches for it to work properly.<br>
 <img width="612" alt="Screenshot 2024-10-13 at 3 51 23 p m" src="https://github.com/user-attachments/assets/df141825-7a77-4c31-a0e0-d2724364dca2">
 <hr/>
