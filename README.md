@@ -16,11 +16,10 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 **note:** The game can be played with keyboard and mouse, but a controller is needed to login and to interact with the lobby (ready up, select gamemode, change skin, etc.) 
 
-~~**note 2:** The screen size will be in an iPad's screen size format, so you may see black bars on the edges of your screen. I haven't found a way to make the game fullscreen yet.~~ <br>
+Update: Acording to recent testing, it looks like sprinting and crouching isn't possible on this version of fortnite on keyboard and mouse. We are working on finding a fix to this, but it isn't 100% certain that we will find it. I would recommend you to play on controller for the time being.
 
-The Fortnite fullscreen patch is now live! Make sure to select the Fullscreen IPA when downloading with FnMasAssistant for it to work.
 
-If anyone manages to solve the controller issue, open a request (or PM me on discord) and I'll try to implement it!
+If anyone has any idea as to how to solve the controller issue, open a request (or PM me on discord: isacucho) and I'll try to implement it!
 <hr/>
 
 <h2>Instructions:</h2>
