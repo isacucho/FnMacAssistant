@@ -25,8 +25,7 @@ If anyone has any idea as to how to solve the controller issue, open a request (
 <hr/>
 
 <h2>Instructions:</h2>
-~~(Video tutorial is in the way, just waiting to be edited. Should be up later today or tomorrow.)~~
-I've been trying to get the video ready, but I'm not a good video editor. If anyone would like to help me with the video editing, contact me on Discord (@isacucho).
+<h3>Video tutorial is out! Thanks to @Ordr. for making the tutorial: https://www.youtube.com/watch?v=N8Cm-rPrI_w</h3>
 
 
 1. Download and install [Sideloadly](https://sideloadly.io)
