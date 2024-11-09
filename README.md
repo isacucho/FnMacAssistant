@@ -2,6 +2,8 @@
 Welcome to FnMacAssistant! An easy to use assistant that helps you download the latest Fortnite IPA and applies the necessary patches for it to work properly.<br>
 <img width="612" alt="Screenshot 2024-10-13 at 3 51 23 p m" src="https://github.com/user-attachments/assets/df141825-7a77-4c31-a0e0-d2724364dca2">
 <hr/>
+<h2>Join the official Fortnite Mac discord here: https://discord.gg/nfEBGJBfHD</h2>
+<hr>
 <h2>Buy me a coffee</h2>
 If you found this program useful and want to support me, buy me a coffee! 
 <br/><br/>
@@ -16,7 +18,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 **note:** The game can be played with keyboard and mouse, but a controller is needed to login and to interact with the lobby (ready up, select gamemode, change skin, etc.) 
 
-Update: Acording to recent testing, it looks like sprinting and crouching isn't possible on this version of fortnite on keyboard and mouse. We are working on finding a fix to this, but it isn't 100% certain that we will find it. I would recommend you to play on controller for the time being.
+Update: Acording to recent testing, it looks like sprinting, crouching, building, and other main actions in the game aren't possible using the native implementation of keyboard and mouse. We are working on finding a fix to this, but it isn't 100% certain that we will find it. I would recommend you to play on controller for the time being.
 
 
 If anyone has any idea as to how to solve the controller issue, open a request (or PM me on discord: isacucho) and I'll try to implement it!
