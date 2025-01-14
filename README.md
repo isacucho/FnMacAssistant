@@ -58,7 +58,7 @@ xattr -dr com.apple.quarantine FnMacAssistant.app
 (If you moved the app from your downloads folder, change the _downloads_ on `cd downloads` for the folder where the app is located)
 Alternatively, you can download and run the python version of the app.
  
-5. Select your desired IPA (Fullscreen or regular), and click the _Download IPA_ button to download it.
+5. Select the Fortnite-XX.XX.ipa (the clean IPA may not work unless manually tweaked), and click the _Download IPA_ button to download it.
 
 6. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
 
