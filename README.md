@@ -15,7 +15,7 @@ If you found this program useful and want to support me, buy me a coffee!
 <hr/>
 <h2>Requirments:</h2> 
 Have Sideloadly installed on your mac <br/>
-Mac must be on MacOS 15.0 or later <br/>
+Mac must be on MacOS 15.1 or later <br/>
 A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 <hr/>
