@@ -74,5 +74,5 @@ If you still get the same message after following this steps, contact me on Disc
 <hr/>
 
 <h2>Credits:</h2>
-The guys at the CelestialiOS Discord server for the Fortnite IPAs. https://discord.gg/celestialios<br/>
+LrdSnow for the help with extracting the IPAs
 Drohy for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
