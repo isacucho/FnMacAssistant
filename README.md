@@ -38,13 +38,7 @@ If anyone has any idea as to how to solve the controller issue, open a request (
 
 3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
 
-4. You may get a "FnMacAssistant.app is damaged and can’t be opened. You should move it to the Trash.". That is completely normal, and the only way to bypass it would be to buy an apple developer account to sign the app. To open the app, copy and paste the following commands on terminal:
-```
-cd downloads
-xattr -dr com.apple.quarantine FnMacAssistant.app
-```
-(If you moved the app from your downloads folder, change the _downloads_ on `cd downloads` for the folder where the app is located)
-Alternatively, you can download and run the python version of the app.
+4. You may get a "Apple could not verify "FnMacAssistant" is free of malware that may harm your Mac or compromise your privacy.". That is completely normal, and will hopefully be fixed once my developer account is approved. In the meantime, to open the app go to Settings > Privacy & Security, scroll down to the bottom and click on 'Open Anyway'.
  
 5. Select the Fortnite-XX.XX.ipa (the clean IPA may not work unless manually tweaked), and click the _Download IPA_ button to download it.
 
