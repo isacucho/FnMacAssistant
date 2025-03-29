@@ -7,17 +7,58 @@ import threading
 import base64
 from io import BytesIO
 from PIL import Image, ImageTk
+import webbrowser
 
+VERSION = "1.3.0" 
+GITHUB_RELEASES_URL = "https://api.github.com/repos/isacucho/FnMacAssistant/releases/latest"
 GIST_ID = "fb6a16acae4e592603540249cbb7e08d"
 GIST_API_URL = f"https://api.github.com/gists/{GIST_ID}"
 
-# Corrected base64-encoded 16x16 refresh icon (GIF)
 REFRESH_ICON_BASE64 = """
 R0lGODlhEAAQAMQAAO/v7+zs7OLg4N/f3+Li4uDg4N3d3ejo6OHh4d7e3ubm5t3d3eHh4d/f39/f
 3+Dg4OHh4ejo6N3d3d7e3uLi4t3d3eDg4OHh4ejo6N3d3eHh4d7e3uDg4OHh4ejo6N3d3eHh4QAA
 ACH5BAEAABwALAAAAAAQABAAAAVRYCSOZGl+ZQpCZJrvqTQiVq7vdYJgsDofD8SYJCKfT0fEQPD9
 fYCFEQzQeB5oOgoRUKjdbrfcrnY7nZ7P63O4XGy3u2y1u8PhcLi7XC6Hw+Hw+n0BFiYBLCMhIQA7
 """
+
+def check_for_updates():
+    try:
+        headers = {"Accept": "application/vnd.github.v3+json"}
+        response = requests.get(GITHUB_RELEASES_URL, headers=headers, timeout=10)
+        response.raise_for_status()
+        latest_release = response.json()
+        latest_version = latest_release["tag_name"].lstrip('v') 
+        
+        current_parts = [int(x) for x in VERSION.split('.')]
+        latest_parts = [int(x) for x in latest_version.split('.')]
+        
+        if latest_parts > current_parts:
+            show_update_dialog(latest_version)
+    except Exception as e:
+        print(f"Failed to check for updates: {str(e)}")
+
+def show_update_dialog(latest_version):
+    update_window = tk.Toplevel(root)
+    update_window.title("Update Available")
+    update_window.geometry("400x200")
+    update_window.grab_set()
+    
+    message = (
+        f"A new version ({latest_version}) is available!\n"
+        f"Current version: {VERSION}\n\n"
+        "Please update to the latest version as the currently\n"
+        "installed version could stop working."
+    )
+    tk.Label(update_window, text=message, justify="center").pack(pady=20)
+    
+    button_frame = tk.Frame(update_window)
+    button_frame.pack(pady=20)
+    
+    tk.Button(button_frame, text="Update Now", 
+              command=lambda: [webbrowser.open("https://github.com/isacucho/FnMacAssistant/releases/latest"), 
+                             update_window.destroy()]).pack(side=tk.LEFT, padx=10)
+    tk.Button(button_frame, text="Ignore", 
+              command=update_window.destroy).pack(side=tk.LEFT, padx=10)
 
 def get_latest_raw_url():
     try:
@@ -207,6 +248,8 @@ root.lift()
 root.focus_force()
 root.title("FnMacAssistant")
 root.geometry("500x350")
+
+check_for_updates()
 
 top_frame = tk.Frame(root)
 top_frame.pack(pady=5)
