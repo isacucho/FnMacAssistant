@@ -8,8 +8,10 @@ import base64
 from io import BytesIO
 from PIL import Image, ImageTk
 import webbrowser
+import subprocess
+import time
 
-VERSION = "1.3.0" 
+VERSION = "1.3.1"
 GITHUB_RELEASES_URL = "https://api.github.com/repos/isacucho/FnMacAssistant/releases/latest"
 GIST_ID = "fb6a16acae4e592603540249cbb7e08d"
 GIST_API_URL = f"https://api.github.com/gists/{GIST_ID}"
@@ -132,8 +134,8 @@ def get_ipa_data():
 
 def download_ipa(selected_ipa_url, selected_ipa_name, file_size):
     download_path = os.path.expanduser(f"~/Downloads/{selected_ipa_name}")
-    progress_bar.pack(pady=10)
-    progress_label.pack(pady=10)
+    progress_label.pack(pady=5)  # Changed to appear above progress bar
+    progress_bar.pack(pady=5)    # Adjusted padding
     progress_var.set(0)
     root.update()
 
@@ -208,6 +210,40 @@ def refresh_dropdown():
     populate_ipa_dropdown()
     messagebox.showinfo("Refresh", "File list refreshed.")
 
+def show_update_skip_info():
+    messagebox.showinfo("Update Skip Feature", 
+                      "Enable this when updating the game. To facilitate the update process, "
+                      "this will automatically open Fortnite-1 and let it crash before proceeding with the patch.")
+
+def open_fortnite_1_and_wait():
+    fortnite_1_app_path = "/Applications/Fortnite-1.app"
+    try:
+        if os.path.exists(fortnite_1_app_path):
+            status_label.config(text="Opening Fortnite-1.app...")
+            root.update()
+            
+            subprocess.Popen(['open', fortnite_1_app_path])
+            
+            status_label.config(text="Waiting for app to crash...")
+            root.update()
+            
+            # Wait 5 seconds for the app to open and crash
+            for i in range(5):
+                time.sleep(1)
+                status_label.config(text=f"Waiting for app to crash... ({5-i}s)")
+                root.update()
+                
+            status_label.config(text="Ready to patch")
+            return True
+        else:
+            messagebox.showerror("Error", "Fortnite-1.app not found")
+            status_label.config(text="")
+            return False
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to open Fortnite-1.app: {str(e)}")
+        status_label.config(text="")
+        return False
+
 def patch_app():
     provision_url = "https://github.com/isacucho/FnMacAssistant/raw/main/files/embedded.mobileprovision"
     temp_path = "/tmp/embedded.mobileprovision"
@@ -216,6 +252,11 @@ def patch_app():
     provision_dest_path = os.path.join(fortnite_app_path, "Wrapper/FortniteClient-IOS-Shipping.app/embedded.mobileprovision")
 
     try:
+        # If update skip is enabled, open Fortnite-1.app and wait for it to crash
+        if update_skip_var.get() and os.path.exists(fortnite_1_app_path):
+            if not open_fortnite_1_and_wait():
+                return
+
         response = requests.get(provision_url, stream=True)
         response.raise_for_status()
         with open(temp_path, 'wb') as provision_file:
@@ -230,8 +271,10 @@ def patch_app():
             os.makedirs(os.path.dirname(provision_dest_path))
         shutil.move(temp_path, provision_dest_path)
         messagebox.showinfo("Patch Complete", "Fortnite has been patched. You can now open Fortnite.")
+        status_label.config(text="")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to patch the app: {str(e)}")
+        status_label.config(text="")
 
 def load_refresh_icon():
     try:
@@ -247,7 +290,7 @@ root = tk.Tk()
 root.lift()
 root.focus_force()
 root.title("FnMacAssistant")
-root.geometry("500x350")
+root.geometry("500x350")  # Keeping height at 350
 
 check_for_updates()
 
@@ -277,11 +320,31 @@ populate_ipa_dropdown()
 download_button = tk.Button(root, text="Download File", command=start_download, width=40, height=2)
 download_button.pack(pady=20)
 
-patch_button = tk.Button(root, text="Patch App", command=patch_app, width=40, height=2)
-patch_button.pack(pady=20)
+# Frame for patch button and update skip toggle
+patch_frame = tk.Frame(root)
+patch_frame.pack(pady=10)
+
+patch_button = tk.Button(patch_frame, text="Patch App", command=patch_app, width=40, height=2)
+patch_button.pack(pady=5)
+
+# Frame for update skip toggle and info button
+update_skip_frame = tk.Frame(root)
+update_skip_frame.pack(pady=5)
+
+update_skip_var = tk.BooleanVar()
+update_skip_toggle = ttk.Checkbutton(update_skip_frame, text="Update Skip", variable=update_skip_var)
+update_skip_toggle.pack(side=tk.LEFT, padx=5)
+
+info_button = tk.Button(update_skip_frame, text="ⓘ", command=show_update_skip_info, 
+                      width=2, font=("Arial", 10), relief=tk.FLAT)
+info_button.pack(side=tk.LEFT)
 
 progress_var = tk.DoubleVar()
 progress_bar = ttk.Progressbar(root, variable=progress_var, maximum=100, length=400)
 progress_label = tk.Label(root, text="")
+
+# Status label for update skip process
+status_label = tk.Label(root, text="", font=("Arial", 10))
+status_label.pack(pady=5)
 
 root.mainloop()
