@@ -20,9 +20,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 <hr/>
 
-**note:** The game can be played with keyboard and mouse, but a controller is needed to login and to interact with the lobby (ready up, select gamemode, change skin, etc.) 
-
-Update: Acording to recent testing, it looks like sprinting, crouching, building, and other main actions in the game aren't possible using the native implementation of keyboard and mouse. We are working on finding a fix to this, but it isn't 100% certain that we will find it. I would recommend you to play on controller for the time being.
+**note:** The game can be played with keyboard and mouse, but using controller is recommended.
 
 
 If anyone has any idea as to how to solve the controller issue, open a request (or PM me on discord: isacucho) and I'll try to implement it!
@@ -37,18 +35,16 @@ If anyone has any idea as to how to solve the controller issue, open a request (
 2. Download the newest version of the FnMacAssistant App from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it. (if you have knowledge on python, you can use the python version by cloning this repository) 
 
 3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
-
-4. You may get a "Apple could not verify "FnMacAssistant" is free of malware that may harm your Mac or compromise your privacy.". That is completely normal, and will hopefully be fixed once my developer account is approved. In the meantime, to open the app go to Settings > Privacy & Security, scroll down to the bottom and click on 'Open Anyway'.
  
-5. Select the Fortnite-XX.XX.ipa (the clean IPA may not work unless manually tweaked), and click the _Download IPA_ button to download it.
+4. Select the Fortnite-XX.XX.ipa (the clean IPA may not work unless manually tweaked), and click the _Download IPA_ button to download it.
 
-6. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
+5. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
 
-7. Open the Fortnite app. It should crash after a few seconds.
+6. Open the Fortnite app. It should crash after a few seconds.
 
-8. Return to FnMacAssistant and click on the _Patch App_ button. (This will patch the embedded.mobileprovision to _/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app_, and remove old app if it exists)
+7. Return to FnMacAssistant and click on the _Patch App_ button. (This will patch the embedded.mobileprovision to _/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app_, and remove old app if it exists)
 
-9. Open fortnite and enjoy!
+8. Open fortnite and enjoy!
 
 <hr/>
 
