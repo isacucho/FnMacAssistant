@@ -45,7 +45,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 4. Allow Fortnite-x to be used for testing purposes through System Settings > Privacy & Security if prompted.<br>
 5. Patch the app.<br>
 6. Fortnite-1 should "delete and merge" itself with the existing Fortnite install, open it, and you should be good to go.<br>
-
+<br>
 
 <h3>Error: “Fortnite” cannot be opened because the developer did not intend for it to be run on this Mac.</h3>
 
@@ -57,8 +57,8 @@ If you get this message, do the following steps:
 4. Go to FnMacAssistant and press the 'Patch App' button.
 5. Open Fortnite again. This time it shouldn't crash!
 
-
-<h3>Error: _Failed to patch the app: [Errno 1] Operation not permitted_</h3>
+<br>
+<h3>Error: Failed to patch the app: [Errno 1] Operation not permitted</h3>
 If you get this error message, you may need to give the FnMacAssistant additional permitions. 
 
 1. Go to System Settings > Privacy & Security > App Management.
@@ -67,17 +67,40 @@ If you get this error message, you may need to give the FnMacAssistant additiona
 4. Restart the app and try to patch again.
 
 Doing this should fix your issue and you should successfuly be able to patch Fortnite. 
-
+<br>
 <h3>Fortnite keeps crashing even after patching</h3>
 This usually means that you're MacOS version is not supported. Please update your mac and try again.
+<br>
+<h3>What is the difference between the various IPAs?</h3>
 
+**Clean IPA** <br>
+The clean IPA (Fortnite-XX.XX_Clean.ipa) is the decrypted IPA as-is, no modifications whatsoever. Useful when trying to debug, but it may cause some issues like black bars.
+<br><br>
+**Regular IPA** <br>
+The regular IPA (Fortnite-XX.XX.ipa) contains the following tweaks:
+- MacOS Fullscreen Patch
+- Removed device restriction
+- Allows editing files from the Files app
+- Lowered minimum iOS version to iOS 10
+<br>
+
+**Tweak IPA**
+<br>
+The tweak IPA (Fortnite-XX.XX+Tweak.ipa) comes bundled with the FnMacTweak made by rt2746. In addition to the tweaks mentioned on the regular IPA, this one also contains:
+- Toggle pointer locking with Left Option key (unlocked by default on game load)
+- Unlocks 120 FPS option (requires 120Hz display for full effect)
+- Unlocks graphic preset selection (Low, Medium, High, Epic; 120 FPS sets to Medium)
+- Custom options menu (press P) for mouse sensitivity adjustments
+- Mouse interaction with mobile UI
+You can download the standalone tweak or build it yourself on the project's [Github page](https://github.com/rt-someone/FnMacTweak).
 <br><br>
 
-If you still get the same message after following this steps, contact me on Discord: _@isacucho_ and I'll do my best to help!
+If you have any questions that are not in here, join the [Fortnite Mac discord server](https://discord.gg/nfEBGJBfHD) and I'll be happy to answer your questions over there!
 
 
 
 
 <h2>Credits:</h2>
-LrdSnow for the help with extracting the IPAs
-Drohy for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
+<br>
+**LrdSnow** for the help with extracting the IPAs<br>
+**Drohy** for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
