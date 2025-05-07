@@ -24,7 +24,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
  
 4. Select your desired IPA, and click the _Download IPA_ button to download it. <br>
-(To check the differences between the different IPAs, click [here](https://github.com/isacucho/FnMacAssistant/edit/main/README.md#fnmacassistant).
+(To see the differences between the different IPAs, click [here](https://github.com/isacucho/FnMacAssistant#what-is-the-difference-between-the-various-ipas).)
 
 5. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
 
@@ -102,5 +102,5 @@ If you have any questions that are not in here, join the [Fortnite Mac discord s
 
 <h2>Credits:</h2>
 <br>
-**LrdSnow** for the help with extracting the IPAs<br>
-**Drohy** for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
+LrdSnow for the help with extracting the IPAs<br>
+jaykwimain for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
