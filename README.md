@@ -91,7 +91,7 @@ The tweak IPA (Fortnite-XX.XX+Tweak.ipa) comes bundled with the FnMacTweak made 
 - Unlocks 120 FPS option (requires 120Hz display for full effect)
 - Unlocks graphic preset selection (Low, Medium, High, Epic; 120 FPS sets to Medium)
 - Custom options menu (press P) for mouse sensitivity adjustments
-- Mouse interaction with mobile UI
+- Mouse interaction with mobile UI<br>
 You can download the standalone tweak or build it yourself on the project's [Github page](https://github.com/rt-someone/FnMacTweak).
 <br><br>
 
