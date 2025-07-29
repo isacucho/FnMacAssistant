@@ -11,8 +11,7 @@ If you found this program useful and want to support me, buy me a coffee!
 <a href="https://www.buymeacoffee.com/Isacucho" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
 <h2>Notice</h2>
-There is currently an issue when downloading where you could either get stuck on 100% installed, get a connection error, or a full storage error. We still haven't managed to completely fix this issue. To play, you will have to manually download and install the files. 
-You can find a guide on how to do it 
+There is currently an issue when downloading where you could either get stuck on 100% installed, get a connection error, or a full storage error. We still haven't managed to completely fix this issue. To play, you will have to manually download and install the files. You can find a guide on how to do it  
 
 [here](https://github.com/isacucho/FnMacAssistant#Manually-installing-the-game-files)
 
