@@ -10,6 +10,12 @@ If you found this program useful and want to support me, buy me a coffee!
 <br/><br/>
 <a href="https://www.buymeacoffee.com/Isacucho" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
+<h2>Notice</h2>
+There is currently an issue when downloading where you could either get stuck on 100% installed, get a connection error, or a full storage error. We still haven't managed to completely fix this issue. To play, you will have to manually download and install the files. 
+You can find a guide on how to do it 
+
+[here](https://github.com/isacucho/FnMacAssistant#Manually-installing-the-game-files)
+
 <h2>Requirments:</h2> 
 Have Sideloadly installed on your mac <br/>
 Mac must be on MacOS 15.1 or later <br/>
@@ -36,6 +42,15 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 
 <h2>FAQ</h2>
+
+<h3>Manually installing the game files</h3>
+1. Download the archive: [v36.30]().<br>
+2. Unzip it.<br>
+3. Cut the PersistentDownloadDir folder (Command + X)<br>
+4. On a finder window, press Shift + Command + G and paste this path: '~/Library/Containers/Fortnite/Data/Documents/FortniteGame/'<br>
+5. Paste the folder (Command + V) and if prompted, select 'replace'.<br>
+6. Open Fortnite.
+<br>
 
 <h3>How do I update the game?</h3>
 1. Download the updated IPA from your preffered source (FnMacAssistant, the website, etc.)<br>
