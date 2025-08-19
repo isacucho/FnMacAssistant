@@ -1,6 +1,6 @@
 # FnMacAssistant
 Welcome to FnMacAssistant! An easy to use assistant that helps you download the latest Fortnite IPA and applies the necessary patches for it to work properly.<br>
-<img width="612" alt="Picture of FnMacAssistant v1.0" src="https://github.com/user-attachments/assets/df141825-7a77-4c31-a0e0-d2724364dca2">
+<img width="612" height="540" alt="Screenshot of FnMacAssistant v1.4.0" src="https://github.com/user-attachments/assets/a187b047-09de-4215-9d95-d8ecc5abcf7f" />
 
 <h2>Discord</h2>
 Join the official Fortnite Mac discord here: https://discord.gg/nfEBGJBfHD
