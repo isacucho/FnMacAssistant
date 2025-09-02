@@ -45,7 +45,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 <h3>Manually installing the game files</h3>
 1. Download the archive: 
 
-[v37.00.2](https://drive.google.com/file/d/1kwZDKQSRJYkxoUG_noW4xhU2G6fg_J-3/view?usp=sharing) <br>
+[v37.10](https://drive.google.com/file/d/1tndniJpZA523BX3-rRKvne7hnMaoLQWG/view?usp=sharing) <br>
 2. Unzip it.<br>
 3. Cut the PersistentDownloadDir folder (Command + X)<br>
 4. On a finder window, press Shift + Command + G and paste this path: '~/Library/Containers/Fortnite/Data/Documents/FortniteGame/'<br>
