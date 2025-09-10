@@ -14,7 +14,7 @@ import plistlib
 import zipfile
 
 
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 GITHUB_RELEASES_URL = "https://api.github.com/repos/isacucho/FnMacAssistant/releases/latest"
 GIST_ID = "fb6a16acae4e592603540249cbb7e08d"
 GIST_API_URL = f"https://api.github.com/gists/{GIST_ID}"
