@@ -5,8 +5,12 @@ Welcome to FnMacAssistant! An easy to use assistant that helps you download the 
 <h2>Discord</h2>
 Join the official Fortnite Mac discord here: https://discord.gg/nfEBGJBfHD
 
-<h2>Buy me a coffee</h2>
-If you found this program useful and want to support me, buy me a coffee! 
+<h2>Support me</h2>
+If you found this program useful and want to support me, consider using my Support a Creator Code in Fortnite!
+
+`Isacucho`
+
+You can also support me through buy me a coffee! 
 <br/><br/>
 <a href="https://www.buymeacoffee.com/Isacucho" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
@@ -45,7 +49,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 <h3>Manually installing the game files</h3>
 1. Download the archive: 
 
-[v38.00](https://drive.google.com/file/d/1iRB7VWd3ivA65dneadQENJVcRnoC8aB2/view?usp=share_link) || [v38.00 w/BR](https://drive.google.com/file/d/1wQmPXC7oXyI4rIS3MYZwHvvCrw6Q4bDk/view?usp=share_link)<br>
+[v38.10](https://drive.google.com/drive/folders/1ZgL1AKaRnoNNbvFZFnz--V6wnf9DuqZ-?usp=drive_link) <br>
 2. Unzip it.<br>
 3. Cut the PersistentDownloadDir folder (Command + X)<br>
 4. On a finder window, press Shift + Command + G and paste this path: '~/Library/Containers/Fortnite/Data/Documents/FortniteGame/'<br>
