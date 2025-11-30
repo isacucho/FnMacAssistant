@@ -14,10 +14,6 @@ You can also support me through buy me a coffee!
 <br/><br/>
 <a href="https://www.buymeacoffee.com/Isacucho" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
-<h2>Notice</h2>
-There is currently an issue when downloading where you could either get stuck on 100% installed, get a connection error, or a full storage error. We still haven't managed to completely fix this issue. To play, you will have to manually download and install the files. You can find a guide on how to do it  
-
-[here](https://github.com/isacucho/FnMacAssistant#Manually-installing-the-game-files)
 
 <h2>Requirments:</h2> 
 Have Sideloadly installed on your mac <br/>
@@ -26,9 +22,12 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 <h2>Instructions:</h2>
 
-1. Download and install [Sideloadly](https://sideloadly.io)
+<h3>Part 1: Installation</h3>
+To get Fortnite up and running in your Mac, follow these steps:
+<br>
+1. Download and install https://sideloadly.io
 
-2. Download the newest version of the FnMacAssistant App from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it. (if you have python knowledge, you can use the python version by cloning this repository) 
+2. Download the newest version of the FnMacAssistant App from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it. (if you prefer to run it through python, you can use the python version by cloning this repository).
 
 3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
  
@@ -37,34 +36,63 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 5. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
 
-6. Open the Fortnite app. It should crash after a few seconds.
+6. Open the Fortnite app. It should crash after a few seconds. If required, go to Settings > Privacy & Security, scroll down and on Fortnite, click "Open Anyway".
 
-7. Return to FnMacAssistant and click on the _Patch App_ button. (This will patch the embedded.mobileprovision to _/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app_, and remove old app if it exists)
+7. Return to FnMacAssistant and click on the _Patch App_ button.
 
-8. Open fortnite and enjoy!
+<h3>Part 2: Download the game files</h3>
+
+Fortnite is now installed, but that's not all. The game files still need to be downloaded, but the initial download is currently broken when installing on Mac. Because of this, you will have to do one of these two options: Download in the background or import the game files with what we call an archive.
+<h4>2.1: Background download (recommended, but might be harder)</h4>
+
+To download the game files in the background, follow these steps:
+<br>
+1. Download the [barebones archive]([url](https://cvws.icloud-content.com/B/AeWUzYPzQZOzQOMtaB7kCP0JI-v4AZ0LGky_FRZC-X7PEqj0wI9iNnbC/v39.00%20barebones.zip?o=AvMlYZ584_vJpWoxc5a_h6yh_ljExX5veAN4N9__xkeE&v=1&x=3&a=CAogVRpQ6ZFPGA2Y-vKJQ7AUijsHS9uhNB4JC861JhmUA0ASbxD-2q6arTMY_uqp7rYzIgEAUgQJI-v4WgRiNnbCaif_gSzt_b8HH7tfsKokgUak0UDA11sesbU6nxJsTIrP8vdSsW4_gudyJ7MLZ9xKFHuSsZlL-zdV4c46sHbwe-JwDgCCtjS62MlSoBhEsfmtbQ&e=1767073543&fl=&r=5EDF64E0-3AAC-46C2-8DF2-F4B0B5E85ACE-1&k=l2c6-eVhXxHm1c87QIReZw&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=nBKLD1ahHqpnaCs4q-vKVmWd7eo)). It is a 100MB zip file that contains the files Fortnite needs to be able to download in the background.
+2. Open FnMacAssistant, and import the archive using the "Import Archive" button.
+3. Once the import is done, open Fortnite and wait for the download to start.
+4. Once the total download size appears, take note of it and fully close Fortnite (either by quitting with 'Command + Q' or by clicking on the red 'X'.
+5. To track the download progress, go to finder. Press the keys 'Shift + Command + G', and paste the following path: `~/Library/Containers/Fortnite/Data/`, then press enter.
+6. Check the size of the Library folder (select it and press 'Space' or right click > get info). The size of that folder is the total downloaded data. Once it completes the download, that folder will shrink to a few MB's.
+7. Once the folder shrinks, re-open Fortnite. The download bar should now be at 50% and the download should continue from there.
+8. After logging in, you might get another download screen. If you do, repeat steps 4-7. After this you should get into the lobby.
+
+<h4>2.2: Archive import (Easier, but will have to download the full game files every update).</h4>
+
+To download the archived game files and import them, follow these steps:
+1. Download the latest archive here: [v39.00 archive](https://cvws.icloud-content.com/B/ARPmX2AYz1O-ucf6DVB9Z1OPjphQAesScw-rawkmEjDiOCajUkNr-PVs/v39.00%20archive.zip?o=AkM9LmGaUvJD8uADjjiA91MpeL20YIunOeporPNABit9&v=1&x=3&a=CAognlH3GTp5KRp52kSI7JdhS7b_H2UICwyN_BmYcEoSVXMSbxCO86iarTMYjoOk7rYzIgEAUgSPjphQWgRr-PVsaidz17MealnGkmbRb1RzIANd07u16ptTkffGeiFGkAEYWnBIA_j-82NyJ4-xXCM7Muxl6S8Rq3eoPWDuNdjAFWoNY8vzV3dVqgv_LDY6-sH6Ug&e=1767073448&fl=&r=D3AD8ADF-93A6-4084-AD8F-8F012274B3A7-1&k=-4BwF5TiB1_6RQlARR1ZdA&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=BaU3mFnbQHdyeoZEGIrmF7IOjGM). Make sure the archive version matches your IPA version. If it doesn't, you'll have to wait until the latest archive is uploaded.
+2. Open Fortnite at least once before importing the archive. Once you see the download bar, you may close the game.
+3. Open FnMacAssistant and click on the "Import Archive" button. Select either Zip or folder depending on how it downloaded and select your archive.
+4. Wait for the progress bar to finish. Once it's done, you can open Fortnite!
+P.S: If you get another download screen after logging in, you might need to follow steps 4-7 of the background download method.
 
 
 <h2>FAQ</h2>
 
-<h3>Manually installing the game files</h3>
-1. Download the archive: 
+<h3>I'm getting a connection / storage error while downloading the game files! What should I do?</h3>
 
-[v39.00](https://cvws.icloud-content.com/B/ARPmX2AYz1O-ucf6DVB9Z1OPjphQAesScw-rawkmEjDiOCajUkNr-PVs/v39.00%20archive.zip?o=AkM9LmGaUvJD8uADjjiA91MpeL20YIunOeporPNABit9&v=1&x=3&a=CAognlH3GTp5KRp52kSI7JdhS7b_H2UICwyN_BmYcEoSVXMSbxCO86iarTMYjoOk7rYzIgEAUgSPjphQWgRr-PVsaidz17MealnGkmbRb1RzIANd07u16ptTkffGeiFGkAEYWnBIA_j-82NyJ4-xXCM7Muxl6S8Rq3eoPWDuNdjAFWoNY8vzV3dVqgv_LDY6-sH6Ug&e=1767073448&fl=&r=D3AD8ADF-93A6-4084-AD8F-8F012274B3A7-1&k=-4BwF5TiB1_6RQlARR1ZdA&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=BaU3mFnbQHdyeoZEGIrmF7IOjGM) <br>
-2. Unzip it.<br>
-3. Cut the PersistentDownloadDir folder (Command + X)<br>
-4. On a finder window, press Shift + Command + G and paste this path: '~/Library/Containers/Fortnite/Data/Documents/FortniteGame/'<br>
-5. Paste the folder (Command + V) and if prompted, select 'replace'.<br>
-6. Open Fortnite.
+There are two solutions for this. You can:
 <br>
+1. Open FnMacAssistant
+2. Click the "Delete App and Data" button
+3. Follow the installation steps to install fortnite and download the game data again.
+
+<br>
+Or, you can also do this:
+<br><br>
+ 1. Open FnMacAssistant<br>
+ 2. Click on the button with a folder icon, at the left of the "Import Archive" button.<br>
+ 3. If prompted, select your container (it is usually the largest one).<br>
+ 4. Go to FortniteGame > PersistentDownloadDir, and locate a file called 'InstallBundleManagerReportCache.json'.<br>
+ 5. Delete that .json file, and re-try the game data download.
+
 
 <h3>How do I update the game?</h3>
 1. Download the updated IPA from your preffered source (FnMacAssistant, the website, etc.)<br>
 2. Install the newest IPA with the same Apple ID you installed the last version. <br>
-3. Open the "Fortnite-1" app, or enable 'Update Skip' if on the newest version. Make sure you open it before patching. Don't attempt to patch first as it will not work.<br>
- (Make sure you only have Fortnite and Fortnite-1. If you have more than one duplicate delete all of them and install again)<br>
-4. Allow Fortnite-x to be used for testing purposes through System Settings > Privacy & Security if prompted.<br>
+3. Open the "Fortnite" app, or enable 'Update Skip' if on the newest version. Make sure you open it before patching. Don't attempt to patch first as it will not work.<br>
+4. If prompted, allow Fortnite to be used for testing purposes through System Settings > Privacy & Security.<br>
 5. Patch the app.<br>
-6. Fortnite-1 should "delete and merge" itself with the existing Fortnite install, open it, and you should be good to go.<br>
+6. Download the game files through your preferred method.<br>
 <br>
 
 <h3>Error: “Fortnite” cannot be opened because the developer did not intend for it to be run on this Mac.</h3>
