@@ -49,7 +49,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 <h3>Manually installing the game files</h3>
 1. Download the archive: 
 
-[v38.11](https://drive.google.com/drive/folders/1ZgL1AKaRnoNNbvFZFnz--V6wnf9DuqZ-?usp=drive_link) <br>
+[v39.00](https://cvws.icloud-content.com/B/ARPmX2AYz1O-ucf6DVB9Z1OPjphQAesScw-rawkmEjDiOCajUkNr-PVs/v39.00%20archive.zip?o=AkM9LmGaUvJD8uADjjiA91MpeL20YIunOeporPNABit9&v=1&x=3&a=CAognlH3GTp5KRp52kSI7JdhS7b_H2UICwyN_BmYcEoSVXMSbxCO86iarTMYjoOk7rYzIgEAUgSPjphQWgRr-PVsaidz17MealnGkmbRb1RzIANd07u16ptTkffGeiFGkAEYWnBIA_j-82NyJ4-xXCM7Muxl6S8Rq3eoPWDuNdjAFWoNY8vzV3dVqgv_LDY6-sH6Ug&e=1767073448&fl=&r=D3AD8ADF-93A6-4084-AD8F-8F012274B3A7-1&k=-4BwF5TiB1_6RQlARR1ZdA&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=BaU3mFnbQHdyeoZEGIrmF7IOjGM) <br>
 2. Unzip it.<br>
 3. Cut the PersistentDownloadDir folder (Command + X)<br>
 4. On a finder window, press Shift + Command + G and paste this path: '~/Library/Containers/Fortnite/Data/Documents/FortniteGame/'<br>
