@@ -25,20 +25,20 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 <h3>Part 1: Installation</h3>
 To get Fortnite up and running in your Mac, follow these steps:
 <br>
-1. Download and install https://sideloadly.io
+1.1. Download and install https://sideloadly.io
 
-2. Download the newest version of the FnMacAssistant App from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it. (if you prefer to run it through python, you can use the python version by cloning this repository).
+1.2. Download the newest version of the FnMacAssistant App from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it. (if you prefer to run it through python, you can use the python version by cloning this repository).
 
-3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
+1.3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
  
-4. Select your desired IPA, and click the _Download IPA_ button to download it. <br>
+1.4. Select your desired IPA, and click the _Download IPA_ button to download it. <br>
 (To see the differences between the different IPAs, click [here](https://github.com/isacucho/FnMacAssistant#what-is-the-difference-between-the-various-ipas).)
 
-5. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
+1.5. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
 
-6. Open the Fortnite app. It should crash after a few seconds. If required, go to Settings > Privacy & Security, scroll down and on Fortnite, click "Open Anyway".
+1.6. Open the Fortnite app. It should crash after a few seconds. If required, go to Settings > Privacy & Security, scroll down and on Fortnite, click "Open Anyway".
 
-7. Return to FnMacAssistant and click on the _Patch App_ button.
+1.7. Return to FnMacAssistant and click on the _Patch App_ button.
 
 <h3>Part 2: Download the game files</h3>
 
@@ -47,24 +47,46 @@ Fortnite is now installed, but that's not all. The game files still need to be d
 
 To download the game files in the background, follow these steps:
 <br>
-1. Download the [barebones archive](https://cvws.icloud-content.com/B/AeWUzYPzQZOzQOMtaB7kCP0JI-v4AZ0LGky_FRZC-X7PEqj0wI9iNnbC/v39.00%20barebones.zip?o=AvMlYZ584_vJpWoxc5a_h6yh_ljExX5veAN4N9__xkeE&v=1&x=3&a=CAogVRpQ6ZFPGA2Y-vKJQ7AUijsHS9uhNB4JC861JhmUA0ASbxD-2q6arTMY_uqp7rYzIgEAUgQJI-v4WgRiNnbCaif_gSzt_b8HH7tfsKokgUak0UDA11sesbU6nxJsTIrP8vdSsW4_gudyJ7MLZ9xKFHuSsZlL-zdV4c46sHbwe-JwDgCCtjS62MlSoBhEsfmtbQ&e=1767073543&fl=&r=5EDF64E0-3AAC-46C2-8DF2-F4B0B5E85ACE-1&k=l2c6-eVhXxHm1c87QIReZw&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=nBKLD1ahHqpnaCs4q-vKVmWd7eo). It is a 100MB zip file that contains the files Fortnite needs to be able to download in the background.
-2. Open FnMacAssistant, and import the archive using the "Import Archive" button.
-3. Once the import is done, open Fortnite and wait for the download to start.
-4. Once the total download size appears, take note of it and fully close Fortnite (either by quitting with 'Command + Q' or by clicking on the red 'X'.
-5. To track the download progress, go to finder. Press the keys 'Shift + Command + G', and paste the following path: `~/Library/Containers/Fortnite/Data/`, then press enter.
-6. Check the size of the Library folder (select it and press 'Space' or right click > get info). The size of that folder is the total downloaded data. Once it completes the download, that folder will shrink to a few MB's.
-7. Once the folder shrinks, re-open Fortnite. The download bar should now be at 50% and the download should continue from there.
-8. After logging in, you might get another download screen. If you do, repeat steps 4-7. After this you should get into the lobby.
+2.1.1. Download the [barebones archive](https://cvws.icloud-content.com/B/AeWUzYPzQZOzQOMtaB7kCP0JI-v4AZ0LGky_FRZC-X7PEqj0wI9iNnbC/v39.00%20barebones.zip?o=AvMlYZ584_vJpWoxc5a_h6yh_ljExX5veAN4N9__xkeE&v=1&x=3&a=CAogVRpQ6ZFPGA2Y-vKJQ7AUijsHS9uhNB4JC861JhmUA0ASbxD-2q6arTMY_uqp7rYzIgEAUgQJI-v4WgRiNnbCaif_gSzt_b8HH7tfsKokgUak0UDA11sesbU6nxJsTIrP8vdSsW4_gudyJ7MLZ9xKFHuSsZlL-zdV4c46sHbwe-JwDgCCtjS62MlSoBhEsfmtbQ&e=1767073543&fl=&r=5EDF64E0-3AAC-46C2-8DF2-F4B0B5E85ACE-1&k=l2c6-eVhXxHm1c87QIReZw&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=nBKLD1ahHqpnaCs4q-vKVmWd7eo). It is a 100MB zip file that contains the files Fortnite needs to be able to download in the background.
+
+2.1.2. Open FnMacAssistant, and import the archive using the "Import Archive" button.
+
+2.1.3. Once the import is done, open Fortnite and wait for the download to start.
+
+2.1.4. Once the total download size appears, take note of it and fully close Fortnite (either by quitting with 'Command + Q' or by clicking on the red 'X'.
+
+2.1.5. To track the download progress, go to finder. Press the keys 'Shift + Command + G', and paste the following path: `~/Library/Containers/Fortnite/Data/`, then press enter.
+
+2.1.6. Check the size of the Library folder (select it and press 'Space' or right click > get info). The size of that folder is the total downloaded data. Once it completes the download, that folder will shrink to a few MB's.
+
+2.1.7. Once the folder shrinks, re-open Fortnite. The download bar should now be at 50% and the download should continue from there.
+
+2.1.8. After logging in, you might get another download screen. If you do, repeat steps 4-7. After this you should get into the lobby.
 
 <h4>2.2: Archive import (Easier, but will have to download the full game files every update).</h4>
 
 To download the archived game files and import them, follow these steps:
-1. Download the latest archive here: [v39.00.1 archive](https://cvws.icloud-content.com/B/AWfwN3V7i-URuVIRRnwmSszRShlTAcTa3rJCndeyzSxKU1rkMjxAUQdZ/v39.00.1%20Archive.zip?o=Ao_Umn3a9iwmBLsfw3YGn_A-BYl5h09CPQ_227wTLLSD&v=1&x=3&a=CAog6l_YpF1Ldy7HT-OmFIVJbKURR6Ksku-WVI3aAUYPVlASbxDch_S2rjMY3JfvirgzIgEAUgTRShlTWgRAUQdZaieUN_zBVXGF878oghgYJUgSS0qujxDeHqz4CPE3vHjcPj3uOnEQU6tyJyXuQEVxEQgk5e35JgnPb7iN2H3Z4QFyYG8OpQSaCtM175amN8JJ_A&e=1767401835&fl=&r=B712CA25-E49B-4B28-8531-82E8E82EF846-1&k=T8akFgThfZ79Gz-HdJx2yw&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=YU9qyipjzoF3379nVM3rixsMVWo). Make sure the archive version matches your IPA version. If it doesn't, you'll have to wait until the latest archive is uploaded.
-2. Open Fortnite at least once before importing the archive. Once you see the download bar, you may close the game.
-3. Open FnMacAssistant and click on the "Import Archive" button. Select either Zip or folder depending on how it downloaded and select your archive.
-4. Wait for the progress bar to finish. Once it's done, you can open Fortnite!
+
+2.2.1. Download the latest archive here: [v39.00.1 archive](https://cvws.icloud-content.com/B/AWfwN3V7i-URuVIRRnwmSszRShlTAcTa3rJCndeyzSxKU1rkMjxAUQdZ/v39.00.1%20Archive.zip?o=Ao_Umn3a9iwmBLsfw3YGn_A-BYl5h09CPQ_227wTLLSD&v=1&x=3&a=CAog6l_YpF1Ldy7HT-OmFIVJbKURR6Ksku-WVI3aAUYPVlASbxDch_S2rjMY3JfvirgzIgEAUgTRShlTWgRAUQdZaieUN_zBVXGF878oghgYJUgSS0qujxDeHqz4CPE3vHjcPj3uOnEQU6tyJyXuQEVxEQgk5e35JgnPb7iN2H3Z4QFyYG8OpQSaCtM175amN8JJ_A&e=1767401835&fl=&r=B712CA25-E49B-4B28-8531-82E8E82EF846-1&k=T8akFgThfZ79Gz-HdJx2yw&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=YU9qyipjzoF3379nVM3rixsMVWo). Make sure the archive version matches your IPA version. If it doesn't, you'll have to wait until the latest archive is uploaded.
+
+2.2.2. Open Fortnite at least once before importing the archive. Once you see the download bar, you may close the game.
+
+2.2.3. Open FnMacAssistant and click on the "Import Archive" button. Select either Zip or folder depending on how it downloaded and select your archive.
+
+2.2.4. Wait for the progress bar to finish. Once it's done, you can open Fortnite!
+
 P.S: If you get another download screen after logging in, you might need to follow steps 4-7 of the background download method.
 
+<h3>Part 3: Download your desired game modes (optional)</h3>
+With the base install, the only game modes included are Battle Royale and Blitz. If you want to play any other game mode (Reload, OG, Creative, LEGO, Rocket Racing, Creative maps, and any future game mode), you will have to download them using the background method. Not using the background method will result in an error. Here's how to install the game mode:
+
+3.1. Open Fortnite, and select the game mode you want to download.
+
+3.2. Take note of the total download size, and then click download. As soon as the download starts, fully close the game (Command + Q or the red X).
+
+3.3. To track the download progress, go to finder. Press the keys 'Shift + Command + G', and paste the following path: `~/Library/Containers/Fortnite/Data/`, then press enter. Check the size of the Library folder (select it and press 'Space' or right click > get info). The size of that folder is the total downloaded data. Once it completes the download, that folder will shrink to a few MB's.
+
+3.4. Once the download completes, open Fortnite, go to the downloaded game mode and click 'Download' again. The download will jump to 50% and will successfully complete the download.
 
 <h2>FAQ</h2>
 
