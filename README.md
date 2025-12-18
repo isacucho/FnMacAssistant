@@ -67,7 +67,7 @@ To download the game files in the background, follow these steps:
 
 To download the archived game files and import them, follow these steps:
 
-2.2.1. Download the latest archive here: [v39.10 archive](https://cvws.icloud-content.com/B/AYBf5vbI9G1nKyOELi0RPsgT0OtiAR4gbtiB-rWbtyP4sx1MyDW8fyTE/v39.10%20archive.zip?o=AjoJ63gME64Uum5yUuSiQpJM60EKnUaDhRSDcjL2zAUs&v=1&x=3&a=CAogUX0PXHdex_vppV6SfX31wnDlTT1utLfYRyEWvvoFgkYSbxCpz9LxsDMYqd_NxbozIgEAUgQT0OtiWgS8fyTEaie9vmyzRSyZTTIYj1nl1vhebUWcMqTBqtcyADBP_IYzfdWT8vQZeXJyJ-OLYNvcvy3oeY5NLctxFpQd3fYz3ZBTH50XgyrtAZXzKU6JG4RVjg&e=1768061890&fl=&r=561B587B-9339-47B0-A02F-287EAA1E74BF-1&k=_031R6wJ7K6seYNsqf59SQ&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=135&s=ngNsIz1bwEqyV-K4iLTXTTodVbA). Make sure the archive version matches your IPA version. If it doesn't, you'll have to wait until the latest archive is uploaded.
+2.2.1. Download the latest archive here: [v39.11 archive](https://cvws.icloud-content.com/B/AWogEuvJB6lzevCFyleE-EdW51u7AQIyTxXxUC9ZReruJjLYoJKaXrmd/v39.11%20archive.zip?o=At6VeWtDufC0SBYGzV9hzPwdC5hN_7HG0NjezFCZWIlu&v=1&x=3&a=CAogKlQaspPMADufPOfxa1H_K1zbjwkze2Hjl2lf9fdLikQSbxCug9OQszMYrpPO5LwzIgEAUgRW51u7WgSaXrmdaidtFFBfsh03CZ7P--bHmUIU9feTePJzLxckoKbYAJ2nELjaMHPsHAVyJ0Yl-5WjZJk4blIntdnFIUSBHz333c2gJjvTm0UBQJhQ_O9edx6O4Q&e=1768663779&fl=&r=23B61DC8-990C-4EC4-BAFC-6381B984BAB9-1&k=-zCEcj6AoTnFQLWf2_wVCQ&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=136&s=TrjCFHnP_hpYHy4HERJ5uGWFuQk). Make sure the archive version matches your IPA version. If it doesn't, you'll have to wait until the latest archive is uploaded.
 
 2.2.2. Open Fortnite at least once before importing the archive. Once you see the download bar, you may close the game.
 
