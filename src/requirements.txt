@@ -1,0 +1,3 @@
+requests
+Pillow
+py2app
