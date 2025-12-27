@@ -17,6 +17,9 @@ Make sure you have **all** of the following before starting:
 After installing Fortnite **normally** using **FnMacAssistant** and **Sideloadly**.
 
 ### 1. Configure the Folder in FnMacAssistant
+
+<img width="612" height="540" alt="Screenshot of FnMacAssistant v1.5.0" src="https://github.com/user-attachments/assets/08308966-ddff-44e9-ac24-7590c843fed7" />
+
 1. Make sure Fortnite was launched at least once after installation.
 2. Open **FnMacAssistant** or Refresh the **Game Data** section.
 3. On **Game Data** section, Click **Change**.
@@ -35,6 +38,9 @@ After installing Fortnite **normally** using **FnMacAssistant** and **Sideloadly
 
 
 ### 2. Select the Custom / External Data Folder (In-Game)
+
+<p align="center"><img width="443" height="368" alt="Screenshot of FnMacTweak v1.0.3" src="https://github.com/user-attachments/assets/37c26a6f-6be6-4e50-801c-0380e3f32049" /></p>
+
 1. When Fortnite opens, press **`P`**.
 2. A menu appears.
 3. Click the purple button:
