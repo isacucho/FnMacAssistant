@@ -97,15 +97,6 @@ def import_zip_task(zip_file_path, target_dir, progress_callback=None, completio
                     progress_callback(i + 1, total_files)
                 time.sleep(0.001) # Small delay to let UI update if needed, though callbacks should handle it
             
-            # Cleanup
-            try:
-                subprocess.run(['mv', zip_file_path, os.path.expanduser("~/.Trash/")], check=True)
-            except:
-                try:
-                    os.remove(zip_file_path)
-                except:
-                    pass
-            
             if completion_callback:
                 completion_callback(total_files)
                 
