@@ -7,7 +7,11 @@ import subprocess
 from .config import FORTNITE_APP_PATH, PROVISION_URL
 from .app_container import AppContainerManager
 
-def download_ipa_task(url, name, size, progress_callback=None, completion_callback=None, error_callback=None):
+class DownloadCancelled(Exception):
+    pass
+
+
+def download_ipa_task(url, name, size, progress_callback=None, completion_callback=None, error_callback=None, cancel_event=None):
     download_path = os.path.expanduser(f"~/Downloads/{name}")
     try:
         response = requests.get(url, stream=True)
@@ -16,6 +20,8 @@ def download_ipa_task(url, name, size, progress_callback=None, completion_callba
         chunk_size = 8192
         with open(download_path, 'wb') as ipa_file:
             for chunk in response.iter_content(chunk_size=chunk_size):
+                if cancel_event is not None and cancel_event.is_set():
+                    raise DownloadCancelled("Download cancelled")
                 if chunk:
                     ipa_file.write(chunk)
                     downloaded_size += len(chunk)
@@ -26,8 +32,14 @@ def download_ipa_task(url, name, size, progress_callback=None, completion_callba
             completion_callback()
             
     except Exception as e:
+        if isinstance(e, DownloadCancelled):
+            try:
+                if os.path.exists(download_path):
+                    os.remove(download_path)
+            except Exception:
+                pass
         if error_callback:
-            error_callback(str(e))
+            error_callback(e)
 
 def patch_app_task(skip_update, status_callback=None, completion_callback=None, error_callback=None):
     temp_path = "/tmp/embedded.mobileprovision"

@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk, filedialog
+import tkinter.font as tkfont
 import threading
 import webbrowser
 import os
@@ -9,13 +10,28 @@ from .config import VERSION
 from .utils import load_refresh_icon
 from .api import APIClient
 from .app_container import AppContainerManager
-from .operations import download_ipa_task, patch_app_task, import_zip_task, import_folder_task
+from .operations import download_ipa_task, patch_app_task, import_zip_task, import_folder_task, DownloadCancelled
+
+
+# --- UI Constants ---
+GAP_S = 8
+GAP_M = 10
+GAP_L = 16
+GAP_XL = 20
+GAP_XXL = 24
+
+PAD_WINDOW = (GAP_XXL, GAP_S)
+PAD_SECTION_INNER = (14, 12)
+PAD_SECTION_TITLE = (GAP_XL, 0)
+FONT_SCALE_TITLE = 1.0
 
 class FnMacAssistantApp:
     def __init__(self, root):
         self.root = root
         self.root.title("FnMacAssistant")
-        self.root.geometry("500x400")
+        self.root.geometry("660x720")
+        self.root.minsize(640, 700)
+        self.root.resizable(True, True)
         self.root.tk.call('tk', 'scaling', 2.0)
         
         self.api_client = APIClient()
@@ -24,83 +40,292 @@ class FnMacAssistantApp:
         
         self.setup_ui()
         self.check_updates()
+
+    def _apply_ttk_style(self):
+        style = ttk.Style(self.root)
+        for theme in ("aqua", "clam", "alt", "default"):
+            try:
+                style.theme_use(theme)
+                break
+            except tk.TclError:
+                continue
+
+        default_font = tkfont.nametofont("TkDefaultFont")
+        self.title_font = default_font.copy()
+        self.title_font.configure(size=int(default_font.cget("size") * FONT_SCALE_TITLE))
+
+        style.configure("TButton", padding=(10, 6))
+        style.configure("TCheckbutton", padding=(4, 2))
+        style.configure("TCombobox", padding=(4, 2))
+        style.configure("Red.TButton", foreground="darkred")
+        style.configure("Info.TButton", padding=(0, 0))
+        return style
+
+    def _create_section(self, parent, title_text, info_command=None):
+        # Custom title frame with label and optional button
+        title_frame = ttk.Frame(parent)
+        title_frame.pack(fill="x", pady=PAD_SECTION_TITLE)
+
+        title_label = ttk.Label(title_frame, text=title_text, font=self.title_font, anchor="w")
+        title_label.pack(side="left")
+
+        if info_command:
+            info_label = ttk.Label(title_frame, text="ⓘ", cursor="hand2")
+            info_label.pack(side="right")
+            info_label.bind("<Button-1>", lambda e: info_command())
+
+        # Bordered content frame using Labelframe with empty text
+        content_frame = ttk.Labelframe(parent, text="", padding=PAD_SECTION_INNER)
+        content_frame.pack(fill="x", pady=(0, GAP_L))
+        return content_frame
+
+    def _show_progress(self, show: bool, message: str = ""):
+        if show:
+            self.progress_label.config(text=message)
+            self.progress_bar.pack(fill="x")
+            self.progress_label.pack(fill="x", pady=(GAP_S, 0))
+        else:
+            self.progress_bar.pack_forget()
+            self.progress_label.pack_forget()
+
+    def _set_download_state(self, downloading: bool):
+        if downloading:
+            self.download_button.state(["disabled"])
+            self.cancel_download_button.pack(side="right")
+        else:
+            self.download_button.state(["!disabled"])
+            self.cancel_download_button.pack_forget()
         
     def setup_ui(self):
-        # Top Frame - IPA Selection
-        top_frame = tk.Frame(self.root)
-        top_frame.pack(pady=5)
+        self._apply_ttk_style()
 
-        tk.Label(top_frame, text="Select file to download:").pack(pady=5)
+        # Main container
+        main_frame = ttk.Frame(self.root, padding=PAD_WINDOW)
+        main_frame.pack(fill="both", expand=True)
 
-        dropdown_frame = tk.Frame(top_frame)
-        dropdown_frame.pack()
+        # --- Section 1: Download ---
+        ipa_frame = self._create_section(main_frame, "⬇️ Download", info_command=self.show_ipa_info)
 
-        tk.Button(dropdown_frame, text="ⓘ", command=self.show_ipa_info, width=1, height=1).pack(side=tk.LEFT, padx=(0, 5))
+        # Row 1: Label | Combobox | Refresh
+        ipa_row1 = ttk.Frame(ipa_frame)
+        ipa_row1.pack(fill="x", pady=(0, GAP_M))
 
-        self.ipa_combobox = ttk.Combobox(dropdown_frame, width=40)
-        self.ipa_combobox.pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Label(ipa_row1, text="IPA file").pack(side="left")
 
         refresh_icon = load_refresh_icon()
         if refresh_icon:
-            self.refresh_icon = refresh_icon # Keep reference
-            refresh_btn = tk.Button(dropdown_frame, image=self.refresh_icon, command=self.refresh_dropdown, 
-                                  width=24, height=24, borderwidth=0, padx=0, pady=0)
+            self.refresh_icon = refresh_icon
+            refresh_btn = ttk.Button(ipa_row1, image=self.refresh_icon, command=self.refresh_dropdown)
         else:
-            refresh_btn = tk.Button(dropdown_frame, text="↻", command=self.refresh_dropdown, width=1, height=1)
-        refresh_btn.pack(side=tk.LEFT)
+            refresh_btn = ttk.Button(ipa_row1, text="↻", command=self.refresh_dropdown)
+        refresh_btn.pack(side="right", padx=(GAP_S, 0))
 
-        # Download Button
-        tk.Button(self.root, text="Download File", command=self.start_download, width=40, height=2).pack(pady=20)
+        self.ipa_combobox = ttk.Combobox(ipa_row1, state="readonly")
+        self.ipa_combobox.pack(side="left", fill="x", expand=True, padx=(GAP_S, 0))
 
-        # Patch Frame
-        patch_frame = tk.Frame(self.root)
-        patch_frame.pack(pady=10)
+        # Row 2: Download | Patch
+        download_row = ttk.Frame(ipa_frame)
+        download_row.pack(fill="x")
 
-        tk.Button(patch_frame, text="Patch App", command=self.patch_app, width=40, height=2).pack(pady=5)
+        self.download_button = ttk.Button(download_row, text="Download Selected IPA", command=self.start_download)
+        self.download_button.pack(side="left", fill="x", expand=True, padx=(0, GAP_S))
 
-        # Import Frame
-        import_frame = tk.Frame(patch_frame)
-        import_frame.pack(pady=5)
+        ttk.Button(download_row, text="Patch App", command=self.patch_app).pack(side="left", fill="x", expand=True)
 
-        folder_frame = tk.Frame(import_frame, width=38, height=38)
-        folder_frame.pack_propagate(False)
-        tk.Button(folder_frame, text="📁", command=self.open_fortnite_directory, font=("Arial", 14),
-                 relief=tk.FLAT, bg="#f0f0f0", bd=0, highlightthickness=0).pack(expand=True, fill="both")
-        folder_frame.pack(side=tk.LEFT, padx=(0, 5))
+        # --- Section 2: Game Data ---
+        data_frame = self._create_section(main_frame, "📦 Game Data")
 
-        tk.Button(import_frame, text="Import Archive", command=self.import_archive, width=35, height=2).pack(side=tk.LEFT, padx=(0, 5))
+        # Row 1: Label | Entry | Change | Open
+        data_row1 = ttk.Frame(data_frame)
+        data_row1.pack(fill="x", pady=(0, GAP_M))
 
-        archive_info_frame = tk.Frame(import_frame, width=38, height=38)
-        archive_info_frame.pack_propagate(False)
-        tk.Button(archive_info_frame, text="🔗", command=self.show_archive_info, font=("Arial", 14),
-                 relief=tk.FLAT, bg="#f0f0f0", bd=0, highlightthickness=0).pack(expand=True, fill="both")
-        archive_info_frame.pack(side=tk.LEFT, padx=5)
+        ttk.Label(data_row1, text="Current Path:").pack(side="left")
+        
+        ttk.Button(data_row1, text="Open", command=self.open_fortnite_directory).pack(side="right")
+        
+        self.change_data_folder_button = ttk.Button(data_row1, text="Change", command=self.change_data_folder)
+        self.change_data_folder_button.pack(side="right", padx=(GAP_S, 0))
 
-        # Delete Button
-        tk.Button(patch_frame, text="Delete Fortnite App and Data", 
-                 command=self.confirm_delete, width=40, height=2).pack(pady=5)
+        self.path_var = tk.StringVar(value="Detecting...")
+        self.path_entry = ttk.Entry(data_row1, textvariable=self.path_var, state="disabled")
+        self.path_entry.pack(side="left", fill="x", expand=True, padx=(GAP_S, 0))
 
-        # Progress
-        progress_frame = tk.Frame(self.root)
-        progress_frame.pack(pady=5)
-        self.progress_var = tk.DoubleVar()
-        self.progress_bar = ttk.Progressbar(progress_frame, variable=self.progress_var, maximum=100, length=400)
-        self.progress_label = tk.Label(progress_frame, text="")
+        archive_row = ttk.Frame(data_frame)
+        archive_row.pack(fill="x", pady=(GAP_M, 0))
 
+        ttk.Label(archive_row, text="Archives:").pack(side="left")
+        ttk.Button(archive_row, text="Import Archive", command=self.import_archive).pack(side="left", padx=(GAP_S, 0))
+        ttk.Button(archive_row, text="🔗", command=self.show_archive_info).pack(side="left")
+        ttk.Button(archive_row, text="Delete App & Data", command=self.confirm_delete, style="Red.TButton").pack(side="right")
+
+        # --- Status / Settings (unbordered) ---
         # Update Skip
-        update_skip_frame = tk.Frame(self.root)
-        update_skip_frame.pack(pady=5)
+        update_skip_row = ttk.Frame(main_frame)
+        update_skip_row.pack(fill="x", pady=(GAP_XL, GAP_S))
+        
         self.update_skip_var = tk.BooleanVar()
-        ttk.Checkbutton(update_skip_frame, text="Update Skip", variable=self.update_skip_var).pack(side=tk.LEFT, padx=5)
-        tk.Button(update_skip_frame, text="ⓘ", command=self.show_update_skip_info, 
-                 width=2, font=("Arial", 10), relief=tk.FLAT).pack(side=tk.LEFT)
+        ttk.Checkbutton(update_skip_row, text="Enable Update Skip", variable=self.update_skip_var).pack(side="left")
+        
+        info_label = ttk.Label(update_skip_row, text="ⓘ", cursor="hand2")
+        info_label.pack(side="right")
+        info_label.bind("<Button-1>", lambda e: self.show_update_skip_info())
 
-        # Status
-        self.status_label = tk.Label(self.root, text="", font=("Arial", 10))
-        self.status_label.pack(pady=5)
+        # Separator
+        ttk.Separator(main_frame, orient="horizontal").pack(fill="x", pady=(0, 8))
 
-        # Initial Load
+        # Progress Container
+        self.progress_frame = ttk.Frame(main_frame)
+        self.progress_frame.pack(fill="x")
+
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(self.progress_frame, variable=self.progress_var, maximum=100)
+        # Packed in _show_progress
+
+        self.progress_label = ttk.Label(self.progress_frame, text="")
+        # Packed in _show_progress
+
+        # Status Row
+        status_row = ttk.Frame(main_frame)
+        status_row.pack(fill="x", pady=(GAP_M, 0))
+
+        self.status_label = ttk.Label(status_row, text="")
+        self.status_label.pack(side="left")
+
+        self.cancel_download_button = ttk.Button(status_row, text="✖️", command=self.cancel_download)
+        # Packed in _set_download_state
+
+        self._show_progress(False)
+
+        self.download_cancel_event = None
+        self._set_download_state(False)
+
         self.populate_ipa_dropdown()
+        self.detect_current_path()
+
+    def detect_current_path(self):
+        containers = self.app_manager.get_containers()
+        if not containers:
+            self.path_var.set("Not found")
+            if hasattr(self, "change_data_folder_button"):
+                self.change_data_folder_button.state(["disabled"])
+            return
+
+        data_dir = self.app_manager.get_container_data_path(containers[0])
+        if not os.path.exists(data_dir):
+            self.path_var.set("Not found")
+            if hasattr(self, "change_data_folder_button"):
+                self.change_data_folder_button.state(["disabled"])
+            return
+
+        # If Data is a symlink, show its target path
+        display_path = self.app_manager.get_container_data_display_path(containers[0])
+        self.path_var.set(display_path)
+        if hasattr(self, "change_data_folder_button"):
+            self.change_data_folder_button.state(["!disabled"])
+
+    def get_container_root(self):
+        containers = self.app_manager.get_containers()
+        if not containers:
+            messagebox.showerror("Error", "Could not find Fortnite's container.")
+            return None
+        if len(containers) == 1:
+            return containers[0]
+        return self.ask_user_to_choose_container_root(containers)
+
+    def ask_user_to_choose_container_root(self, containers):
+        choice_window = tk.Toplevel(self.root)
+        choice_window.title("Multiple Fortnite Containers Found")
+        choice_window.geometry("520x360")
+        choice_window.grab_set()
+
+        ttk.Label(
+            choice_window,
+            text="Multiple Fortnite containers were found.\nPlease choose the correct one:",
+            justify="center",
+        ).pack(pady=GAP_L)
+
+        listbox = tk.Listbox(choice_window)
+        listbox.pack(pady=GAP_M, padx=GAP_L)
+
+        for i, container in enumerate(containers):
+            listbox.insert(i, container)
+
+        result = [None]
+
+        def on_select():
+            selection = listbox.curselection()
+            if selection:
+                result[0] = containers[selection[0]]
+                choice_window.destroy()
+
+        ttk.Button(choice_window, text="Select", command=on_select).pack(pady=GAP_L)
+        choice_window.wait_window()
+        return result[0]
+
+    def change_data_folder(self):
+        # Do not allow switching if we can't locate the current Game Data folder
+        container_root = self.get_container_root()
+        if not container_root:
+            messagebox.showerror("Error", "Fortnite game data folder not found.")
+            return
+
+        current_data_dir = self.app_manager.get_container_data_path(container_root)
+        if not os.path.exists(current_data_dir):
+            messagebox.showerror("Error", "Fortnite game data folder not found.")
+            return
+
+        folder_selected = filedialog.askdirectory(title="Select New Game Data Folder")
+        if not folder_selected:
+            return
+
+        if not messagebox.askyesno(
+            "Confirm",
+            "This will switch Fortnite's container Game Data folder to the selected folder using a symlink.\n\nContinue?",
+            icon="warning",
+        ):
+            return
+
+        self.update_status("Switching game data folder...")
+        self.progress_var.set(0)
+        self._show_progress(True, "Switching game data folder...")
+
+        def worker():
+            try:
+                result = self.app_manager.switch_data_folder(container_root, folder_selected)
+                self.root.after(0, lambda: self._on_switch_data_folder_success(result))
+            except Exception as e:
+                self.root.after(0, lambda: self._on_switch_data_folder_error(e))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_switch_data_folder_success(self, result: dict):
+        self._show_progress(False)
+        self.update_status("Ready")
+        self.detect_current_path()
+
+        status = result.get("status", "ok")
+        if status == "already":
+            messagebox.showinfo("Game Data Folder", "Selected folder is already in use.")
+            return
+
+        if status == "backed_up_and_linked":
+            backup = result.get("backup", "")
+            messagebox.showinfo(
+                "Game Data Folder Updated",
+                "Game data folder switched successfully.\n\n"
+                f"A backup of the old Game Data folder was created at:\n{backup}",
+            )
+            return
+
+        messagebox.showinfo("Game Data Folder Updated", "Game data folder switched successfully.")
+
+    def _on_switch_data_folder_error(self, error: Exception):
+        self._show_progress(False)
+        self.update_status("Ready")
+        if isinstance(error, (PermissionError, OSError)) and "Operation not permitted" in str(error):
+            messagebox.showerror("Permissions Required", "Operation failed due to missing permissions. Please grant Full Disk Access.")
+            return
+        messagebox.showerror("Error", str(error))
 
     def check_updates(self):
         latest_version = self.api_client.check_for_updates()
@@ -119,15 +344,15 @@ class FnMacAssistantApp:
             "Please update to the latest version as the currently\n"
             "installed version could stop working."
         )
-        tk.Label(update_window, text=message, justify="center").pack(pady=20)
+        ttk.Label(update_window, text=message, justify="center").pack(pady=GAP_XL)
         
-        button_frame = tk.Frame(update_window)
-        button_frame.pack(pady=20)
+        button_frame = ttk.Frame(update_window)
+        button_frame.pack(pady=GAP_XL)
         
-        tk.Button(button_frame, text="Update Now", 
+        ttk.Button(button_frame, text="Update Now", 
                   command=lambda: [webbrowser.open("https://github.com/isacucho/FnMacAssistant/releases/latest"), 
                                  update_window.destroy()]).pack(side=tk.LEFT, padx=10)
-        tk.Button(button_frame, text="Ignore", 
+        ttk.Button(button_frame, text="Ignore", 
                   command=update_window.destroy).pack(side=tk.LEFT, padx=10)
 
     def populate_ipa_dropdown(self):
@@ -163,14 +388,14 @@ class FnMacAssistantApp:
         if info:
             version = info.get("archive version", "Unknown")
             link = info.get("link", "")
-            message = f"Latest Archive Available\n\nVersion: {version}\n\nThis archive contains the latest game files.\nDo you want to open the download page?"
-            if messagebox.askyesno("Get Latest Archive", message, icon="info"):
+            message = f"Latest Game Data Archive Available\n\nVersion: {version}\n\nThis archive contains the latest game data files.\nDo you want to open the download page?"
+            if messagebox.askyesno("Get Latest Game Data Archive", message, icon="info"):
                 if link:
                     webbrowser.open(link)
                 else:
                     messagebox.showerror("Error", "Download link not available.")
         else:
-            messagebox.showwarning("No Archive Info", "No archive information available.")
+            messagebox.showwarning("No Game Data Archive Info", "No game data archive information available.")
 
     def show_update_skip_info(self):
         messagebox.showinfo("Update Skip Feature", 
@@ -181,20 +406,28 @@ class FnMacAssistantApp:
         selected_ipa = self.ipa_combobox.get()
         if selected_ipa and selected_ipa in self.ipa_files_dict:
             data = self.ipa_files_dict[selected_ipa]
-            
-            self.progress_label.pack(pady=5)
-            self.progress_bar.pack(pady=5)
+
             self.progress_var.set(0)
+            self._show_progress(True, "Starting download...")
+            self.download_cancel_event = threading.Event()
+            self._set_download_state(True)
             
             threading.Thread(target=download_ipa_task, 
                            args=(data['browser_download_url'], data['name'], data['size']),
                            kwargs={
                                'progress_callback': self.update_download_progress,
                                'completion_callback': self.download_complete,
-                               'error_callback': self.operation_error
+                               'error_callback': self.operation_error,
+                               'cancel_event': self.download_cancel_event,
                            }).start()
         else:
             messagebox.showerror("Error", "Please select a valid file.")
+
+    def cancel_download(self):
+        if self.download_cancel_event is not None:
+            self.download_cancel_event.set()
+            self.update_status("Cancelling download...")
+            self._show_progress(True, "Cancelling download...")
 
     def update_download_progress(self, downloaded, total):
         if total > 0:
@@ -206,8 +439,9 @@ class FnMacAssistantApp:
 
     def download_complete(self):
         messagebox.showinfo("Download Complete", "Download completed!\n\nProceed with the app installation, open the game and make sure it crashes, then return here and patch.")
-        self.progress_label.pack_forget()
-        self.progress_bar.pack_forget()
+        self._show_progress(False)
+        self._set_download_state(False)
+        self.download_cancel_event = None
 
     def patch_app(self):
         threading.Thread(target=patch_app_task,
@@ -233,8 +467,13 @@ class FnMacAssistantApp:
             messagebox.showerror("Error", f"Failed to patch: {str(error)}")
 
     def operation_error(self, error):
-        self.progress_label.pack_forget()
-        self.progress_bar.pack_forget()
+        self._show_progress(False)
+        self._set_download_state(False)
+        self.download_cancel_event = None
+        if isinstance(error, DownloadCancelled):
+            self.update_status("Ready")
+            messagebox.showinfo("Download", "Download cancelled.")
+            return
         messagebox.showerror("Error", f"Operation failed: {str(error)}")
 
     def get_container_path(self):
@@ -254,11 +493,11 @@ class FnMacAssistantApp:
         choice_window.geometry("500x350")
         choice_window.grab_set()
         
-        tk.Label(choice_window, text="Multiple Fortnite containers were found.\nPlease choose the correct one:", 
-                 justify="center", font=("Arial", 12)).pack(pady=20)
+        ttk.Label(choice_window, text="Multiple Fortnite containers were found.\nPlease choose the correct one:", 
+                 justify="center").pack(pady=GAP_XL)
         
-        listbox = tk.Listbox(choice_window, width=70, height=8)
-        listbox.pack(pady=10, padx=20)
+        listbox = tk.Listbox(choice_window)
+        listbox.pack(pady=GAP_M, padx=GAP_XL)
         
         for i, container in enumerate(containers):
             try:
@@ -282,7 +521,7 @@ class FnMacAssistantApp:
                 result[0] = containers[selection[0]]
                 choice_window.destroy()
         
-        tk.Button(choice_window, text="Select", command=on_select).pack(pady=20)
+        ttk.Button(choice_window, text="Select", command=on_select).pack(pady=GAP_XL)
         choice_window.wait_window()
         
         if result[0]:
@@ -309,7 +548,7 @@ class FnMacAssistantApp:
             return
 
         import_window = tk.Toplevel(self.root)
-        import_window.title("Select Archive Type")
+        import_window.title("Select Game Data Archive Type")
         import_window.geometry("280x150")
         
         def on_zip():
@@ -327,14 +566,12 @@ class FnMacAssistantApp:
                     return
                 self.start_import_folder(dir_path, path)
 
-        tk.Button(import_window, text="ZIP File", command=on_zip).pack(pady=10)
-        tk.Button(import_window, text="Folder", command=on_folder).pack(pady=10)
+        ttk.Button(import_window, text="ZIP File", command=on_zip).pack(pady=GAP_M)
+        ttk.Button(import_window, text="Folder", command=on_folder).pack(pady=GAP_M)
 
     def start_import_zip(self, zip_path, target_dir):
-        self.progress_label.pack(pady=5)
-        self.progress_bar.pack(pady=5)
         self.progress_var.set(0)
-        self.progress_label.config(text="Starting ZIP import...")
+        self._show_progress(True, "Starting ZIP import...")
         
         threading.Thread(target=import_zip_task, args=(zip_path, target_dir),
                        kwargs={
@@ -344,10 +581,8 @@ class FnMacAssistantApp:
                        }).start()
 
     def start_import_folder(self, folder_path, target_dir):
-        self.progress_label.pack(pady=5)
-        self.progress_bar.pack(pady=5)
         self.progress_var.set(0)
-        self.progress_label.config(text="Starting folder import...")
+        self._show_progress(True, "Starting folder import...")
         
         threading.Thread(target=import_folder_task, args=(folder_path, target_dir),
                        kwargs={
@@ -362,6 +597,5 @@ class FnMacAssistantApp:
         self.progress_label.config(text=f"Imported {current}/{total} files")
 
     def import_complete(self, count):
-        self.progress_label.pack_forget()
-        self.progress_bar.pack_forget()
+        self._show_progress(False)
         messagebox.showinfo("Success", f"Successfully imported {count} files.")
