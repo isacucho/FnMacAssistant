@@ -29,8 +29,7 @@ class FnMacAssistantApp:
     def __init__(self, root):
         self.root = root
         self.root.title("FnMacAssistant")
-        self.root.geometry("660x720")
-        self.root.minsize(640, 700)
+        self.root.minsize(640, 0)
         self.root.resizable(True, True)
         self.root.tk.call('tk', 'scaling', 2.0)
         
@@ -162,11 +161,6 @@ class FnMacAssistantApp:
         self.path_info_frame = ttk.Frame(data_frame)
         self.path_info_frame.pack(fill="x", pady=(0, GAP_M))
 
-        # Container list
-        self.container_list_frame = ttk.Frame(data_frame)
-        self.container_list_frame.pack(fill="x", pady=(0, GAP_M))
-        # Labels added in update_container_display
-
         archive_row = ttk.Frame(data_frame)
         archive_row.pack(fill="x", pady=(GAP_M, 0))
 
@@ -223,7 +217,6 @@ class FnMacAssistantApp:
             self.current_container = None
             if hasattr(self, "change_data_folder_button"):
                 self.change_data_folder_button.state(["disabled"])
-            self.update_container_display()
             return
 
         # Try to find the best container (one that has FortniteGame folder)
@@ -245,7 +238,6 @@ class FnMacAssistantApp:
             self.path_var.set("Not found")
             if hasattr(self, "change_data_folder_button"):
                 self.change_data_folder_button.state(["disabled"])
-            self.update_container_display()
             return
 
         # If Data is a symlink, show its target path
@@ -253,37 +245,6 @@ class FnMacAssistantApp:
         self.path_var.set(display_path)
         if hasattr(self, "change_data_folder_button"):
             self.change_data_folder_button.state(["!disabled"])
-        self.update_container_display()
-
-    def set_active_container(self, container):
-        self.current_container = container
-        self.detect_current_path() # Refresh display
-
-    def update_container_display(self):
-        # Clear previous
-        for widget in self.path_info_frame.winfo_children():
-            widget.pack_forget()
-        for widget in self.container_list_frame.winfo_children():
-            widget.pack_forget()
-
-        # Show container list
-        if self.containers:
-            ttk.Label(self.container_list_frame, text="Available containers (click to select):", font=(None, 10)).pack(anchor="w")
-            for i, container in enumerate(self.containers):
-                label_text = f"{i+1}. {container}"
-                fg_color = "gray"
-                cursor = "hand2"
-                
-                if container == self.current_container:
-                    label_text += " (active)"
-                    fg_color = "black" # Highlight active
-                    cursor = ""
-
-                lbl = ttk.Label(self.container_list_frame, text=label_text, font=(None, 9), foreground=fg_color, cursor=cursor)
-                lbl.pack(anchor="w")
-                
-                if container != self.current_container:
-                    lbl.bind("<Button-1>", lambda e, c=container: self.set_active_container(c))
 
     def get_container_root(self):
         containers = self.app_manager.get_containers()
