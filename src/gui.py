@@ -38,6 +38,10 @@ class FnMacAssistantApp:
         self.app_manager = AppContainerManager()
         self.ipa_files_dict = {}
         
+        # Container info
+        self.containers = []
+        self.current_container = None
+        
         self.setup_ui()
         self.check_updates()
 
@@ -61,7 +65,7 @@ class FnMacAssistantApp:
         style.configure("Info.TButton", padding=(0, 0))
         return style
 
-    def _create_section(self, parent, title_text, info_command=None):
+    def _create_section(self, parent, title_text, info_command=None, refresh_command=None):
         # Custom title frame with label and optional button
         title_frame = ttk.Frame(parent)
         title_frame.pack(fill="x", pady=PAD_SECTION_TITLE)
@@ -73,6 +77,11 @@ class FnMacAssistantApp:
             info_label = ttk.Label(title_frame, text="ⓘ", cursor="hand2")
             info_label.pack(side="right")
             info_label.bind("<Button-1>", lambda e: info_command())
+
+        if refresh_command:
+            refresh_label = ttk.Label(title_frame, text="↻", cursor="hand2", font=(None, 14))
+            refresh_label.pack(side="right", padx=(0, GAP_S))
+            refresh_label.bind("<Button-1>", lambda e: refresh_command())
 
         # Bordered content frame using Labelframe with empty text
         content_frame = ttk.Labelframe(parent, text="", padding=PAD_SECTION_INNER)
@@ -86,7 +95,6 @@ class FnMacAssistantApp:
             self.progress_label.pack(fill="x", pady=(GAP_S, 0))
         else:
             self.progress_bar.pack_forget()
-            self.progress_label.pack_forget()
 
     def _set_download_state(self, downloading: bool):
         if downloading:
@@ -133,7 +141,7 @@ class FnMacAssistantApp:
         ttk.Button(download_row, text="Patch App", command=self.patch_app).pack(side="left", fill="x", expand=True)
 
         # --- Section 2: Game Data ---
-        data_frame = self._create_section(main_frame, "📦 Game Data")
+        data_frame = self._create_section(main_frame, "📦 Game Data", refresh_command=self.detect_current_path)
 
         # Row 1: Label | Entry | Change | Open
         data_row1 = ttk.Frame(data_frame)
@@ -149,6 +157,15 @@ class FnMacAssistantApp:
         self.path_var = tk.StringVar(value="Detecting...")
         self.path_entry = ttk.Entry(data_row1, textvariable=self.path_var, state="disabled")
         self.path_entry.pack(side="left", fill="x", expand=True, padx=(GAP_S, 0))
+
+        # Additional path info
+        self.path_info_frame = ttk.Frame(data_frame)
+        self.path_info_frame.pack(fill="x", pady=(0, GAP_M))
+
+        # Container list
+        self.container_list_frame = ttk.Frame(data_frame)
+        self.container_list_frame.pack(fill="x", pady=(0, GAP_M))
+        # Labels added in update_container_display
 
         archive_row = ttk.Frame(data_frame)
         archive_row.pack(fill="x", pady=(GAP_M, 0))
@@ -188,9 +205,6 @@ class FnMacAssistantApp:
         status_row = ttk.Frame(main_frame)
         status_row.pack(fill="x", pady=(GAP_M, 0))
 
-        self.status_label = ttk.Label(status_row, text="")
-        self.status_label.pack(side="left")
-
         self.cancel_download_button = ttk.Button(status_row, text="✖️", command=self.cancel_download)
         # Packed in _set_download_state
 
@@ -203,25 +217,73 @@ class FnMacAssistantApp:
         self.detect_current_path()
 
     def detect_current_path(self):
-        containers = self.app_manager.get_containers()
-        if not containers:
+        self.containers = self.app_manager.get_containers()
+        if not self.containers:
             self.path_var.set("Not found")
+            self.current_container = None
             if hasattr(self, "change_data_folder_button"):
                 self.change_data_folder_button.state(["disabled"])
+            self.update_container_display()
             return
 
-        data_dir = self.app_manager.get_container_data_path(containers[0])
+        # Try to find the best container (one that has FortniteGame folder)
+        best_container = self.containers[0]
+        for c in self.containers:
+             # Check if Data/Documents/FortniteGame exists
+             if os.path.exists(os.path.join(c, "Data/Documents/FortniteGame")):
+                  best_container = c
+                  break
+        
+        # If we already have a current container and it's still valid, keep it
+        if self.current_container and self.current_container in self.containers:
+            pass # Keep current
+        else:
+            self.current_container = best_container
+
+        data_dir = self.app_manager.get_container_data_path(self.current_container)
         if not os.path.exists(data_dir):
             self.path_var.set("Not found")
             if hasattr(self, "change_data_folder_button"):
                 self.change_data_folder_button.state(["disabled"])
+            self.update_container_display()
             return
 
         # If Data is a symlink, show its target path
-        display_path = self.app_manager.get_container_data_display_path(containers[0])
+        display_path = self.app_manager.get_container_data_display_path(self.current_container)
         self.path_var.set(display_path)
         if hasattr(self, "change_data_folder_button"):
             self.change_data_folder_button.state(["!disabled"])
+        self.update_container_display()
+
+    def set_active_container(self, container):
+        self.current_container = container
+        self.detect_current_path() # Refresh display
+
+    def update_container_display(self):
+        # Clear previous
+        for widget in self.path_info_frame.winfo_children():
+            widget.pack_forget()
+        for widget in self.container_list_frame.winfo_children():
+            widget.pack_forget()
+
+        # Show container list
+        if self.containers:
+            ttk.Label(self.container_list_frame, text="Available containers (click to select):", font=(None, 10)).pack(anchor="w")
+            for i, container in enumerate(self.containers):
+                label_text = f"{i+1}. {container}"
+                fg_color = "gray"
+                cursor = "hand2"
+                
+                if container == self.current_container:
+                    label_text += " (active)"
+                    fg_color = "black" # Highlight active
+                    cursor = ""
+
+                lbl = ttk.Label(self.container_list_frame, text=label_text, font=(None, 9), foreground=fg_color, cursor=cursor)
+                lbl.pack(anchor="w")
+                
+                if container != self.current_container:
+                    lbl.bind("<Button-1>", lambda e, c=container: self.set_active_container(c))
 
     def get_container_root(self):
         containers = self.app_manager.get_containers()
@@ -294,7 +356,7 @@ class FnMacAssistantApp:
                 result = self.app_manager.switch_data_folder(container_root, folder_selected)
                 self.root.after(0, lambda: self._on_switch_data_folder_success(result))
             except Exception as e:
-                self.root.after(0, lambda: self._on_switch_data_folder_error(e))
+                self.root.after(0, lambda err=e: self._on_switch_data_folder_error(err))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -453,7 +515,8 @@ class FnMacAssistantApp:
                        }).start()
 
     def update_status(self, text):
-        self.status_label.config(text=text)
+        self.progress_label.config(text=text)
+        self.progress_label.pack(fill="x", pady=(GAP_M, 0))
 
     def patch_complete(self):
         self.status_label.config(text="")
