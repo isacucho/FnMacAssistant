@@ -355,13 +355,13 @@ class FnMacAssistantApp:
         ttk.Button(button_frame, text="Ignore", 
                   command=update_window.destroy).pack(side=tk.LEFT, padx=10)
 
-    def populate_ipa_dropdown(self):
+    def populate_ipa_dropdown(self, force=False):
         self.ipa_files_dict = {}
         # Run in thread to avoid freezing UI
-        threading.Thread(target=self._fetch_ipa_data).start()
+        threading.Thread(target=self._fetch_ipa_data, args=(force,)).start()
 
-    def _fetch_ipa_data(self):
-        ipa_files = self.api_client.get_ipa_data()
+    def _fetch_ipa_data(self, force=False):
+        ipa_files = self.api_client.get_ipa_data(force)
         if ipa_files:
             self.ipa_files_dict = {file['name']: file for file in ipa_files}
             self.root.after(0, self._update_dropdown, list(self.ipa_files_dict.keys()))
@@ -376,7 +376,7 @@ class FnMacAssistantApp:
             self.ipa_combobox.set("No files available")
 
     def refresh_dropdown(self):
-        self.populate_ipa_dropdown()
+        self.populate_ipa_dropdown(force=True)
         messagebox.showinfo("Refresh", "File list refreshed.")
 
     def show_ipa_info(self):
