@@ -1,0 +1,4 @@
+requests
+Pillow
+py2app
+watchfiles
