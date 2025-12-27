@@ -5,6 +5,9 @@ VENV_DIR=".venv"
 PYTHON_CMD="python3"
 REQUIREMENTS_FILE="src/requirements.txt"
 
+WATCH_MODE=0
+if [[ "${1:-}" == "--watch" || "${1:-}" == "-w" ]]; then WATCH_MODE=1; fi
+
 error_exit() {
     rm -rf "$VENV_DIR"
 
@@ -36,4 +39,9 @@ if [ -f "$REQUIREMENTS_FILE" ]; then
 fi
 
 echo "Starting FnMacAssistant..."
-python FnMacAssistant.py || error_exit
+if [[ "${WATCH_MODE}" -eq 1 ]]; then
+    pip -q install watchfiles >/dev/null || error_exit
+    exec python -m watchfiles --filter python "python FnMacAssistant.py" FnMacAssistant.py src
+else
+    exec python FnMacAssistant.py || error_exit
+fi
