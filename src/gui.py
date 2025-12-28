@@ -480,11 +480,11 @@ class FnMacAssistantApp:
         self.progress_label.pack(fill="x", pady=(GAP_M, 0))
 
     def patch_complete(self):
-        self.status_label.config(text="")
+        self.progress_label.config(text="")
         messagebox.showinfo("Patch Complete", "Fortnite has been patched. You can now open it.")
 
     def patch_error(self, error):
-        self.status_label.config(text="")
+        self.progress_label.config(text="")
         if isinstance(error, (PermissionError, OSError)) and "Operation not permitted" in str(error):
             messagebox.showerror("Permissions Required", "Failed to patch due to missing permissions. Please grant Full Disk Access.")
         else:
