@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import tkinter.font as tkfont
 
 GAP_S = 8
@@ -86,9 +86,21 @@ class ContainerSelectorWindow:
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.config(command=self.tree.yview)
 
+        # Context Menu
+        self.context_menu = tk.Menu(self.window, tearoff=0)
+        self.context_menu.add_command(label="Delete Container", command=self.delete_selected_container)
+
         # Bindings
         self.tree.bind("<Double-1>", lambda e: self.confirm_selection())
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
+        
+        # Right-click binding (Mac uses Button-2 or Control-Click usually, but Button-3 is standard right click)
+        if self.window.tk.call('tk', 'windowingsystem') == 'aqua':
+            self.tree.bind("<Button-2>", self._show_context_menu)
+            self.tree.bind("<Button-3>", self._show_context_menu)
+            self.tree.bind("<Control-1>", self._show_context_menu)
+        else:
+            self.tree.bind("<Button-3>", self._show_context_menu)
 
         # Footer / Action Section
         footer_frame = ttk.Frame(main_frame)
@@ -125,6 +137,40 @@ class ContainerSelectorWindow:
         else:
             self.select_button.state(["disabled"])
             self.info_label.config(text="Select a container to continue")
+
+    def _show_context_menu(self, event):
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.selection_set(item)
+            self.context_menu.post(event.x_root, event.y_root)
+
+    def delete_selected_container(self):
+        selection = self.tree.selection()
+        if not selection:
+            return
+            
+        item = self.tree.item(selection[0])
+        container_path = item['values'][1]
+        
+        if messagebox.askyesno(
+            "Confirm Delete", 
+            f"Are you sure you want to delete this container?\n\n{container_path}\n\nThis action cannot be undone.",
+            parent=self.window,
+            icon='warning'
+        ):
+            try:
+                if self.app_manager.delete_container(container_path):
+                    # Remove from internal list and UI
+                    if container_path in self.containers:
+                        self.containers.remove(container_path)
+                    self.tree.delete(selection[0])
+                    
+                    messagebox.showinfo("Success", "Container deleted.", parent=self.window)
+                    
+                    if not self.containers:
+                        self.window.destroy()
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to delete: {str(e)}", parent=self.window)
 
     def confirm_selection(self):
         selection = self.tree.selection()
