@@ -46,7 +46,7 @@ Fortnite is now installed, but that's not all. The game files still need to be d
 <h4>2.1: Background download (recommended, but might be harder)</h4>
 
 To download the game files in the background, follow these steps:
-<br>
+<br><br>
 2.1.1. Download the [barebones archive](https://cvws.icloud-content.com/B/Afkr8fxJZaNJzFedcqDjghcNZ7_7ATboPGNPnPbAaJx0_jTRify5_iio/v39.11%20Barebones.zip?o=AgceIR9i4L2Lzq5N99LvhADXK9q6RyZhOSdtERqCTAqz&v=1&x=3&a=CAogMhfIYgoyJOn0bHp1jJ9l9RsVu2z79mQ4k9bV5aY4o1USbxCO_JOPszMYjoyP47wzIgEAUgQNZ7_7WgS5_iioaifAIME_G7e7H9n9f4BKROACyGFwprXycwmT4GAqJtfi_wpqpDxALPZyJ12dXSXuk7HDGD0G26b9Pt6DyuQdi6zS8LyQH7Nj3BHyGzWIlx4uiw&e=1768660649&fl=&r=BE651AB9-493B-491F-B0BF-D978D32DD944-1&k=3VaQhkKGO367VDq_nBznKA&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=136&s=of9dztgeWRtfoaBTsepNza7sO14). It is a ~300MB zip file that contains the files Fortnite needs to be able to download in the background.
 
 2.1.2. Open FnMacAssistant, and import the archive using the "Import Archive" button.
