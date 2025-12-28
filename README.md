@@ -25,19 +25,19 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 <h3>Part 1: Installation</h3>
 To get Fortnite up and running in your Mac, follow these steps:
 <br><br>
-1.1. Download and install [Sideloadly](https://sideloadly.io)
-<br>
+1.1. Download and install Sideloadly: https://sideloadly.io
+<br><br>
 1.2. Download the newest version of the FnMacAssistant App from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it. (if you prefer to run it through python, you can use the python version by cloning this repository).
-<br>
+<br><br>
 1.3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
- <br>
+ <br><br>
 1.4. Select your desired IPA, and click the _Download IPA_ button to download it. <br>
 (To see the differences between the different IPAs, click [here](https://github.com/isacucho/FnMacAssistant#what-is-the-difference-between-the-various-ipas).)
-<br>
+<br><br>
 1.5. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
-<br>
+<br><br>
 1.6. Open the Fortnite app. It should crash after a few seconds. If required, go to Settings > Privacy & Security, scroll down and on Fortnite, click "Open Anyway".
-<br>
+<br><br>
 1.7. Return to FnMacAssistant and click on the _Patch App_ button.
 <br>
 <h3>Part 2: Download the game files</h3>
