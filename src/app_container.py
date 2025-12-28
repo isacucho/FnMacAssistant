@@ -214,6 +214,34 @@ class AppContainerManager:
             return True
         return False
 
+    def delete_container(self, container_path):
+        """Deletes only the specified container, leaving the app installed."""
+        try:
+            if container_path:
+                # Handle if we were passed the internal FortniteGame path
+                if os.path.basename(container_path) == "FortniteGame":
+                    # .../Data/Documents/FortniteGame -> .../Data/Documents -> .../Data -> ContainerRoot
+                    # Actually resolve_game_path returns .../Data/Documents/FortniteGame
+                    # But the container path in the list is usually the root container path.
+                    # Let's be safe.
+                    # If path ends with FortniteGame, go up 3 levels? 
+                    # No, let's assume we get the container root from the list.
+                    # But just in case:
+                    if "Data/Documents/FortniteGame" in container_path:
+                         real_container_to_delete = container_path.split("/Data/Documents/FortniteGame")[0]
+                    else:
+                         real_container_to_delete = container_path
+                else:
+                    real_container_to_delete = container_path
+                
+                if os.path.exists(real_container_to_delete):
+                    subprocess.run(['rm', '-rf', real_container_to_delete], check=True)
+                    print(f"Container deleted: {real_container_to_delete}")
+                    return True
+        except Exception as e:
+            raise e
+        return False
+
     def delete_data(self, container_path=None):
         try:
             if os.path.exists(FORTNITE_APP_PATH):
