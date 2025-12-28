@@ -11,6 +11,7 @@ from .utils import load_refresh_icon
 from .api import APIClient
 from .app_container import AppContainerManager
 from .operations import download_ipa_task, patch_app_task, import_zip_task, import_folder_task, DownloadCancelled
+from .gui_container_selector import ContainerSelectorWindow
 
 
 # --- UI Constants ---
@@ -251,39 +252,13 @@ class FnMacAssistantApp:
         if not containers:
             messagebox.showerror("Error", "Could not find Fortnite's container.")
             return None
-        if len(containers) == 1:
+        if len(containers) == 1 and not self.app_manager.DEV_FORCE_MULTIPLE_CONTAINERS:
             return containers[0]
         return self.ask_user_to_choose_container_root(containers)
 
     def ask_user_to_choose_container_root(self, containers):
-        choice_window = tk.Toplevel(self.root)
-        choice_window.title("Multiple Fortnite Containers Found")
-        choice_window.geometry("520x360")
-        choice_window.grab_set()
-
-        ttk.Label(
-            choice_window,
-            text="Multiple Fortnite containers were found.\nPlease choose the correct one:",
-            justify="center",
-        ).pack(pady=GAP_L)
-
-        listbox = tk.Listbox(choice_window)
-        listbox.pack(pady=GAP_M, padx=GAP_L)
-
-        for i, container in enumerate(containers):
-            listbox.insert(i, container)
-
-        result = [None]
-
-        def on_select():
-            selection = listbox.curselection()
-            if selection:
-                result[0] = containers[selection[0]]
-                choice_window.destroy()
-
-        ttk.Button(choice_window, text="Select", command=on_select).pack(pady=GAP_L)
-        choice_window.wait_window()
-        return result[0]
+        selector = ContainerSelectorWindow(self.root, containers, self.app_manager)
+        return selector.show()
 
     def change_data_folder(self):
         # Do not allow switching if we can't locate the current Game Data folder
@@ -500,76 +475,29 @@ class FnMacAssistantApp:
             return
         messagebox.showerror("Error", f"Operation failed: {str(error)}")
 
-    def get_container_path(self):
-        containers = self.app_manager.get_containers()
-        if not containers:
-            messagebox.showerror("Error", "Could not find Fortnite's container.")
-            return None
-        
-        if len(containers) == 1:
-            return self.app_manager.resolve_game_path(containers[0])
-        
-        return self.ask_user_to_choose_container(containers)
-
-    def ask_user_to_choose_container(self, containers):
-        choice_window = tk.Toplevel(self.root)
-        choice_window.title("Multiple Fortnite Containers Found")
-        choice_window.geometry("500x350")
-        choice_window.grab_set()
-        
-        ttk.Label(choice_window, text="Multiple Fortnite containers were found.\nPlease choose the correct one:", 
-                 justify="center").pack(pady=GAP_XL)
-        
-        listbox = tk.Listbox(choice_window)
-        listbox.pack(pady=GAP_M, padx=GAP_XL)
-        
-        for i, container in enumerate(containers):
-            try:
-                total_size = 0
-                for dirpath, dirnames, filenames in os.walk(container):
-                    for filename in filenames:
-                        filepath = os.path.join(dirpath, filename)
-                        if os.path.exists(filepath):
-                            total_size += os.path.getsize(filepath)
-                size_mb = total_size / (1024 * 1024)
-                display_text = f"{os.path.basename(container)} ({size_mb:.1f} MB)"
-            except:
-                display_text = os.path.basename(container)
-            listbox.insert(i, display_text)
-        
-        result = [None]
-        
-        def on_select():
-            selection = listbox.curselection()
-            if selection:
-                result[0] = containers[selection[0]]
-                choice_window.destroy()
-        
-        ttk.Button(choice_window, text="Select", command=on_select).pack(pady=GAP_XL)
-        choice_window.wait_window()
-        
-        if result[0]:
-            return self.app_manager.resolve_game_path(result[0])
-        return None
-
     def open_fortnite_directory(self):
-        path = self.get_container_path()
-        if path:
+        container = self.get_container_root()
+        if container:
+            path = self.app_manager.resolve_game_path(container)
             subprocess.run(['open', '-R', path])
 
     def confirm_delete(self):
         if messagebox.askyesno("Delete Fortnite", "Are you sure you want to delete Fortnite?\nThis action cannot be reversed.", icon='warning', default='no'):
             try:
-                path = self.get_container_path()
-                if self.app_manager.delete_data(path):
-                    messagebox.showinfo("Success", "Fortnite app and data have been deleted.")
+                container = self.get_container_root()
+                if container:
+                    path = self.app_manager.resolve_game_path(container)
+                    if self.app_manager.delete_data(path):
+                        messagebox.showinfo("Success", "Fortnite app and data have been deleted.")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to delete: {str(e)}")
 
     def import_archive(self):
-        path = self.get_container_path()
-        if not path:
+        container = self.get_container_root()
+        if not container:
             return
+            
+        path = self.app_manager.resolve_game_path(container)
 
         import_window = tk.Toplevel(self.root)
         import_window.title("Select Game Data Archive Type")

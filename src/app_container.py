@@ -7,8 +7,23 @@ from .config import FORTNITE_APP_PATH, SYMLINK_TARGET_SUBPATH
 from .utils import has_full_disk_access, prompt_for_full_disk_access
 
 class AppContainerManager:
+    # Set to True to force multiple containers detection for UI testing
+    DEV_FORCE_MULTIPLE_CONTAINERS = True
+
     def get_container_data_path(self, container_root: str) -> str:
         return os.path.join(container_root, "Data", "Documents", "FortniteGame")
+
+    def get_directory_size_display(self, path: str) -> str:
+        try:
+            # -h for human readable
+            cmd = ['du', '-sh', path]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                # Output is like "12G    /path/to/dir"
+                return result.stdout.split()[0]
+        except Exception:
+            pass
+        return "Unknown"
 
     def get_container_data_display_path(self, container_root: str) -> str:
         # Determine the path that might be a symlink based on configuration
@@ -167,6 +182,10 @@ class AppContainerManager:
             # Merge both lists and remove duplicates
             all_containers = list(set(fortnite_containers + fallback_containers))
             
+            if self.DEV_FORCE_MULTIPLE_CONTAINERS and len(all_containers) > 0:
+                 # Duplicate the first one for testing UI
+                 all_containers.append(all_containers[0])
+
             if not all_containers:
                 return []
                 
