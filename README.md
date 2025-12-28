@@ -173,4 +173,5 @@ If you have any questions that are not in here, join the [Fortnite Mac discord s
 <h2>Credits:</h2>
 <br>
 LrdSnow for the help with extracting the IPAs<br>
-jaykwimain for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
+jaykwimain for the inspiration to make this app. https://github.com/Drohy/FortniteMAC<br>
+Rt-someone for creating FnMacTweak
