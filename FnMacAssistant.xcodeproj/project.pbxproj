@@ -1,0 +1,463 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3008A9112EBD2FCC00647857 /* FnMacAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */; };
+		3008A9122EBD2FCC00647857 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3008A90B2EBD2FCC00647857 /* Assets.xcassets */; };
+		3008A9192EBD302D00647857 /* DownloadItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9182EBD302400647857 /* DownloadItem.swift */; };
+		3008A91B2EBD303A00647857 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A91A2EBD303300647857 /* DownloadManager.swift */; };
+		3008A91F2EBD308A00647857 /* DownloadRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A91E2EBD308200647857 /* DownloadRowView.swift */; };
+		3008A9212EBD30AE00647857 /* FileHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9202EBD309200647857 /* FileHelper.swift */; };
+		3008A9232EBD30D600647857 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9222EBD30D600647857 /* ContentView.swift */; };
+		3008A9252EBD825900647857 /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9242EBD825300647857 /* DownloadsView.swift */; };
+		3008A9272EBD827800647857 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9262EBD827300647857 /* SettingsView.swift */; };
+		3008A9292EBD8B5400647857 /* IPASource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9282EBD8B4E00647857 /* IPASource.swift */; };
+		3008A92B2EBD8B6500647857 /* IPAFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A92A2EBD8B6100647857 /* IPAFetcher.swift */; };
+		307A824E2EC3CBFC0004CD9B /* PatchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307A824D2EC3CBFC0004CD9B /* PatchManager.swift */; };
+		308A546C2EC6F1E400D136F6 /* InGameDownloadTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */; };
+		308A546E2EC6F20400D136F6 /* InGameDownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A546D2EC6F1FF00D136F6 /* InGameDownloadsView.swift */; };
+		308A54702EC6F21800D136F6 /* InGameDownloadRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A546F2EC6F20F00D136F6 /* InGameDownloadRowView.swift */; };
+		308A54742EC78BFC00D136F6 /* FortniteContainerLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */; };
+		309947AF2EC3ADFE008B1F2A /* PatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309947AE2EC3ADFE008B1F2A /* PatchView.swift */; };
+		30E6109E2F12161A00A0C310 /* fort-dl in Copy Files */ = {isa = PBXBuildFile; fileRef = 30E6109B2F12153400A0C310 /* fort-dl */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		30E6109D2F1215FC00A0C310 /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				30E6109E2F12161A00A0C310 /* fort-dl in Copy Files */,
+			);
+			name = "Copy Files";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		3008A8EE2EBD2D8800647857 /* FnMacAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FnMacAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3008A90B2EBD2FCC00647857 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FnMacAssistantApp.swift; sourceTree = "<group>"; };
+		3008A9182EBD302400647857 /* DownloadItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadItem.swift; sourceTree = "<group>"; };
+		3008A91A2EBD303300647857 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
+		3008A91E2EBD308200647857 /* DownloadRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadRowView.swift; sourceTree = "<group>"; };
+		3008A9202EBD309200647857 /* FileHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHelper.swift; sourceTree = "<group>"; };
+		3008A9222EBD30D600647857 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		3008A9242EBD825300647857 /* DownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsView.swift; sourceTree = "<group>"; };
+		3008A9262EBD827300647857 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		3008A9282EBD8B4E00647857 /* IPASource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPASource.swift; sourceTree = "<group>"; };
+		3008A92A2EBD8B6100647857 /* IPAFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPAFetcher.swift; sourceTree = "<group>"; };
+		307A824D2EC3CBFC0004CD9B /* PatchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchManager.swift; sourceTree = "<group>"; };
+		308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameDownloadTracker.swift; sourceTree = "<group>"; };
+		308A546D2EC6F1FF00D136F6 /* InGameDownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameDownloadsView.swift; sourceTree = "<group>"; };
+		308A546F2EC6F20F00D136F6 /* InGameDownloadRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameDownloadRowView.swift; sourceTree = "<group>"; };
+		308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortniteContainerLocator.swift; sourceTree = "<group>"; };
+		309947AE2EC3ADFE008B1F2A /* PatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchView.swift; sourceTree = "<group>"; };
+		30E6109B2F12153400A0C310 /* fort-dl */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "fort-dl"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3008A8EB2EBD2D8800647857 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3008A8E52EBD2D8800647857 = {
+			isa = PBXGroup;
+			children = (
+				3008A90F2EBD2FCC00647857 /* FnMacAssistant */,
+				3008A8EF2EBD2D8800647857 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3008A8EF2EBD2D8800647857 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3008A8EE2EBD2D8800647857 /* FnMacAssistant.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3008A90F2EBD2FCC00647857 /* FnMacAssistant */ = {
+			isa = PBXGroup;
+			children = (
+				3008A9172EBD2FE900647857 /* Services */,
+				3008A9162EBD2FE100647857 /* Views */,
+				3008A9152EBD2FDA00647857 /* ViewModels */,
+				3008A9142EBD2FD100647857 /* Models */,
+				3008A90B2EBD2FCC00647857 /* Assets.xcassets */,
+				3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */,
+				30E6109B2F12153400A0C310 /* fort-dl */,
+			);
+			path = FnMacAssistant;
+			sourceTree = "<group>";
+		};
+		3008A9142EBD2FD100647857 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				3008A9282EBD8B4E00647857 /* IPASource.swift */,
+				3008A9182EBD302400647857 /* DownloadItem.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		3008A9152EBD2FDA00647857 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				3008A92A2EBD8B6100647857 /* IPAFetcher.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		3008A9162EBD2FE100647857 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				308A546F2EC6F20F00D136F6 /* InGameDownloadRowView.swift */,
+				308A546D2EC6F1FF00D136F6 /* InGameDownloadsView.swift */,
+				309947AE2EC3ADFE008B1F2A /* PatchView.swift */,
+				3008A9262EBD827300647857 /* SettingsView.swift */,
+				3008A9242EBD825300647857 /* DownloadsView.swift */,
+				3008A91E2EBD308200647857 /* DownloadRowView.swift */,
+				3008A9222EBD30D600647857 /* ContentView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		3008A9172EBD2FE900647857 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */,
+				308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */,
+				307A824D2EC3CBFC0004CD9B /* PatchManager.swift */,
+				3008A9202EBD309200647857 /* FileHelper.swift */,
+				3008A91A2EBD303300647857 /* DownloadManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3008A8ED2EBD2D8800647857 /* FnMacAssistant */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3008A8F92EBD2D8900647857 /* Build configuration list for PBXNativeTarget "FnMacAssistant" */;
+			buildPhases = (
+				3008A8EA2EBD2D8800647857 /* Sources */,
+				3008A8EB2EBD2D8800647857 /* Frameworks */,
+				3008A8EC2EBD2D8800647857 /* Resources */,
+				30E6109D2F1215FC00A0C310 /* Copy Files */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FnMacAssistant;
+			packageProductDependencies = (
+			);
+			productName = FnMacAssistant;
+			productReference = 3008A8EE2EBD2D8800647857 /* FnMacAssistant.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3008A8E62EBD2D8800647857 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2610;
+				TargetAttributes = {
+					3008A8ED2EBD2D8800647857 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = 3008A8E92EBD2D8800647857 /* Build configuration list for PBXProject "FnMacAssistant" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3008A8E52EBD2D8800647857;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3008A8EF2EBD2D8800647857 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3008A8ED2EBD2D8800647857 /* FnMacAssistant */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3008A8EC2EBD2D8800647857 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3008A9122EBD2FCC00647857 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3008A8EA2EBD2D8800647857 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3008A92B2EBD8B6500647857 /* IPAFetcher.swift in Sources */,
+				3008A9292EBD8B5400647857 /* IPASource.swift in Sources */,
+				308A54702EC6F21800D136F6 /* InGameDownloadRowView.swift in Sources */,
+				3008A91F2EBD308A00647857 /* DownloadRowView.swift in Sources */,
+				3008A9272EBD827800647857 /* SettingsView.swift in Sources */,
+				307A824E2EC3CBFC0004CD9B /* PatchManager.swift in Sources */,
+				3008A9232EBD30D600647857 /* ContentView.swift in Sources */,
+				308A546C2EC6F1E400D136F6 /* InGameDownloadTracker.swift in Sources */,
+				3008A9252EBD825900647857 /* DownloadsView.swift in Sources */,
+				3008A9112EBD2FCC00647857 /* FnMacAssistantApp.swift in Sources */,
+				309947AF2EC3ADFE008B1F2A /* PatchView.swift in Sources */,
+				308A54742EC78BFC00D136F6 /* FortniteContainerLocator.swift in Sources */,
+				3008A9192EBD302D00647857 /* DownloadItem.swift in Sources */,
+				308A546E2EC6F20400D136F6 /* InGameDownloadsView.swift in Sources */,
+				3008A9212EBD30AE00647857 /* FileHelper.swift in Sources */,
+				3008A91B2EBD303A00647857 /* DownloadManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3008A8F72EBD2D8900647857 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = R9V4FFR4Q5;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		3008A8F82EBD2D8900647857 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = R9V4FFR4Q5;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		3008A8FA2EBD2D8900647857 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = R9V4FFR4Q5;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.isacucho.FnMacAssistant;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		3008A8FB2EBD2D8900647857 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = R9V4FFR4Q5;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.isacucho.FnMacAssistant;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3008A8E92EBD2D8800647857 /* Build configuration list for PBXProject "FnMacAssistant" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3008A8F72EBD2D8900647857 /* Debug */,
+				3008A8F82EBD2D8900647857 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3008A8F92EBD2D8900647857 /* Build configuration list for PBXNativeTarget "FnMacAssistant" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3008A8FA2EBD2D8900647857 /* Debug */,
+				3008A8FB2EBD2D8900647857 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3008A8E62EBD2D8800647857 /* Project object */;
+}
