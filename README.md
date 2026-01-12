@@ -28,18 +28,18 @@ To get Fortnite up and running in your Mac, follow these steps:
 1.1. Download and install https://sideloadly.io
 
 1.2. Download the newest version of the FnMacAssistant App from [Releases](https://github.com/isacucho/FnMacAssistant/releases) and unzip it. (if you prefer to run it through python, you can use the python version by cloning this repository).
-
+<br><br>
 1.3. You should now have an app called FnMacAssistant on your downloads folder. Double-click to open it.
  
 1.4. Select your desired IPA, and click the _Download IPA_ button to download it. <br />
 (To see the differences between the different IPAs, click [here](https://github.com/isacucho/FnMacAssistant#what-is-the-difference-between-the-various-ipas).)
-
+<br><br>
 1.5. Go to sideloadly and sideload the downloaded IPA (the IPA will be saved to your _Downloads_ folder.
-
+<br><br>
 1.6. Open the Fortnite app. It should crash after a few seconds. If required, go to Settings > Privacy & Security, scroll down and on Fortnite, click "Open Anyway".
-
+<br><br>
 1.7. Return to FnMacAssistant and click on the _Patch App_ button.
-
+<br>
 <h3>Part 2: Download the game files</h3>
 
 Fortnite is now installed, but that's not all. The game files still need to be downloaded, but the initial download is currently broken when installing on Mac. Because of this, you will have to do one of these two options: Download in the background or import the game files with what we call an archive.
@@ -47,7 +47,7 @@ Fortnite is now installed, but that's not all. The game files still need to be d
 
 To download the game files in the background, follow these steps:
 <br />
-2.1.1. Download the [barebones archive](https://cvws.icloud-content.com/B/Afkr8fxJZaNJzFedcqDjghcNZ7_7ATboPGNPnPbAaJx0_jTRify5_iio/v39.11%20Barebones.zip?o=AgceIR9i4L2Lzq5N99LvhADXK9q6RyZhOSdtERqCTAqz&v=1&x=3&a=CAogMhfIYgoyJOn0bHp1jJ9l9RsVu2z79mQ4k9bV5aY4o1USbxCO_JOPszMYjoyP47wzIgEAUgQNZ7_7WgS5_iioaifAIME_G7e7H9n9f4BKROACyGFwprXycwmT4GAqJtfi_wpqpDxALPZyJ12dXSXuk7HDGD0G26b9Pt6DyuQdi6zS8LyQH7Nj3BHyGzWIlx4uiw&e=1768660649&fl=&r=BE651AB9-493B-491F-B0BF-D978D32DD944-1&k=3VaQhkKGO367VDq_nBznKA&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=136&s=of9dztgeWRtfoaBTsepNza7sO14). It is a ~300MB zip file that contains the files Fortnite needs to be able to download in the background.
+2.1.1. Download the [barebones archive](https://cvws.icloud-content.com/B/AbqQjf4KVuERiFWui3vb5UbTTK9yAZMYuc8MDVc20yE7pYY-Sxck7M31/v39.20%20Barebones.zip?o=AtLs53_7EG8l2qIEQop1Hzulp54jf_hb6x6u9Md3XZNy&v=1&x=3&a=CAog4aL9VT9PzL3PI5C9xW-uvoX6FOaWxI0iPB8DUf6wfB8SbxClrI-ZujMYpbyK7cMzIgEAUgTTTK9yWgQk7M31aieV-witqqTbGUzL2DDTltIRpRicaTvq-9ohyYF8uTi0v23uaghVDo1yJ6N_U3y6HW-vgdGUZWuS4FUBM_KnRaiCPy-XSSSnlkgSaViMGDRg0A&e=1770560593&fl=&r=B7E18054-915F-46E9-97A8-1BE689159968-1&k=XhA0ZJRHf1JNkzB6Y1CtEg&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=136&s=_QRQRdrV3z90ZXiQtZ5NfS8Exsw). It is a ~300MB zip file that contains the files Fortnite needs to be able to download in the background.
 
 2.1.2. Open FnMacAssistant, and import the archive using the "Import Archive" button.
 
@@ -67,7 +67,7 @@ To download the game files in the background, follow these steps:
 
 To download the archived game files and import them, follow these steps:
 
-2.2.1. Download the latest archive here: [v39.11 archive](https://cvws.icloud-content.com/B/AWogEuvJB6lzevCFyleE-EdW51u7AQIyTxXxUC9ZReruJjLYoJKaXrmd/v39.11%20archive.zip?o=At6VeWtDufC0SBYGzV9hzPwdC5hN_7HG0NjezFCZWIlu&v=1&x=3&a=CAogKlQaspPMADufPOfxa1H_K1zbjwkze2Hjl2lf9fdLikQSbxCug9OQszMYrpPO5LwzIgEAUgRW51u7WgSaXrmdaidtFFBfsh03CZ7P--bHmUIU9feTePJzLxckoKbYAJ2nELjaMHPsHAVyJ0Yl-5WjZJk4blIntdnFIUSBHz333c2gJjvTm0UBQJhQ_O9edx6O4Q&e=1768663779&fl=&r=23B61DC8-990C-4EC4-BAFC-6381B984BAB9-1&k=-zCEcj6AoTnFQLWf2_wVCQ&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=136&s=TrjCFHnP_hpYHy4HERJ5uGWFuQk). Make sure the archive version matches your IPA version. If it doesn't, you'll have to wait until the latest archive is uploaded.
+2.2.1. Download the latest archive here: [v39.20 archive](https://cvws.icloud-content.com/B/AbmmoP-DbW8yF0y0yz_5xiesLMRuAQK5uEkbEg8n8SFX9umRdSk7gsa9/v39.20%20archive.zip?o=AueBMcarTQSITJgJ5YxkPtId-4bphNbRh_DGjByZ9WeM&v=1&x=3&a=CAogl5i85XQXdrBww7saLV7Zkwcl54zCJx_6hRIyjEE8ks4SbxCwo9GcujMYsLPM8MMzIgEAUgSsLMRuWgQ7gsa9aidtoBHYyV1ck0N44Ot4rPX2o-FSkURNu4hqC4D_I87i7etTe2OT2WZyJ7UEtCGdrdABk2ZXvwtTGFIrumQOmj53Sr8rBe0y4PaJ4coAzmTozA&e=1770567965&fl=&r=48CAA10F-AFD2-41AB-B00F-773C239ED4F6-1&k=4fc_B7PiDlKBom5bVT36lQ&ckc=com.apple.clouddocs&ckz=com.apple.CloudDocs&p=136&s=NwQmoCtOteT8a5u-iie8XPnfLUU). Make sure the archive version matches your IPA version. If it doesn't, you'll have to wait until the latest archive is uploaded.
 
 2.2.2. Open Fortnite at least once before importing the archive. Once you see the download bar, you may close the game.
 
@@ -174,6 +174,6 @@ If you have any questions that are not in here, join the [Fortnite Mac discord s
 
 
 <h2>Credits:</h2>
-<br />
-LrdSnow for the help with extracting the IPAs<br />
-jaykwimain for the inspiration to make this app. https://github.com/Drohy/FortniteMAC
+<br>
+LrdSnow for the help with extracting the IPAs<br>
+Rt-someone for creating FnMacTweak
