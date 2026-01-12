@@ -2,3 +2,7 @@ requests
 Pillow
 py2app
 watchfiles
+flake8
+vulture
+autoflake
+autopep8

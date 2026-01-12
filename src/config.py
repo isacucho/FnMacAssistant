@@ -1,5 +1,3 @@
-import os
-
 VERSION = "1.5.0"
 GITHUB_RELEASES_URL = "https://api.github.com/repos/isacucho/FnMacAssistant/releases/latest"
 GIST_ID = "fb6a16acae4e592603540249cbb7e08d"

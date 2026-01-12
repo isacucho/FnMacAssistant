@@ -1,14 +1,15 @@
 import os
-import tkinter as tk
 from tkinter import messagebox
 import base64
 from io import BytesIO
 from PIL import Image, ImageTk
 from .config import REFRESH_ICON_BASE64
 
+
 def has_full_disk_access():
     """Checks for Full Disk Access by trying to list a protected directory."""
-    protected_dir = os.path.expanduser('~/Library/Application Support/com.apple.TCC/')
+    protected_dir = os.path.expanduser(
+        '~/Library/Application Support/com.apple.TCC/')
     try:
         os.listdir(protected_dir)
         print("Full Disk Access check: Succeeded.")
@@ -18,10 +19,11 @@ def has_full_disk_access():
         return False
     except FileNotFoundError:
         print("Full Disk Access check: TCC directory not found, cannot determine access.")
-        return True 
+        return True
     except Exception as e:
         print(f"Full Disk Access check: An unexpected error occurred: {e}")
         return True
+
 
 def prompt_for_full_disk_access():
     """Shows a dialog to guide the user to grant Full Disk Access."""
@@ -32,9 +34,9 @@ def prompt_for_full_disk_access():
         "2. Scroll down and click on 'Full Disk Access'.\n"
         "3. Click the '+' button and add FnMacAssistant.\n"
         "4. If the app is already in the list, make sure it is enabled.\n\n"
-        "Please grant access and restart the application."
-    )
+        "Please grant access and restart the application.")
     messagebox.showwarning("Full Disk Access Required", message)
+
 
 def load_refresh_icon():
     try:

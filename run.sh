@@ -38,10 +38,23 @@ if [ -f "$REQUIREMENTS_FILE" ]; then
     pip install -r "$REQUIREMENTS_FILE" > /dev/null || error_exit
 fi
 
-echo "Starting FnMacAssistant..."
+runApp() {
+    autoflake --in-place --remove-all-unused-imports --remove-unused-variables --recursive src FnMacAssistant.py && \
+    autopep8 --in-place --recursive --aggressive --aggressive src FnMacAssistant.py && \
+    flake8 src --count --show-source --statistics --ignore=E501 && \
+    vulture FnMacAssistant.py src --min-confidence 60 && \
+    exec python FnMacAssistant.py
+}
+
+if [[ "${1:-}" == "--internal-run" ]]; then
+    runApp
+    exit 0
+fi
+
 if [[ "${WATCH_MODE}" -eq 1 ]]; then
-    pip -q install watchfiles >/dev/null || error_exit
-    exec python -m watchfiles --filter python "python FnMacAssistant.py" FnMacAssistant.py src
+    echo "Starting FnMacAssistant in dev mode watching for changes..."
+    exec python -m watchfiles --filter python "bash $0 --internal-run" FnMacAssistant.py src
 else
-    exec python FnMacAssistant.py || error_exit
+    echo "Starting FnMacAssistant..."
+    runApp || error_exit
 fi
