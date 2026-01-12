@@ -261,21 +261,6 @@ class FnMacAssistantApp:
             side="right")
 
         # --- Status / Settings (unbordered) ---
-        # Update Skip
-        update_skip_row = ttk.Frame(main_frame)
-        update_skip_row.pack(fill="x", pady=(GAP_XL, GAP_S))
-
-        self.update_skip_var = tk.BooleanVar()
-        ttk.Checkbutton(
-            update_skip_row,
-            text="Enable Update Skip",
-            variable=self.update_skip_var).pack(
-            side="left")
-
-        info_label = ttk.Label(update_skip_row, text="ⓘ", cursor="hand2")
-        info_label.pack(side="right")
-        info_label.bind("<Button-1>", lambda e: self.show_update_skip_info())
-
         # Separator
         ttk.Separator(
             main_frame,
@@ -610,12 +595,6 @@ class FnMacAssistantApp:
                 "No Game Data Archive Info",
                 "No game data archive information available.")
 
-    def show_update_skip_info(self):
-        messagebox.showinfo(
-            "Update Skip Feature",
-            "Enable this when updating the game. To facilitate the update process, "
-            "this will automatically open Fortnite and let it crash before proceeding with the patch.")
-
     def copy_download_link(self):
         selected_ipa = self.ipa_combobox.get()
         if selected_ipa and selected_ipa in self.ipa_files_dict:
@@ -676,13 +655,16 @@ class FnMacAssistantApp:
         self.download_cancel_event = None
 
     def patch_app(self):
-        threading.Thread(target=patch_app_task,
-                         args=(self.update_skip_var.get(),),
-                         kwargs={
-                             'status_callback': self.update_status,
-                             'completion_callback': self.patch_complete,
-                             'error_callback': self.patch_error
-                         }).start()
+        threading.Thread(
+            target=patch_app_task,
+            kwargs={
+                'status_callback': self.update_status,
+                'completion_callback': self.patch_complete,
+                'error_callback': self.patch_error
+            },
+        daemon=True
+    ).start()
+
 
     def update_status(self, text):
         self.progress_label.config(text=text)
