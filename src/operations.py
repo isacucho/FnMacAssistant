@@ -10,6 +10,53 @@ from .app_container import AppContainerManager
 class DownloadCancelled(Exception):
     pass
 
+def resolve_fortnite_app_path(status_callback=None):
+    applications_dir = "/Applications"
+
+    candidates = {
+        "Fortnite.app": os.path.join(applications_dir, "Fortnite.app"),
+        "Fortnite-1.app": os.path.join(applications_dir, "Fortnite-1.app"),
+        "FortniteClient-IOS-Shipping.app": os.path.join(
+            applications_dir, "FortniteClient-IOS-Shipping.app"
+        ),
+    }
+
+    existing = {
+        name: path for name, path in candidates.items()
+        if os.path.exists(path)
+    }
+
+    if not existing:
+        raise Exception("Fortnite is not installed. Please install it first.")
+
+    if "Fortnite.app" in existing and len(existing) > 1:
+        if status_callback:
+            status_callback("Resolving multiple Fortnite installations...")
+
+        if os.path.isdir(existing["Fortnite.app"]):
+            shutil.rmtree(existing["Fortnite.app"])
+        else:
+            os.remove(existing["Fortnite.app"])
+
+        preferred = (
+            existing.get("Fortnite-1.app")
+            or existing.get("FortniteClient-IOS-Shipping.app")
+        )
+
+        os.rename(preferred, candidates["Fortnite.app"])
+
+    elif "Fortnite.app" not in existing:
+        if status_callback:
+            status_callback("Normalizing Fortnite app installation...")
+
+        preferred = (
+            existing.get("Fortnite-1.app")
+            or existing.get("FortniteClient-IOS-Shipping.app")
+        )
+
+        os.rename(preferred, candidates["Fortnite.app"])
+
+    return candidates["Fortnite.app"]
 
 def download_ipa_task(
         url,
@@ -50,31 +97,37 @@ def download_ipa_task(
 
 
 def patch_app_task(
-        skip_update,
         status_callback=None,
         completion_callback=None,
         error_callback=None):
-    temp_path = "/tmp/embedded.mobileprovision"
-    provision_dest_path = os.path.join(
-        FORTNITE_APP_PATH,
-        "Wrapper/FortniteClient-IOS-Shipping.app/embedded.mobileprovision")
 
-    app_manager = AppContainerManager()
+    temp_path = "/tmp/embedded.mobileprovision"
 
     try:
-        if skip_update:
-            if status_callback:
-                status_callback("Opening Fortnite.app...")
+        resolved_app_path = resolve_fortnite_app_path(status_callback)
 
-            if app_manager.open_app():
-                if status_callback:
-                    status_callback("Waiting for app to crash...")
+        from . import config
+        config.FORTNITE_APP_PATH = resolved_app_path
+
+        provision_dest_path = os.path.join(
+            resolved_app_path,
+            "Wrapper/FortniteClient-IOS-Shipping.app/embedded.mobileprovision"
+        )
+
+        app_manager = AppContainerManager()
+
+        if status_callback:
+            status_callback("Opening Fortnite.app...")
+
+        if app_manager.open_app():
+            if status_callback:
+                status_callback("Waiting for app to verify...")
 
                 for i in range(5):
                     time.sleep(1)
                     if status_callback:
                         status_callback(
-                            f"Waiting for app to crash... ({5 - i}s)")
+                            f"Waiting for app to verify... ({5 - i}s)")
             else:
                 raise Exception("Fortnite.app not found")
 
@@ -83,13 +136,13 @@ def patch_app_task(
 
         response = requests.get(PROVISION_URL, stream=True)
         response.raise_for_status()
+
         with open(temp_path, 'wb') as provision_file:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     provision_file.write(chunk)
 
-        if not os.path.exists(os.path.dirname(provision_dest_path)):
-            os.makedirs(os.path.dirname(provision_dest_path))
+        os.makedirs(os.path.dirname(provision_dest_path), exist_ok=True)
         shutil.move(temp_path, provision_dest_path)
 
         if completion_callback:
