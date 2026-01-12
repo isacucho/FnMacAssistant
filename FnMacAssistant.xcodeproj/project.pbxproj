@@ -18,6 +18,8 @@
 		3008A9272EBD827800647857 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9262EBD827300647857 /* SettingsView.swift */; };
 		3008A9292EBD8B5400647857 /* IPASource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9282EBD8B4E00647857 /* IPASource.swift */; };
 		3008A92B2EBD8B6500647857 /* IPAFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A92A2EBD8B6100647857 /* IPAFetcher.swift */; };
+		300F26D42F1492CF00A997A6 /* FortDLManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300F26D32F1492CF00A997A6 /* FortDLManager.swift */; };
+		300F26D62F1492EF00A997A6 /* GameAssetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300F26D52F1492EB00A997A6 /* GameAssetsView.swift */; };
 		307A824E2EC3CBFC0004CD9B /* PatchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307A824D2EC3CBFC0004CD9B /* PatchManager.swift */; };
 		308A546C2EC6F1E400D136F6 /* InGameDownloadTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */; };
 		308A546E2EC6F20400D136F6 /* InGameDownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A546D2EC6F1FF00D136F6 /* InGameDownloadsView.swift */; };
@@ -54,6 +56,8 @@
 		3008A9262EBD827300647857 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3008A9282EBD8B4E00647857 /* IPASource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPASource.swift; sourceTree = "<group>"; };
 		3008A92A2EBD8B6100647857 /* IPAFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPAFetcher.swift; sourceTree = "<group>"; };
+		300F26D32F1492CF00A997A6 /* FortDLManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortDLManager.swift; sourceTree = "<group>"; };
+		300F26D52F1492EB00A997A6 /* GameAssetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameAssetsView.swift; sourceTree = "<group>"; };
 		307A824D2EC3CBFC0004CD9B /* PatchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchManager.swift; sourceTree = "<group>"; };
 		308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameDownloadTracker.swift; sourceTree = "<group>"; };
 		308A546D2EC6F1FF00D136F6 /* InGameDownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameDownloadsView.swift; sourceTree = "<group>"; };
@@ -124,6 +128,7 @@
 		3008A9162EBD2FE100647857 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				300F26D52F1492EB00A997A6 /* GameAssetsView.swift */,
 				308A546F2EC6F20F00D136F6 /* InGameDownloadRowView.swift */,
 				308A546D2EC6F1FF00D136F6 /* InGameDownloadsView.swift */,
 				309947AE2EC3ADFE008B1F2A /* PatchView.swift */,
@@ -138,6 +143,7 @@
 		3008A9172EBD2FE900647857 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				300F26D32F1492CF00A997A6 /* FortDLManager.swift */,
 				308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */,
 				308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */,
 				307A824D2EC3CBFC0004CD9B /* PatchManager.swift */,
@@ -227,6 +233,7 @@
 				3008A9272EBD827800647857 /* SettingsView.swift in Sources */,
 				307A824E2EC3CBFC0004CD9B /* PatchManager.swift in Sources */,
 				3008A9232EBD30D600647857 /* ContentView.swift in Sources */,
+				300F26D62F1492EF00A997A6 /* GameAssetsView.swift in Sources */,
 				308A546C2EC6F1E400D136F6 /* InGameDownloadTracker.swift in Sources */,
 				3008A9252EBD825900647857 /* DownloadsView.swift in Sources */,
 				3008A9112EBD2FCC00647857 /* FnMacAssistantApp.swift in Sources */,
@@ -235,6 +242,7 @@
 				3008A9192EBD302D00647857 /* DownloadItem.swift in Sources */,
 				308A546E2EC6F20400D136F6 /* InGameDownloadsView.swift in Sources */,
 				3008A9212EBD30AE00647857 /* FileHelper.swift in Sources */,
+				300F26D42F1492CF00A997A6 /* FortDLManager.swift in Sources */,
 				3008A91B2EBD303A00647857 /* DownloadManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -27,6 +27,8 @@ struct ContentView: View {
                     DownloadsView(downloadManager: DownloadManager.shared)
                 case .patch:
                     PatchView()
+                case .gameAssets:
+                    GameAssetsView()
                 case .inGameDownloads:
                     InGameDownloadsView()
                 case .settings:
@@ -76,6 +78,11 @@ struct SidebarView: View {
                     isSelected: selection == .patch
                 ) { selection = .patch }
                 
+                SidebarButton(
+                    label: "Game Assets",
+                    systemImage: "shippingbox.fill",
+                    isSelected: selection == .gameAssets
+                ) { selection = .gameAssets }
                 SidebarButton(
                     label: "In-Game Downloads",
                     systemImage: "arrow.down.app.dashed",
@@ -152,6 +159,7 @@ struct SidebarButton: View {
 enum SidebarSection {
     case downloads
     case patch
+    case gameAssets
     case inGameDownloads
     case settings
 }
