@@ -4,6 +4,7 @@ import json
 import os
 from .config import GITHUB_RELEASES_URL, GIST_API_URL, ARCHIVE_GIST_API_URL, VERSION
 
+
 class APIClient:
     CACHE_FILE = os.path.expanduser("~/.fnmac_cache.json")
     CACHE_EXPIRY = 600  # 10 minutes
@@ -17,7 +18,7 @@ class APIClient:
             try:
                 with open(self.CACHE_FILE, 'r') as f:
                     return json.load(f)
-            except:
+            except BaseException:
                 pass
         return {}
 
@@ -25,7 +26,7 @@ class APIClient:
         try:
             with open(self.CACHE_FILE, 'w') as f:
                 json.dump(self.cache, f)
-        except:
+        except BaseException:
             pass
 
     def _get_cached(self, key):
@@ -51,17 +52,18 @@ class APIClient:
             cached, is_cached = self._get_cached('updates')
             if is_cached:
                 return cached
-        
+
         try:
             headers = {"Accept": "application/vnd.github.v3+json"}
-            response = self.session.get(GITHUB_RELEASES_URL, headers=headers, timeout=10)
+            response = self.session.get(
+                GITHUB_RELEASES_URL, headers=headers, timeout=10)
             response.raise_for_status()
             latest_release = response.json()
-            latest_version = latest_release["tag_name"].lstrip('v') 
-            
+            latest_version = latest_release["tag_name"].lstrip('v')
+
             current_parts = [int(x) for x in VERSION.split('.')]
             latest_parts = [int(x) for x in latest_version.split('.')]
-            
+
             result = latest_version if latest_parts > current_parts else None
             self._set_cached('updates', result)
             return result
@@ -79,10 +81,11 @@ class APIClient:
             cached, is_cached = self._get_cached('raw_url')
             if is_cached:
                 return cached
-        
+
         try:
             headers = {"Accept": "application/vnd.github.v3+json"}
-            response = self.session.get(GIST_API_URL, headers=headers, timeout=10)
+            response = self.session.get(
+                GIST_API_URL, headers=headers, timeout=10)
             response.raise_for_status()
             gist_data = response.json()
             raw_url = gist_data["files"]["list.json"]["raw_url"]
@@ -121,18 +124,18 @@ class APIClient:
             cached, is_cached = self._get_cached('ipa_data')
             if is_cached:
                 return cached
-        
+
         try:
             raw_url = self.get_latest_raw_url(force)
             if not raw_url:
                 return []
-            
+
             headers = {
                 "Cache-Control": "no-cache, no-store, must-revalidate",
                 "Pragma": "no-cache",
                 "Expires": "0"
             }
-            
+
             response = self.session.get(raw_url, headers=headers, timeout=10)
             response.raise_for_status()
 
@@ -168,29 +171,30 @@ class APIClient:
             cached, is_cached = self._get_cached('archive_info')
             if is_cached:
                 return cached
-        
+
         try:
             headers = {"Accept": "application/vnd.github.v3+json"}
-            response = self.session.get(ARCHIVE_GIST_API_URL, headers=headers, timeout=10)
+            response = self.session.get(
+                ARCHIVE_GIST_API_URL, headers=headers, timeout=10)
             response.raise_for_status()
-            
+
             gist_data = response.json()
             archive_file = gist_data["files"].get("archive.json")
-            
+
             if not archive_file:
                 result = None
             else:
                 raw_url = archive_file["raw_url"]
                 response = self.session.get(raw_url, timeout=10)
                 response.raise_for_status()
-                
+
                 archive_data = response.json()
-                
+
                 result = archive_data[0] if archive_data else None
-            
+
             self._set_cached('archive_info', result)
             return result
-            
+
         except Exception as e:
             print(f"Failed to fetch archive information: {str(e)}")
             # Fallback to expired cache

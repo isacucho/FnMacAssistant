@@ -3,5 +3,5 @@ from src.gui import FnMacAssistantApp
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = FnMacAssistantApp(root)
+    FnMacAssistantApp(root)
     root.mainloop()
