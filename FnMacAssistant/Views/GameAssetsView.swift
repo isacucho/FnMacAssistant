@@ -9,112 +9,190 @@ import SwiftUI
 
 struct GameAssetsView: View {
     @ObservedObject private var manager = FortDLManager.shared
+    @State private var didAutoScrollToProgress = false
+
+    private let bottomSpacerID = "BOTTOM_SPACER"
+    private var showsProgressBar: Bool {
+        manager.isDownloading || manager.isInstalling || manager.isDone
+    }
+    private let progressBarID = "PROGRESS_BAR"
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+        ScrollViewReader { proxy in
+            ZStack(alignment: .bottom) {
 
-                Text("Game Assets")
-                    .font(.largeTitle)
-                    .bold()
+                // =====================
+                // MAIN SCROLL CONTENT
+                // =====================
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
 
-                Text("Download Fortnite game assets without launching the game.")
-                    .foregroundColor(.secondary)
+                        Text("Game Assets")
+                            .font(.largeTitle)
+                            .bold()
 
-                Divider()
+                        Text("Download Fortnite game assets without launching the game.")
+                            .foregroundColor(.secondary)
 
-                HStack {
-                    Text("Build:")
-                    Text(manager.buildVersion ?? "Unknown")
-                        .fontWeight(.semibold)
-                }
+                        Divider()
 
-                HStack {
-                    Text("Manifest ID:")
-                    Text(manager.manifestID ?? "Unknown")
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                }
+                        HStack {
+                            Text("Build:")
+                            Text(manager.buildVersion ?? "Unknown")
+                                .fontWeight(.semibold)
+                        }
 
-                Divider()
+                        HStack {
+                            Text("Manifest ID:")
+                            Text(manager.manifestID ?? "Unknown")
+                                .font(.system(.body, design: .monospaced))
+                                .textSelection(.enabled)
+                        }
 
-                Toggle(
-                    "Download all assets (\(manager.totalDownloadSize ?? "—"))",
-                    isOn: $manager.downloadAllAssets
-                )
-                .onChange(of: manager.downloadAllAssets) { enabled in
-                    if enabled {
-                        manager.selectedLayers = Set(manager.layers.map(\.name))
-                        manager.selectedAssets = Set(
-                            manager.layers.flatMap { $0.assets.map(\.name) }
+                        Divider()
+
+                        Toggle(
+                            "Download all assets (\(manager.totalDownloadSize ?? "—"))",
+                            isOn: $manager.downloadAllAssets
                         )
-                    } else {
-                        manager.selectedLayers.removeAll()
-                        manager.selectedAssets.removeAll()
-                    }
-                }
-
-                Toggle("Show individual tags", isOn: $manager.showAssets)
-
-                Divider()
-
-                let columnCount = manager.showAssets ? 2 : 4
-                let columns = masonryColumns(
-                    layers: manager.layers,
-                    columnCount: columnCount
-                )
-
-                HStack(alignment: .top, spacing: 12) {
-                    ForEach(columns.indices, id: \.self) { columnIndex in
-                        VStack(spacing: 12) {
-                            ForEach(columns[columnIndex]) { layer in
-                                LayerCard(layer: layer)
+                        .onChange(of: manager.downloadAllAssets) { enabled in
+                            if enabled {
+                                manager.selectedLayers = Set(manager.layers.map(\.name))
+                                manager.selectedAssets = Set(
+                                    manager.layers.flatMap { $0.assets.map(\.name) }
+                                )
+                            } else {
+                                manager.selectedLayers.removeAll()
+                                manager.selectedAssets.removeAll()
                             }
                         }
-                        .frame(maxWidth: .infinity)
+
+                        Toggle("Show individual tags", isOn: $manager.showAssets)
+
+                        Divider()
+
+                        let columnCount = manager.showAssets ? 2 : 4
+                        let columns = masonryColumns(
+                            layers: manager.layers,
+                            columnCount: columnCount
+                        )
+
+                        HStack(alignment: .top, spacing: 12) {
+                            ForEach(columns.indices, id: \.self) { columnIndex in
+                                VStack(spacing: 12) {
+                                    ForEach(columns[columnIndex]) { layer in
+                                        LayerCard(layer: layer)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                        }
+
+                        HStack {
+                            Button("Download Selected Assets") {
+                                manager.download()
+                                didAutoScrollToProgress = false
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(
+                                !manager.downloadAllAssets &&
+                                manager.selectedLayers.isEmpty &&
+                                manager.selectedAssets.isEmpty
+                            )
+
+                            Spacer()
+
+                            Text("Total download size: \(manager.selectedDownloadSizeLabel)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        // MARK: Anchor point for auto-scroll
+                        Color.clear
+                            .frame(height: 1)
+                            .id(progressBarID)
+
+                        // Bottom padding so content never hides behind progress bar
+                        if showsProgressBar {
+                            Spacer()
+                                .frame(height: progressBarHeight + 24)
+                                .id(bottomSpacerID)
+                        }
                     }
-                }
-
-                HStack {
-                    Button("Download Selected Assets") {
-                        manager.download()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(
-                        !manager.downloadAllAssets &&
-                        manager.selectedLayers.isEmpty &&
-                        manager.selectedAssets.isEmpty
-                    )
-
-                    Spacer()
-
-                    Text("Total download size: \(manager.selectedDownloadSizeLabel)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                Divider()
-
-                Toggle("Show terminal output", isOn: $manager.showConsole)
-
-                if manager.showConsole {
-                    ScrollView {
-                        Text(manager.logOutput)
-                            .font(.system(.caption, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(height: 260)
                     .padding()
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                // =====================
+                // STICKY PROGRESS BAR
+                // =====================
+                if showsProgressBar {
+                    progressBar
                 }
             }
-            .padding()
+            // =====================
+            // AUTO-SCROLL ON START
+            // =====================
+            .onChange(of: showsProgressBar) { showing in
+                guard showing else { return }
+
+                DispatchQueue.main.async {
+                    withAnimation(.easeOut(duration: 0.35)) {
+                        proxy.scrollTo(bottomSpacerID, anchor: .bottom)
+                    }
+                }
+            }
         }
     }
 
-    // MARK: - Masonry layout
+    // MARK: - Sticky Progress Bar View
+
+    private var progressBar: some View {
+        VStack(spacing: 8) {
+            ProgressView(value: manager.downloadProgress)
+                .progressViewStyle(.linear)
+
+            HStack {
+                if manager.isDownloading {
+                    Text("Downloading (\(manager.downloadProgressLabel))")
+                } else if manager.isInstalling {
+                    Text("Installing…")
+                } else if manager.isDone {
+                    Text("Done")
+                }
+
+                Spacer()
+
+                if manager.isDownloading {
+                    HStack(spacing: 8) {
+                        Text(manager.downloadPercentageLabel)
+
+                        Button {
+                            manager.cancelDownload()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Cancel download")
+                    }
+                }
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding()
+        .shadow(radius: 8)
+    }
+
+    private var progressBarHeight: CGFloat {
+        80
+    }
+
+    // MARK: - Masonry layout (unchanged)
 
     private func masonryColumns(
         layers: [FortDLManager.Layer],
@@ -139,7 +217,7 @@ struct GameAssetsView: View {
         return columns
     }
 
-    // MARK: - Layer card
+    // MARK: - Layer Card (unchanged)
 
     @ViewBuilder
     private func LayerCard(layer: FortDLManager.Layer) -> some View {

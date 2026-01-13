@@ -28,6 +28,10 @@ final class FortDLManager: ObservableObject {
     }
 
     // MARK: - State
+    
+    @Published var isDownloading = false
+    @Published var downloadedBytes: UInt64 = 0
+    @Published var totalBytes: UInt64 = 0
 
     @Published var manifestID: String?
     @Published var buildVersion: String?
@@ -43,10 +47,52 @@ final class FortDLManager: ObservableObject {
     @Published var showAssets = false
     @Published var showConsole = false
     @Published var downloadAllAssets = false
+    
+    @Published var isInstalling = false
+    @Published var isDone = false
+    
+    private var activeProcess: Process?
+
+
+
+    @Published var downloadStartDate: Date?
 
     private init() {
         loadManifest()
         fetchAvailableLayers()
+    }
+    
+    var downloadProgress: Double {
+        guard totalBytes > 0 else { return 0 }
+        return Double(downloadedBytes) / Double(totalBytes)
+    }
+
+    var downloadProgressLabel: String {
+        let downloaded = ByteCountFormatter.string(
+            fromByteCount: Int64(downloadedBytes),
+            countStyle: .file
+        )
+        let total = ByteCountFormatter.string(
+            fromByteCount: Int64(totalBytes),
+            countStyle: .file
+        )
+        return "\(downloaded) / \(total)"
+    }
+    
+    
+
+    var downloadedSizeLabel: String {
+        ByteCountFormatter.string(
+            fromByteCount: Int64(downloadedBytes),
+            countStyle: .file
+        )
+    }
+
+    var totalSizeLabel: String {
+        ByteCountFormatter.string(
+            fromByteCount: Int64(totalBytes),
+            countStyle: .file
+        )
     }
 
     // MARK: - Manifest
@@ -83,9 +129,12 @@ final class FortDLManager: ObservableObject {
 
         let process = Process()
         process.executableURL = fortDLURL()
+        clearFortDLCache()
+
         process.arguments = [
             "--manifest-id", manifestID,
-            "--list-tags"
+            "--list-tags",
+            "-c", fortDLCacheURL.path
         ]
 
         let pipe = Pipe()
@@ -119,6 +168,8 @@ final class FortDLManager: ObservableObject {
             "--manifest-id", manifestID,
             "-o", outputDir
         ]
+        
+        args += ["-c", fortDLCacheURL.path]
 
         if downloadAllAssets {
             // everything
@@ -132,6 +183,11 @@ final class FortDLManager: ObservableObject {
             }
         }
 
+        isDownloading = true
+        downloadedBytes = 0
+        totalBytes = 0
+        
+        clearFortDLCache()
         runFortDL(arguments: args)
     }
 
@@ -198,6 +254,7 @@ final class FortDLManager: ObservableObject {
 
     private func runFortDL(arguments: [String]) {
         let process = Process()
+        activeProcess = process
         process.executableURL = fortDLURL()
         process.arguments = arguments
 
@@ -209,7 +266,16 @@ final class FortDLManager: ObservableObject {
             let data = handle.availableData
             guard !data.isEmpty else { return }
             let str = String(decoding: data, as: UTF8.self)
-            Task { @MainActor in self.log(str) }
+
+            Task { @MainActor in
+                self.log(str)
+                self.parseProgress(from: str)
+            }
+            process.terminationHandler = { _ in
+                Task { @MainActor in
+                    self.clearFortDLCache()
+                }
+            }
         }
 
         try? process.run()
@@ -222,7 +288,36 @@ final class FortDLManager: ObservableObject {
 
     private func log(_ str: String) {
         logOutput += str + "\n"
+
+        // PROGRESS_BYTES <downloaded> <total>
+        if str.hasPrefix("PROGRESS_BYTES") {
+            let parts = str.split(separator: " ")
+            if parts.count == 3,
+               let downloaded = UInt64(parts[1]),
+               let total = UInt64(parts[2]) {
+
+                downloadedBytes = downloaded
+                totalBytes = total
+                isDownloading = true
+                isInstalling = false
+                isDone = false
+            }
+        }
+
+        if str.contains("Extracting files") {
+            isDownloading = false
+            isInstalling = true
+        }
+
+        if str.contains("Done:") {
+            isDownloading = false
+            isInstalling = false
+            isDone = true
+            clearFortDLCache()
+        }
     }
+    
+    
 
     var selectedDownloadSizeLabel: String {
         if downloadAllAssets {
@@ -259,5 +354,139 @@ final class FortDLManager: ObservableObject {
         selectedAssets.removeAll()
         layers.removeAll()
         totalDownloadSize = nil
+    }
+    private func handleProcessOutput(_ output: String) {
+        log(output)
+
+        for line in output.split(separator: "\n") {
+            if line.hasPrefix("PROGRESS ") {
+                let parts = line.split(separator: " ")
+                guard parts.count == 3,
+                      let downloaded = UInt64(parts[1]),
+                      let total = UInt64(parts[2])
+                else { continue }
+
+                downloadedBytes = downloaded
+                totalBytes = total
+            }
+        }
+    }
+
+    var downloadPercentageLabel: String {
+        String(format: "%.1f%%", downloadProgress * 100)
+    }
+
+    var downloadETALabel: String {
+        guard
+            let start = downloadStartDate,
+            downloadedBytes > 0,
+            totalBytes > downloadedBytes
+        else { return "—" }
+
+        let elapsed = Date().timeIntervalSince(start)
+        let speed = Double(downloadedBytes) / elapsed
+        let remaining = Double(totalBytes - downloadedBytes) / speed
+
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.minute, .second]
+        formatter.unitsStyle = .abbreviated
+
+        return formatter.string(from: remaining) ?? "—"
+    }
+    private func parseProgress(from output: String) {
+        let lines = output.split(separator: "\n")
+
+        for line in lines {
+            let text = String(line)
+
+            // ---- DOWNLOAD PROGRESS ----
+            if text.hasPrefix("PROGRESS ") {
+                // Format: PROGRESS <downloaded> <total>
+                let parts = text.split(separator: " ")
+                guard parts.count == 3,
+                      let downloaded = UInt64(parts[1]),
+                      let total = UInt64(parts[2])
+                else { continue }
+
+                if !isDownloading {
+                    isDownloading = true
+                    isInstalling = false
+                    isDone = false
+                    downloadStartDate = Date()
+                }
+
+                downloadedBytes = downloaded
+                totalBytes = total
+            }
+
+            // ---- INSTALL PHASE ----
+            else if text.contains("Extracting files") {
+                isDownloading = false
+                isInstalling = true
+            }
+
+            // ---- DONE ----
+            else if text.hasPrefix("Done:") {
+                isDownloading = false
+                isInstalling = false
+                isDone = true
+            }
+        }
+    }
+    
+    // MARK: - fort-dl Cache
+
+    private var fortDLCacheURL: URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("FnMacAssistant-cache", isDirectory: true)
+    }
+
+    private func clearFortDLCache() {
+        let fm = FileManager.default
+
+        if fm.fileExists(atPath: fortDLCacheURL.path) {
+            do {
+                try fm.removeItem(at: fortDLCacheURL)
+            } catch {
+                log("⚠️ Failed to remove fort-dl cache: \(error.localizedDescription)")
+            }
+        }
+
+        do {
+            try fm.createDirectory(
+                at: fortDLCacheURL,
+                withIntermediateDirectories: true
+            )
+        } catch {
+            log("⚠️ Failed to create fort-dl cache: \(error.localizedDescription)")
+        }
+    }
+    // MARK: - Cancel Download (Ctrl-C equivalent)
+
+    func cancelDownload() {
+        guard let process = activeProcess else { return }
+
+        log("🛑 Download cancelled by user")
+
+        // Send SIGINT (Ctrl-C)
+        process.interrupt()
+
+        // Fallback hard kill after short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if process.isRunning {
+                process.terminate()
+            }
+        }
+
+        activeProcess = nil
+
+        isDownloading = false
+        isInstalling = false
+        isDone = false
+
+        downloadedBytes = 0
+        totalBytes = 0
+
+        clearFortDLCache()
     }
 }
