@@ -59,7 +59,7 @@ cd FnMacAssistant
 source .env/bin/activate
 python3 FnMacAssistant.py
 ```
-
+Proceed to step 1.4 of the installation guide to continue installing Fortnite.
 
 <hr>
 <h3>Part 1: Installation</h3>
