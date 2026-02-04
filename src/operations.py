@@ -3,12 +3,13 @@ import requests
 import shutil
 import zipfile
 import time
-from .config import FORTNITE_APP_PATH, PROVISION_URL
+from .config import PROVISION_URL
 from .app_container import AppContainerManager
 
 
 class DownloadCancelled(Exception):
     pass
+
 
 def resolve_fortnite_app_path(status_callback=None):
     applications_dir = "/Applications"
@@ -57,6 +58,7 @@ def resolve_fortnite_app_path(status_callback=None):
         os.rename(preferred, candidates["Fortnite.app"])
 
     return candidates["Fortnite.app"]
+
 
 def download_ipa_task(
         url,

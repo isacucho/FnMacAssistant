@@ -22,6 +22,42 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 <h2>Instructions:</h2>
 
+### Running the Python Program
+
+Clone the repo:
+```sh
+git clone https://github.com/isacucho/FnMacAssistant
+cd FnMacAssistant
+```
+Download and Install python3 if you haven't already:
+https://www.python.org/ftp/python/3.14.3/python-3.14.3-macos11.pkg
+
+> [!NOTE]
+> It is highly recommended to use a virtual environment:
+> ```py
+> python3 -m venv .env # only needed once
+> ```
+> Start the venv:
+>```py
+>source .env/bin/activate
+>```
+
+Install dependencies:
+```sh
+pip3 install -r src/requirements.txt
+```
+
+Run FnMacAssistant:
+```py
+python3 FnMacAssistant.py
+```
+> [!NOTE]
+> If FnMacAssistant cannot find your container, make sure to give your terminal 'Full Disk Access' permissions.
+>
+>Go to `System Settings > Privacy & Security > Full Disk Access` and toggle 'Terminal.app' on, or add it if it isn't listed.
+
+
+<hr>
 <h3>Part 1: Installation</h3>
 To get Fortnite up and running in your Mac, follow these steps:
 <br />
@@ -40,6 +76,7 @@ To get Fortnite up and running in your Mac, follow these steps:
 <br><br>
 1.7. Return to FnMacAssistant and click on the _Patch App_ button.
 <br>
+<hr>
 <h3>Part 2: Download the game files</h3>
 
 Fortnite is now installed, but that's not all. The game files still need to be downloaded, but the initial download is currently broken when installing on Mac. Because of this, you will have to do one of these two options: Download in the background or import the game files with what we call an archive.
@@ -77,8 +114,10 @@ To download the archived game files and import them, follow these steps:
 
 P.S: If you get another download screen after logging in, you might need to follow steps 4-7 of the background download method.
 
+<hr>
 <h3>Part 3: Download your desired game modes (optional)</h3>
 With the base install, the only game modes included are Battle Royale and Blitz. If you want to play any other game mode (Reload, OG, Creative, LEGO, Rocket Racing, Creative maps, and any future game mode), you will have to download them using the background method. Not using the background method will result in an error. Here's how to install the game mode:
+<br><br>
 
 3.1. Open Fortnite, and select the game mode you want to download.
 
@@ -107,7 +146,7 @@ Or, you can also do this:
  4. Go to FortniteGame > PersistentDownloadDir, and locate a file called 'InstallBundleManagerReportCache.json'.<br />
  5. Delete that .json file, and re-try the game data download.
 
-
+<hr>
 <h3>How do I update the game?</h3>
 1. Download the updated IPA from your preffered source (FnMacAssistant, the website, etc.)<br />
 2. Install the newest IPA with the same Apple ID you installed the last version. <br />
@@ -116,7 +155,7 @@ Or, you can also do this:
 5. Patch the app.<br />
 6. Download the game files through your preferred method.<br />
 <br />
-
+<hr>
 <h3>Error: “Fortnite” cannot be opened because the developer did not intend for it to be run on this Mac.</h3>
 
 
@@ -128,6 +167,7 @@ If you get this message, do the following steps:
 5. Open Fortnite again. This time it shouldn't crash!
 
 <br />
+<hr>
 <h3>Error: Failed to patch the app: [Errno 1] Operation not permitted</h3>
 If you get this error message, you may need to give the FnMacAssistant additional permitions. 
 
@@ -137,10 +177,10 @@ If you get this error message, you may need to give the FnMacAssistant additiona
 4. Restart the app and try to patch again.
 
 Doing this should fix your issue and you should successfuly be able to patch Fortnite. 
-<br />
+<hr>
 <h3>Fortnite keeps crashing even after patching</h3>
 This usually means that you're MacOS version is not supported. Please update your mac and try again.
-<br />
+<hr>
 <h3>What is the difference between the various IPAs?</h3>
 
 **Clean IPA** <br />
