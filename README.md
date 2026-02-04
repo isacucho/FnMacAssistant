@@ -47,7 +47,11 @@ Install dependencies:
 ```sh
 pip3 install -r src/requirements.txt 
 ```
-
+> [!NOTE]
+> To get full app functionality, you need to give your terminal Full Disk Access. 
+>
+>Go to `System Settings > Privacy & Security > Full Disk Access` and toggle 'Terminal.app' on, or add it if it isn't listed.
+<br><br>
 #### Running the app
 To start FnMacAssistant, run:
 ```sh
@@ -55,10 +59,6 @@ cd FnMacAssistant
 source .env/bin/activate
 python3 FnMacAssistant.py
 ```
-> [!NOTE]
-> If FnMacAssistant cannot find your container, make sure to give your terminal 'Full Disk Access' permissions.
->
->Go to `System Settings > Privacy & Security > Full Disk Access` and toggle 'Terminal.app' on, or add it if it isn't listed.
 
 
 <hr>
