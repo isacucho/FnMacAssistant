@@ -662,8 +662,8 @@ class FnMacAssistantApp:
                 'completion_callback': self.patch_complete,
                 'error_callback': self.patch_error
             },
-        daemon=True
-    ).start()
+            daemon=True
+        ).start()
 
 
     def update_status(self, text):
