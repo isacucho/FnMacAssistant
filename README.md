@@ -24,6 +24,7 @@ A mac with an M series chip. (Fortnite mobile will never work on an Intel Mac)
 
 ### Running the Python Program
 
+#### Set-up
 Clone the repo:
 ```sh
 git clone https://github.com/isacucho/FnMacAssistant
@@ -35,7 +36,7 @@ https://www.python.org/ftp/python/3.14.3/python-3.14.3-macos11.pkg
 > [!NOTE]
 > It is highly recommended to use a virtual environment:
 > ```py
-> python3 -m venv .env #only needed once
+> python3 -m venv .env 
 > ```
 > Start the venv:
 >```py
@@ -44,11 +45,14 @@ https://www.python.org/ftp/python/3.14.3/python-3.14.3-macos11.pkg
 
 Install dependencies:
 ```sh
-pip3 install -r src/requirements.txt #only needed once
+pip3 install -r src/requirements.txt 
 ```
 
-Run FnMacAssistant:
-```py
+#### Running the app
+To start FnMacAssistant, run:
+```sh
+cd FnMacAssistant
+source .env/bin/activate
 python3 FnMacAssistant.py
 ```
 > [!NOTE]
