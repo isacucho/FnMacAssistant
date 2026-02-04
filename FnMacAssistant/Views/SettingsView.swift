@@ -10,6 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var downloadManager = DownloadManager.shared
     @StateObject private var containerLocator = FortniteContainerLocator.shared
+    @State private var showResetConfirm = false
 
     var body: some View {
         ScrollView {
@@ -129,10 +130,38 @@ struct SettingsView: View {
                         }
                     }
                 }
+
+                // MARK: - Reset Settings
+                glassSection {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Reset Settings")
+                            .font(.headline)
+
+                        Text("Reset all preferences back to default values.")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+
+                        HStack {
+                            Button(role: .destructive) {
+                                showResetConfirm = true
+                            } label: {
+                                Text("Reset All Settings")
+                            }
+                        }
+                    }
+                }
             }
             .padding(24)
         }
         .scrollBounceBehavior(.basedOnSize)
+        .alert("Reset All Settings?", isPresented: $showResetConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Reset", role: .destructive) {
+                resetAllSettings()
+            }
+        } message: {
+            Text("This will reset download location, container path, manual manifest settings, and warning preferences.")
+        }
     }
 
     // MARK: - Glass Section Builder
@@ -149,5 +178,25 @@ struct SettingsView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.white.opacity(0.1))
             )
+    }
+
+    private func resetAllSettings() {
+        downloadManager.resetDownloadFolder()
+        containerLocator.resetContainer()
+
+        let fortDL = FortDLManager.shared
+        fortDL.useManualManifest = false
+        fortDL.manualManifestID = ""
+        fortDL.setManualManifestEnabled(false)
+
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "defaultDownloadFolderPath")
+        defaults.removeObject(forKey: "FortniteContainerPath")
+        defaults.removeObject(forKey: "fortdlManualManifestID")
+        defaults.removeObject(forKey: "brCosmeticsWarningDisabled")
+        defaults.removeObject(forKey: "brCosmeticsWarnedBattleRoyale")
+        defaults.removeObject(forKey: "brCosmeticsWarnedRocketRacing")
+        defaults.removeObject(forKey: "brCosmeticsWarnedCreative")
+        defaults.removeObject(forKey: "brCosmeticsWarnedFestival")
     }
 }

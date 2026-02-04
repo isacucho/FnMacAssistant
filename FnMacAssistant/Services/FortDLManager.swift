@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 final class FortDLManager: ObservableObject {
@@ -53,11 +54,29 @@ final class FortDLManager: ObservableObject {
     
     private var activeProcess: Process?
 
+    private var cancellables: Set<AnyCancellable> = []
 
 
     @Published var downloadStartDate: Date?
+    @Published var useManualManifest: Bool = false
+    @Published var manualManifestID: String = ""
+
+    @AppStorage("fortdlManualManifestID") private var storedManualManifestID = ""
+
+    private var autoManifestID: String?
 
     private init() {
+        manualManifestID = storedManualManifestID
+
+        $manualManifestID
+            .sink { [weak self] value in
+                self?.storedManualManifestID = value
+                Task { @MainActor in
+                    self?.updateManifestID()
+                }
+            }
+            .store(in: &cancellables)
+
         loadManifest()
         fetchAvailableLayers()
     }
@@ -111,11 +130,12 @@ final class FortDLManager: ObservableObject {
         buildVersion = json["BuildVersion"] as? String
 
         if let manifestPath = json["ManifestPath"] as? String {
-            manifestID = URL(fileURLWithPath: manifestPath)
+            autoManifestID = URL(fileURLWithPath: manifestPath)
                 .deletingPathExtension()
                 .lastPathComponent
         }
 
+        updateManifestID()
         log("✔ Manifest ID: \(manifestID ?? "unknown")")
     }
 
@@ -464,17 +484,17 @@ final class FortDLManager: ObservableObject {
     // MARK: - Cancel Download (Ctrl-C equivalent)
 
     func cancelDownload() {
-        guard let process = activeProcess else { return }
+        if let process = activeProcess {
+            log("🛑 Download cancelled by user")
 
-        log("🛑 Download cancelled by user")
+            // Send SIGINT (Ctrl-C)
+            process.interrupt()
 
-        // Send SIGINT (Ctrl-C)
-        process.interrupt()
-
-        // Fallback hard kill after short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if process.isRunning {
-                process.terminate()
+            // Fallback hard kill after short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                if process.isRunning {
+                    process.terminate()
+                }
             }
         }
 
@@ -488,5 +508,36 @@ final class FortDLManager: ObservableObject {
         totalBytes = 0
 
         clearFortDLCache()
+    }
+
+    // MARK: - Manual Manifest
+
+    func setManualManifestEnabled(_ enabled: Bool) {
+        useManualManifest = enabled
+        updateManifestID()
+        fetchAvailableLayers()
+    }
+
+    func setManualManifestID(_ id: String) {
+        manualManifestID = id
+        updateManifestID()
+    }
+
+    func refreshManifest() {
+        if useManualManifest, !manualManifestID.isEmpty {
+            updateManifestID()
+            fetchAvailableLayers()
+        } else {
+            loadManifest()
+            fetchAvailableLayers()
+        }
+    }
+
+    private func updateManifestID() {
+        if useManualManifest, !manualManifestID.isEmpty {
+            manifestID = manualManifestID
+        } else {
+            manifestID = autoManifestID
+        }
     }
 }

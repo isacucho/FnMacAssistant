@@ -10,6 +10,18 @@ import SwiftUI
 struct GameAssetsView: View {
     @ObservedObject private var manager = FortDLManager.shared
     @State private var didAutoScrollToProgress = false
+    @State private var showBRCosmeticsWarning = false
+    @State private var brCosmeticsWarningMessage = ""
+    @State private var pendingWarningMode: BRCosmeticsMode? = nil
+    @State private var dontShowBRCosmeticsAgain = false
+    @State private var consoleUserScrolledAway = false
+    @State private var consoleViewportHeight: CGFloat = 0
+
+    @AppStorage("brCosmeticsWarningDisabled") private var brCosmeticsWarningDisabled = false
+    @AppStorage("brCosmeticsWarnedBattleRoyale") private var brCosmeticsWarnedBattleRoyale = false
+    @AppStorage("brCosmeticsWarnedRocketRacing") private var brCosmeticsWarnedRocketRacing = false
+    @AppStorage("brCosmeticsWarnedCreative") private var brCosmeticsWarnedCreative = false
+    @AppStorage("brCosmeticsWarnedFestival") private var brCosmeticsWarnedFestival = false
 
     private let bottomSpacerID = "BOTTOM_SPACER"
     private var showsProgressBar: Bool {
@@ -47,6 +59,41 @@ struct GameAssetsView: View {
                             Text(manager.manifestID ?? "Unknown")
                                 .font(.system(.body, design: .monospaced))
                                 .textSelection(.enabled)
+
+                            Spacer()
+
+                            Toggle("Manual", isOn: $manager.useManualManifest)
+                                .onChange(of: manager.useManualManifest) { enabled in
+                                    manager.setManualManifestEnabled(enabled)
+                                }
+                            .toggleStyle(.switch)
+                        }
+
+                        if manager.useManualManifest {
+                            HStack(spacing: 10) {
+                                Text("Manual Manifest ID:")
+                                TextField(
+                                    "Enter manifest ID",
+                                    text: $manager.manualManifestID
+                                )
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(.body, design: .monospaced))
+                                .frame(minWidth: 240)
+                                .onChange(of: manager.manualManifestID) { value in
+                                    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    if trimmed != value {
+                                        manager.manualManifestID = trimmed
+                                    }
+                                }
+                                .onSubmit {
+                                    manager.refreshManifest()
+                                }
+
+                                Button("Load") {
+                                    manager.refreshManifest()
+                                }
+                                .buttonStyle(.bordered)
+                            }
                         }
 
                         Divider()
@@ -107,6 +154,15 @@ struct GameAssetsView: View {
                                 .foregroundColor(.secondary)
                         }
 
+                        // MARK: Console Toggle + Output
+                        VStack(alignment: .leading, spacing: 10) {
+                            Toggle("Show console", isOn: $manager.showConsole)
+
+                            if manager.showConsole {
+                                consoleView
+                            }
+                        }
+
                         // MARK: Anchor point for auto-scroll
                         Color.clear
                             .frame(height: 1)
@@ -141,6 +197,30 @@ struct GameAssetsView: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showBRCosmeticsWarning, onDismiss: {
+            finalizeBRCosmeticsWarning()
+        }) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("BRCosmetics Required")
+                    .font(.title2)
+                    .fontWeight(.bold)
+
+                Text(brCosmeticsWarningMessage)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Toggle("Don’t show again", isOn: $dontShowBRCosmeticsAgain)
+
+                HStack {
+                    Spacer()
+                    Button("OK") {
+                        showBRCosmeticsWarning = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(24)
+            .frame(minWidth: 420)
         }
     }
 
@@ -192,6 +272,69 @@ struct GameAssetsView: View {
         80
     }
 
+    // MARK: - Console View
+
+    private var consoleView: some View {
+        GeometryReader { viewportProxy in
+            let height = viewportProxy.size.height
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(manager.logOutput)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            .textSelection(.enabled)
+                            .padding(8)
+
+                        GeometryReader { bottomProxy in
+                            Color.clear
+                                .preference(
+                                    key: ConsoleBottomOffsetKey.self,
+                                    value: bottomProxy.frame(in: .named("consoleScroll")).maxY
+                                )
+                        }
+                        .frame(height: 1)
+                        .id("consoleBottom")
+                    }
+                }
+                .coordinateSpace(name: "consoleScroll")
+                .background(Color(NSColor.textBackgroundColor).opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.secondary.opacity(0.3))
+                )
+                .gesture(
+                    DragGesture()
+                        .onChanged { _ in
+                            consoleUserScrolledAway = true
+                        }
+                )
+                .onChange(of: manager.logOutput) {
+                    if !consoleUserScrolledAway {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            proxy.scrollTo("consoleBottom", anchor: .bottom)
+                        }
+                    }
+                }
+                .onAppear {
+                    consoleViewportHeight = height
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        proxy.scrollTo("consoleBottom", anchor: .bottom)
+                    }
+                }
+                .onPreferenceChange(ConsoleBottomOffsetKey.self) { bottomY in
+                    consoleViewportHeight = height
+                    if bottomY <= height + 8 {
+                        consoleUserScrolledAway = false
+                    }
+                }
+            }
+        }
+        .frame(minHeight: 160, maxHeight: 220)
+    }
+
     // MARK: - Masonry layout (unchanged)
 
     private func masonryColumns(
@@ -230,6 +373,7 @@ struct GameAssetsView: View {
                     if selected {
                         manager.selectedLayers.insert(layer.name)
                         manager.selectedAssets.formUnion(layer.assets.map(\.name))
+                        handleBRCosmeticsWarning(for: layer.name)
                     } else {
                         manager.selectedLayers.remove(layer.name)
                         manager.selectedAssets.subtract(layer.assets.map(\.name))
@@ -287,5 +431,100 @@ struct GameAssetsView: View {
         .padding(manager.showAssets ? 16 : 10)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - BRCosmetics Warning
+
+    private func handleBRCosmeticsWarning(for layerName: String) {
+        guard !brCosmeticsWarningDisabled else { return }
+        guard let mode = requiredBRCosmeticsMode(for: layerName) else { return }
+        guard !isModeAlreadyWarned(mode) else { return }
+        guard !isBRCosmeticsSelected() else { return }
+
+        pendingWarningMode = mode
+        dontShowBRCosmeticsAgain = false
+        brCosmeticsWarningMessage =
+        """
+        This mode requires BRCosmetics. Please enable the cosmetics layer.
+
+        You only need to install BRCosmetics once per update. If you already installed it with another game mode, you do not need to install it again.
+        """
+        showBRCosmeticsWarning = true
+    }
+
+    private func requiredBRCosmeticsMode(for layerName: String) -> BRCosmeticsMode? {
+        let name = layerName.lowercased()
+        if name.contains("battle-royale") {
+            return .battleRoyale
+        }
+        if name.contains("rocket-racing") {
+            return .rocketRacing
+        }
+        if name.contains("creative") {
+            return .creative
+        }
+        if name.contains("festival") {
+            return .festival
+        }
+        return nil
+    }
+
+    private func isBRCosmeticsSelected() -> Bool {
+        if manager.selectedLayers.contains("cosmetics") {
+            return true
+        }
+        return manager.selectedAssets.contains("GFP_BRCosmetics")
+    }
+
+    private func finalizeBRCosmeticsWarning() {
+        guard let mode = pendingWarningMode else { return }
+
+        if dontShowBRCosmeticsAgain {
+            brCosmeticsWarningDisabled = true
+        }
+
+        markModeWarned(mode)
+        pendingWarningMode = nil
+    }
+
+    private func isModeAlreadyWarned(_ mode: BRCosmeticsMode) -> Bool {
+        switch mode {
+        case .battleRoyale:
+            return brCosmeticsWarnedBattleRoyale
+        case .rocketRacing:
+            return brCosmeticsWarnedRocketRacing
+        case .creative:
+            return brCosmeticsWarnedCreative
+        case .festival:
+            return brCosmeticsWarnedFestival
+        }
+    }
+
+    private func markModeWarned(_ mode: BRCosmeticsMode) {
+        switch mode {
+        case .battleRoyale:
+            brCosmeticsWarnedBattleRoyale = true
+        case .rocketRacing:
+            brCosmeticsWarnedRocketRacing = true
+        case .creative:
+            brCosmeticsWarnedCreative = true
+        case .festival:
+            brCosmeticsWarnedFestival = true
+        }
+    }
+}
+
+// MARK: - BRCosmetics Warning Modes
+private enum BRCosmeticsMode {
+    case battleRoyale
+    case rocketRacing
+    case creative
+    case festival
+}
+
+private struct ConsoleBottomOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
