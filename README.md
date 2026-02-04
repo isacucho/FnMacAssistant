@@ -35,7 +35,7 @@ https://www.python.org/ftp/python/3.14.3/python-3.14.3-macos11.pkg
 > [!NOTE]
 > It is highly recommended to use a virtual environment:
 > ```py
-> python3 -m venv .env # only needed once
+> python3 -m venv .env #only needed once
 > ```
 > Start the venv:
 >```py
@@ -44,7 +44,7 @@ https://www.python.org/ftp/python/3.14.3/python-3.14.3-macos11.pkg
 
 Install dependencies:
 ```sh
-pip3 install -r src/requirements.txt
+pip3 install -r src/requirements.txt #only needed once
 ```
 
 Run FnMacAssistant:
