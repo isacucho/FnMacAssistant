@@ -26,7 +26,8 @@
 		308A54702EC6F21800D136F6 /* InGameDownloadRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A546F2EC6F20F00D136F6 /* InGameDownloadRowView.swift */; };
 		308A54742EC78BFC00D136F6 /* FortniteContainerLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */; };
 		309947AF2EC3ADFE008B1F2A /* PatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309947AE2EC3ADFE008B1F2A /* PatchView.swift */; };
-		30E6109E2F12161A00A0C310 /* fort-dl in Copy Files */ = {isa = PBXBuildFile; fileRef = 30E6109B2F12153400A0C310 /* fort-dl */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		30DCDF522F226E8F000D6758 /* fort-dl in Resources */ = {isa = PBXBuildFile; fileRef = 30DCDF512F226E8F000D6758 /* fort-dl */; };
+		30DCDF532F226EF2000D6758 /* fort-dl in Copy Files */ = {isa = PBXBuildFile; fileRef = 30DCDF512F226E8F000D6758 /* fort-dl */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -36,7 +37,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 6;
 			files = (
-				30E6109E2F12161A00A0C310 /* fort-dl in Copy Files */,
+				30DCDF532F226EF2000D6758 /* fort-dl in Copy Files */,
 			);
 			name = "Copy Files";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -64,7 +65,7 @@
 		308A546F2EC6F20F00D136F6 /* InGameDownloadRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameDownloadRowView.swift; sourceTree = "<group>"; };
 		308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortniteContainerLocator.swift; sourceTree = "<group>"; };
 		309947AE2EC3ADFE008B1F2A /* PatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchView.swift; sourceTree = "<group>"; };
-		30E6109B2F12153400A0C310 /* fort-dl */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "fort-dl"; sourceTree = "<group>"; };
+		30DCDF512F226E8F000D6758 /* fort-dl */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "fort-dl"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,7 +104,7 @@
 				3008A9142EBD2FD100647857 /* Models */,
 				3008A90B2EBD2FCC00647857 /* Assets.xcassets */,
 				3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */,
-				30E6109B2F12153400A0C310 /* fort-dl */,
+				30DCDF512F226E8F000D6758 /* fort-dl */,
 			);
 			path = FnMacAssistant;
 			sourceTree = "<group>";
@@ -216,6 +217,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3008A9122EBD2FCC00647857 /* Assets.xcassets in Resources */,
+				30DCDF522F226E8F000D6758 /* fort-dl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -385,7 +387,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = R9V4FFR4Q5;
+				DEVELOPMENT_TEAM = Q662HCB3TY;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -421,7 +423,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = R9V4FFR4Q5;
+				DEVELOPMENT_TEAM = Q662HCB3TY;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
