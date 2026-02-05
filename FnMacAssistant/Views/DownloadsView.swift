@@ -20,58 +20,43 @@ struct DownloadsView: View {
             // MARK: - Main Content
             VStack(alignment: .leading, spacing: 20) {
 
-                // MARK: Header
-                HStack {
-                    Text("Available IPAs")
-                        .font(.largeTitle)
-                        .bold()
+                headerSection
 
-                    Spacer()
-
-                    if ipaFetcher.isLoading {
-                        ProgressView().scaleEffect(0.9)
-                    } else {
-                        Button {
-                            Task { await refreshIPAs() }
-                        } label: {
-                            Label("Refresh", systemImage: "arrow.clockwise")
+                glassSection {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Latest Version")
+                                .font(.headline)
+                            Spacer()
+                            Text(shownVersion ?? (ipaFetcher.isLoading ? "Fetching…" : "N/A"))
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .foregroundColor(.secondary)
                         }
-                        .buttonStyle(.bordered)
-                    }
-                }
 
-                // MARK: Version Banner
-                HStack {
-                    Text("Latest Version: \(shownVersion ?? (ipaFetcher.isLoading ? "Fetching…" : "N/A"))")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 12)
-                        .background(
-                            LinearGradient(
-                                colors: [.blue.opacity(0.85), .purple.opacity(0.85)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .shadow(radius: 4, y: 2)
+                        HStack {
+                            Picker("Select IPA:", selection: $ipaFetcher.selectedIPA) {
+                                ForEach(ipaFetcher.availableIPAs) { ipa in
+                                    Text(ipa.name).tag(Optional(ipa))
+                                }
+                            }
+                            .font(.system(size: 14, weight: .semibold))
+                            .pickerStyle(.menu)
+                            .frame(minWidth: 260)
 
-                    Spacer()
-                }
-                .padding(.bottom, 6)
+                            Spacer()
 
-                // MARK: IPA Picker
-                HStack {
-                    Picker("Select IPA:", selection: $ipaFetcher.selectedIPA) {
-                        ForEach(ipaFetcher.availableIPAs) { ipa in
-                            Text(ipa.name).tag(Optional(ipa))
+                            if ipaFetcher.isLoading {
+                                ProgressView().scaleEffect(0.9)
+                            } else {
+                                Button {
+                                    Task { await refreshIPAs() }
+                                } label: {
+                                    Label("Refresh", systemImage: "arrow.clockwise")
+                                }
+                                .buttonStyle(.bordered)
+                            }
                         }
                     }
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .pickerStyle(.menu)
-                    .frame(minWidth: 260)
                 }
                 .onAppear {
                     Task { await refreshIPAs() }
@@ -79,21 +64,24 @@ struct DownloadsView: View {
 
                 // MARK: Selected IPA Info
                 if let ipa = ipaFetcher.selectedIPA {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(ipa.name)
-                                .font(.title3)
-                                .bold()
+                    glassSection {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(ipa.name)
+                                    .font(.title3)
+                                    .bold()
 
-                            Text(ipaInfo(for: ipa.name))
-                                .font(.system(size: 15))
-                                .foregroundColor(.primary)
-                                .lineSpacing(4)
-                                .fixedSize(horizontal: false, vertical: true)
+                                Text(ipaInfo(for: ipa.name))
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.primary)
+                                    .lineSpacing(4)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.trailing, 6)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 10)
-                        .padding(.bottom, 80)
+                        .scrollIndicators(.visible)
+                        .frame(maxHeight: 240)
                     }
                 } else {
                     Text("No IPA selected")
@@ -102,70 +90,97 @@ struct DownloadsView: View {
 
                 // MARK: Active Download Bubble
                 if let active = downloadManager.downloads.first {
-                    VStack(alignment: .leading, spacing: 10) {
+                    glassSection {
+                        VStack(alignment: .leading, spacing: 10) {
 
-                        HStack {
-                            Text("Downloading \(active.fileName)")
-                                .font(.headline)
-                                .lineLimit(1)
+                            HStack {
+                                Text(active.fileName)
+                                    .font(.headline)
+                                    .lineLimit(1)
 
-                            Spacer()
+                                Spacer()
 
-                            if active.state == .finished {
-                                Button(role: .destructive) {
-                                    withAnimation {
-                                        downloadManager.clearDownloads()
-                                    }
-                                } label: {
-                                    Label("Clear", systemImage: "trash.fill")
+                                if active.state == .finished {
+                                    Text("Completed")
+                                        .font(.caption2)
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 8)
+                                        .background(Color.green.opacity(0.15))
+                                        .foregroundColor(.green)
+                                        .clipShape(Capsule())
+                                } else if active.state == .paused {
+                                    Text("Paused")
+                                        .font(.caption2)
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 8)
+                                        .background(Color.orange.opacity(0.15))
+                                        .foregroundColor(.orange)
+                                        .clipShape(Capsule())
+                                } else {
+                                    Text("Downloading")
+                                        .font(.caption2)
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 8)
+                                        .background(Color.accentColor.opacity(0.15))
+                                        .foregroundColor(.accentColor)
+                                        .clipShape(Capsule())
                                 }
-                                .buttonStyle(.bordered)
-                            } else {
-                                Button {
-                                    downloadManager.pauseOrResume(active)
-                                } label: {
-                                    Label(
-                                        active.state == .paused ? "Resume" : "Pause",
-                                        systemImage: active.state == .paused ? "play.fill" : "pause.fill"
-                                    )
-                                }
-                                .buttonStyle(.bordered)
-
-                                Button(role: .destructive) {
-                                    withAnimation {
-                                        downloadManager.cancelCurrentDownload()
-                                        downloadManager.clearDownloads()
-                                    }
-                                } label: {
-                                    Label("Cancel", systemImage: "xmark.circle.fill")
-                                }
-                                .buttonStyle(.bordered)
                             }
-                        }
 
-                        VStack(alignment: .leading, spacing: 6) {
-                            ProgressView(value: active.progress)
-                                .progressViewStyle(.linear)
+                            VStack(alignment: .leading, spacing: 6) {
+                                ProgressView(value: active.progress)
+                                    .progressViewStyle(.linear)
 
-                            let downloaded = formatBytes(active.totalBytesWritten)
-                            let total = formatBytes(active.totalBytesExpected)
+                                let downloaded = formatBytes(active.totalBytesWritten)
+                                let total = formatBytes(active.totalBytesExpected)
 
-                            if active.state == .finished {
-                                Text("✅ Download Complete")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.green)
-                            } else {
-                                Text("\(downloaded) / \(total) downloaded")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                if active.state == .finished {
+                                    Text("Download complete")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.green)
+                                } else {
+                                    Text("\(downloaded) / \(total) downloaded")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+
+                            HStack {
+                                if active.state == .finished {
+                                    Button(role: .destructive) {
+                                        withAnimation {
+                                            downloadManager.clearDownloads()
+                                        }
+                                    } label: {
+                                        Label("Clear", systemImage: "trash.fill")
+                                    }
+                                    .buttonStyle(.bordered)
+                                } else {
+                                    Button {
+                                        downloadManager.pauseOrResume(active)
+                                    } label: {
+                                        Label(
+                                            active.state == .paused ? "Resume" : "Pause",
+                                            systemImage: active.state == .paused ? "play.fill" : "pause.fill"
+                                        )
+                                    }
+                                    .buttonStyle(.bordered)
+
+                                    Button(role: .destructive) {
+                                        withAnimation {
+                                            downloadManager.cancelCurrentDownload()
+                                            downloadManager.clearDownloads()
+                                        }
+                                    } label: {
+                                        Label("Cancel", systemImage: "xmark.circle.fill")
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                                Spacer()
                             }
                         }
                     }
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .shadow(radius: 3, y: 2)
                 }
 
                 Spacer(minLength: 20)
@@ -198,6 +213,29 @@ struct DownloadsView: View {
             Button("Keep Current", role: .cancel) {}
         } message: {
             Text("Another download is already in progress.")
+        }
+    }
+
+    private var headerSection: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 42, height: 42)
+                Image(systemName: "square.and.arrow.down.fill")
+                    .foregroundColor(.accentColor)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("IPA Downloads")
+                    .font(.largeTitle)
+                    .bold()
+                Text(ipaFetcher.isLoading ? "Loading releases…" : "Ready")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
         }
     }
 
@@ -284,5 +322,20 @@ https://discord.gg/nfEBGJBfHD
         }
 
         return text
+    }
+
+    @ViewBuilder
+    private func glassSection<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.1))
+            )
     }
 }

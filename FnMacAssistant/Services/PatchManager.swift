@@ -18,12 +18,15 @@ final class PatchManager: ObservableObject {
     @MainActor @Published var logMessages: [String] = []
     
     private let fortniteAppPath = "/Applications/Fortnite.app"
+    private let altFortniteAppPath = "/Applications/Fortnite-1.app"
+    private let legacyFortniteAppPath = "/Applications/FortniteClient-IOS-Shipping.app"
     
     private init() {}
     
     // MARK: - Public Entry Point
     @MainActor
     func startPatch() {
+        // Allow re-patching attempts even if already completed in this session
         patchAttempts += 1
         if patchAttempts >= 3 {
             showRepeatedPatchWarning()
@@ -39,6 +42,8 @@ final class PatchManager: ObservableObject {
     private func runPatch() async {
         log("Starting patch process...")
         setState(isPatching: true, completed: false)
+
+        normalizeFortniteAppName()
         
         guard FileManager.default.fileExists(atPath: fortniteAppPath) else {
             log("Fortnite is not installed. Please sideload it first.")
@@ -46,58 +51,67 @@ final class PatchManager: ObservableObject {
             return
         }
         
-        log("Launching Fortnite to verify installation...")
+        log("Launching Fortnite...")
         let launched = await runShellLaunch()
         guard launched else {
             log("Failed to launch Fortnite. Try opening it manually once.")
             finish(false)
             return
         }
-        
-        log("Waiting for Fortnite to start...")
-        var started = false
-        for _ in 0..<35 {
-            if isFortniteRunning() { started = true; break }
-            try? await Task.sleep(nanoseconds: 500_000_000)
-        }
-        
-        guard started else {
-            log("Patch cancelled: Fortnite is already patched, or macOS blocked it from running.")
-            log("Go to System Settings → Privacy & Security and click 'Open Anyway' to allow Fortnite to run.")
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?General") {
-                NSWorkspace.shared.open(url)
+
+        log("Waiting up to 7 seconds before applying patch...")
+        let start = Date()
+        var wasRunning = false
+        while Date().timeIntervalSince(start) < 7 {
+            if isFortniteRunning() {
+                wasRunning = true
+            } else if wasRunning {
+                log("Fortnite closed early — applying patch now...")
+                break
             }
-            finish(false)
-            return
-        }
-        
-        log("Fortnite launched. Monitoring process...")
-        
-        var lifetimeSeconds = 0
-        while isFortniteRunning() {
             try? await Task.sleep(nanoseconds: 500_000_000)
-            lifetimeSeconds += 1
-            if lifetimeSeconds > 60 { break }
         }
-        
-        if lifetimeSeconds > 20 {
-            log("Patch cancelled: Fortnite is already patched or the sideload method used does not require patching.")
-            finish(false)
-            return
-        }
-        
-        log("Fortnite closed — proceeding with patching...")
         
         log("Applying patch...")
-        let success = await applyProvisionPatch()
-        if success {
+        let result = await applyProvisionPatch()
+        switch result {
+        case .success:
             log("Patch successfully applied. You can now open Fortnite.")
-        } else {
+            finish(true)
+        case .alreadyApplied:
+            log("Patch already applied. No changes were made.")
+            finish(false)
+        case .failed:
             log("Failed to apply patch. If this happened due to permissions, grant Full Disk Access to FnMacAssistant and try again.")
             await promptFullDiskAccess()
+            finish(false)
         }
-        
-        finish(success)
+    }
+
+    // MARK: - Normalize App Name
+    private func normalizeFortniteAppName() {
+        let fm = FileManager.default
+        let altExists = fm.fileExists(atPath: altFortniteAppPath)
+        let legacyExists = fm.fileExists(atPath: legacyFortniteAppPath)
+        guard altExists || legacyExists else { return }
+
+        let preferredPath = altExists ? altFortniteAppPath : legacyFortniteAppPath
+
+        if fm.fileExists(atPath: fortniteAppPath) {
+            do {
+                try fm.removeItem(atPath: fortniteAppPath)
+            } catch {
+                log("Failed to remove existing Fortnite.app. \(error.localizedDescription)")
+                return
+            }
+        }
+
+        do {
+            try fm.moveItem(atPath: preferredPath, toPath: fortniteAppPath)
+            log("Renamed Fortnite app to Fortnite.app")
+        } catch {
+            log("Failed to rename Fortnite app. \(error.localizedDescription)")
+        }
     }
     
     // MARK: - Launch via shell
@@ -119,11 +133,11 @@ final class PatchManager: ObservableObject {
     }
     
     // MARK: - Patch embedded.mobileprovision
-    private func applyProvisionPatch() async -> Bool {
+    private func applyProvisionPatch() async -> PatchResult {
         let provisionPath = fortniteAppPath + "/Wrapper/FortniteClient-IOS-Shipping.app/embedded.mobileprovision"
         guard FileManager.default.fileExists(atPath: provisionPath) else {
             log("Could not find the embedded provisioning file.")
-            return false
+            return .failed
         }
         
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("FnMacAssistant-cache", isDirectory: true)
@@ -137,7 +151,7 @@ final class PatchManager: ObservableObject {
             try FileManager.default.copyItem(atPath: provisionPath, toPath: tempURL.path)
         } catch {
             log("Unable to copy provisioning file.")
-            return false
+            return .failed
         }
         
         do {
@@ -145,13 +159,19 @@ final class PatchManager: ObservableObject {
             guard let xmlStart = data.range(of: Data("<?xml".utf8))?.lowerBound,
                   let xmlEnd = data.lastRange(of: Data("</plist>".utf8))?.upperBound else {
                 log("Could not locate the XML section in the provisioning file.")
-                return false
+                return .failed
             }
             
             let xmlData = data.subdata(in: xmlStart..<xmlEnd)
             guard var xml = String(data: xmlData, encoding: .utf8) else {
                 log("Unable to read provisioning XML.")
-                return false
+                return .failed
+            }
+
+            let keyA = "com.apple.developer.kernel.extended-virtual-addressing"
+            let keyB = "com.apple.developer.kernel.increased-memory-limit"
+            if xml.contains(keyA) && xml.contains(keyB) {
+                return .alreadyApplied
             }
             
             let patch = """
@@ -167,7 +187,7 @@ final class PatchManager: ObservableObject {
                 xml.insert(contentsOf: patch, at: dictClose.lowerBound)
             } else {
                 log("Could not find the entitlements section.")
-                return false
+                return .failed
             }
             
             let newXML = xml.data(using: .utf8)!
@@ -175,7 +195,7 @@ final class PatchManager: ObservableObject {
             try data.write(to: tempURL, options: .atomic)
         } catch {
             log("Failed to modify provisioning file.")
-            return false
+            return .failed
         }
         
         log("Replacing provisioning file...")
@@ -183,7 +203,7 @@ final class PatchManager: ObservableObject {
         if !success {
             log("Failed to replace provisioning file. Check if FnMacAssistant has Full Disk Access.")
         }
-        return success
+        return success ? .success : .failed
     }
     
     // MARK: - Shell Move Helper
@@ -287,4 +307,11 @@ final class PatchManager: ObservableObject {
             }
         }
     }
+
+}
+
+private enum PatchResult {
+    case success
+    case alreadyApplied
+    case failed
 }

@@ -11,26 +11,24 @@ struct SettingsView: View {
     @ObservedObject var downloadManager = DownloadManager.shared
     @StateObject private var containerLocator = FortniteContainerLocator.shared
     @State private var showResetConfirm = false
+    @State private var showFullDiskAlert = false
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
 
-                // MARK: - Title
-                Text("Settings")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.horizontal, 8)
+                headerSection
+
+                Text("Manage downloads, container location, and notifications.")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
 
                 VStack(alignment: .leading, spacing: 16) {
 
                     // MARK: - Download Settings
                     Text("Download Settings")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 4)
+                        .font(.headline)
 
                     // ===== Download Folder Section =====
                     glassSection {
@@ -101,7 +99,7 @@ struct SettingsView: View {
                                 if let found = containerLocator.locateContainer() {
                                     containerLocator.cachedPath = found
                                 } else {
-                                    NSSound.beep()
+                                    showFullDiskAlert = true
                                 }
                             }
 
@@ -131,24 +129,42 @@ struct SettingsView: View {
                     }
                 }
 
-                // MARK: - Reset Settings
+                // MARK: - Notifications
                 glassSection {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Reset Settings")
+                        Text("Notifications")
                             .font(.headline)
 
-                        Text("Reset all preferences back to default values.")
-                            .font(.system(size: 13))
-                            .foregroundColor(.secondary)
+                        Text("""
+FnMacAssistant uses notifications to let you know when game assets finish installing.
+You can disable them at any time.
+""")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
 
-                        HStack {
-                            Button(role: .destructive) {
-                                showResetConfirm = true
-                            } label: {
-                                Text("Reset All Settings")
+                        Toggle("Enable notifications", isOn: $notificationsEnabled)
+                            .onChange(of: notificationsEnabled) { enabled in
+                                if enabled {
+                                    NotificationHelper.shared.requestAuthorization()
+                                }
                             }
-                        }
                     }
+                }
+
+                Divider()
+
+                HStack {
+                    Spacer()
+                    Button(role: .destructive) {
+                        showResetConfirm = true
+                    } label: {
+                        Text("Reset All Settings")
+                            .foregroundColor(.red)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                    }
+                    .buttonStyle(.plain)
+                    Spacer()
                 }
             }
             .padding(24)
@@ -161,6 +177,20 @@ struct SettingsView: View {
             }
         } message: {
             Text("This will reset download location, container path, manual manifest settings, and warning preferences.")
+        }
+        .alert("Full Disk Access Needed", isPresented: $showFullDiskAlert) {
+            Button("Open Settings") {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("""
+FnMacAssistant needs Full Disk Access to locate Fortnite's container.
+
+Open System Settings > Privacy & Security > Full Disk Access, then add and enable FnMacAssistant.
+""")
         }
     }
 
@@ -193,10 +223,34 @@ struct SettingsView: View {
         defaults.removeObject(forKey: "defaultDownloadFolderPath")
         defaults.removeObject(forKey: "FortniteContainerPath")
         defaults.removeObject(forKey: "fortdlManualManifestID")
+        defaults.removeObject(forKey: "notificationsEnabled")
         defaults.removeObject(forKey: "brCosmeticsWarningDisabled")
         defaults.removeObject(forKey: "brCosmeticsWarnedBattleRoyale")
         defaults.removeObject(forKey: "brCosmeticsWarnedRocketRacing")
         defaults.removeObject(forKey: "brCosmeticsWarnedCreative")
         defaults.removeObject(forKey: "brCosmeticsWarnedFestival")
+    }
+
+    private var headerSection: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 42, height: 42)
+                Image(systemName: "gearshape.fill")
+                    .foregroundColor(.accentColor)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Settings")
+                    .font(.largeTitle)
+                    .bold()
+                Text("Customize preferences")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
     }
 }

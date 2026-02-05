@@ -39,119 +39,121 @@ struct GameAssetsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
 
-                        Text("Game Assets")
-                            .font(.largeTitle)
-                            .bold()
+                        headerSection
 
                         Text("Download Fortnite game assets without launching the game.")
+                            .font(.system(size: 14))
                             .foregroundColor(.secondary)
 
-                        Divider()
-
-                        HStack {
-                            Text("Build:")
-                            Text(manager.buildVersion ?? "Unknown")
-                                .fontWeight(.semibold)
-                        }
-
-                        HStack {
-                            Text("Manifest ID:")
-                            Text(manager.manifestID ?? "Unknown")
-                                .font(.system(.body, design: .monospaced))
-                                .textSelection(.enabled)
-
-                            Spacer()
-
-                            Toggle("Manual", isOn: $manager.useManualManifest)
-                                .onChange(of: manager.useManualManifest) { enabled in
-                                    manager.setManualManifestEnabled(enabled)
+                        glassSection {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Text("Build")
+                                    Spacer()
+                                    Text(manager.buildVersion ?? "Unknown")
+                                        .fontWeight(.semibold)
                                 }
-                            .toggleStyle(.switch)
-                        }
 
-                        if manager.useManualManifest {
-                            HStack(spacing: 10) {
-                                Text("Manual Manifest ID:")
-                                TextField(
-                                    "Enter manifest ID",
-                                    text: $manager.manualManifestID
-                                )
-                                .textFieldStyle(.roundedBorder)
-                                .font(.system(.body, design: .monospaced))
-                                .frame(minWidth: 240)
-                                .onChange(of: manager.manualManifestID) { value in
-                                    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    if trimmed != value {
-                                        manager.manualManifestID = trimmed
+                                HStack {
+                                    Text("Manifest ID")
+                                    Text(manager.manifestID ?? "Unknown")
+                                        .font(.system(.body, design: .monospaced))
+                                        .textSelection(.enabled)
+
+                                    Spacer()
+
+                                    Toggle("Manual", isOn: $manager.useManualManifest)
+                                        .onChange(of: manager.useManualManifest) { enabled in
+                                            manager.setManualManifestEnabled(enabled)
+                                        }
+                                    .toggleStyle(.switch)
+                                }
+
+                                if manager.useManualManifest {
+                                    HStack(spacing: 10) {
+                                        Text("Manual Manifest ID")
+                                        TextField(
+                                            "Enter manifest ID",
+                                            text: $manager.manualManifestID
+                                        )
+                                        .textFieldStyle(.roundedBorder)
+                                        .font(.system(.body, design: .monospaced))
+                                        .frame(minWidth: 240)
+                                        .onChange(of: manager.manualManifestID) { value in
+                                            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                                            if trimmed != value {
+                                                manager.manualManifestID = trimmed
+                                            }
+                                        }
+                                        .onSubmit {
+                                            manager.refreshManifest()
+                                        }
+
+                                        Button("Load") {
+                                            manager.refreshManifest()
+                                        }
+                                        .buttonStyle(.bordered)
                                     }
                                 }
-                                .onSubmit {
-                                    manager.refreshManifest()
-                                }
 
-                                Button("Load") {
-                                    manager.refreshManifest()
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
+                                Divider()
 
-                        Divider()
-
-                        Toggle(
-                            "Download all assets (\(manager.totalDownloadSize ?? "—"))",
-                            isOn: $manager.downloadAllAssets
-                        )
-                        .onChange(of: manager.downloadAllAssets) { enabled in
-                            if enabled {
-                                manager.selectedLayers = Set(manager.layers.map(\.name))
-                                manager.selectedAssets = Set(
-                                    manager.layers.flatMap { $0.assets.map(\.name) }
+                                Toggle(
+                                    "Download all assets (\(manager.totalDownloadSize ?? "—"))",
+                                    isOn: $manager.downloadAllAssets
                                 )
-                            } else {
-                                manager.selectedLayers.removeAll()
-                                manager.selectedAssets.removeAll()
-                            }
-                        }
-
-                        Toggle("Show individual tags", isOn: $manager.showAssets)
-
-                        Divider()
-
-                        let columnCount = manager.showAssets ? 2 : 4
-                        let columns = masonryColumns(
-                            layers: manager.layers,
-                            columnCount: columnCount
-                        )
-
-                        HStack(alignment: .top, spacing: 12) {
-                            ForEach(columns.indices, id: \.self) { columnIndex in
-                                VStack(spacing: 12) {
-                                    ForEach(columns[columnIndex]) { layer in
-                                        LayerCard(layer: layer)
+                                .onChange(of: manager.downloadAllAssets) { enabled in
+                                    if enabled {
+                                        manager.selectedLayers = Set(manager.layers.map(\.name))
+                                        manager.selectedAssets = Set(
+                                            manager.layers.flatMap { $0.assets.map(\.name) }
+                                        )
+                                    } else {
+                                        manager.selectedLayers.removeAll()
+                                        manager.selectedAssets.removeAll()
                                     }
                                 }
-                                .frame(maxWidth: .infinity)
+
+                                Toggle("Show individual tags", isOn: $manager.showAssets)
                             }
                         }
 
-                        HStack {
-                            Button("Download Selected Assets") {
-                                manager.download()
-                                didAutoScrollToProgress = false
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(
-                                !manager.downloadAllAssets &&
-                                manager.selectedLayers.isEmpty &&
-                                manager.selectedAssets.isEmpty
+                        glassSection {
+                            let columnCount = manager.showAssets ? 2 : 4
+                            let columns = masonryColumns(
+                                layers: manager.layers,
+                                columnCount: columnCount
                             )
 
-                            Spacer()
+                            HStack(alignment: .top, spacing: 12) {
+                                ForEach(columns.indices, id: \.self) { columnIndex in
+                                    VStack(spacing: 12) {
+                                        ForEach(columns[columnIndex]) { layer in
+                                            LayerCard(layer: layer)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                            }
 
-                            Text("Total download size: \(manager.selectedDownloadSizeLabel)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            HStack {
+                                Button("Download Selected Assets") {
+                                    manager.download()
+                                    didAutoScrollToProgress = false
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(
+                                    !manager.downloadAllAssets &&
+                                    manager.selectedLayers.isEmpty &&
+                                    manager.selectedAssets.isEmpty
+                                )
+
+                                Spacer()
+
+                                Text("Total download size: \(manager.selectedDownloadSizeLabel)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                         }
 
                         // MARK: Console Toggle + Output
@@ -255,6 +257,22 @@ struct GameAssetsView: View {
                         .buttonStyle(.plain)
                         .help("Cancel download")
                     }
+                } else if manager.isDone {
+                    HStack(spacing: 8) {
+                    Button {
+                        openFortnite()
+                    } label: {
+                        Label("Open Fortnite", systemImage: "gamecontroller.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    
+                        Button(role: .destructive) {
+                            manager.clearCompletedDownload()
+                        } label: {
+                            Label("Close", systemImage: "xmark.circle.fill")
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
             .font(.caption)
@@ -270,6 +288,13 @@ struct GameAssetsView: View {
 
     private var progressBarHeight: CGFloat {
         80
+    }
+
+    private func openFortnite() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["/Applications/Fortnite.app"]
+        try? process.run()
     }
 
     // MARK: - Console View
@@ -511,6 +536,44 @@ struct GameAssetsView: View {
         case .festival:
             brCosmeticsWarnedFestival = true
         }
+    }
+
+    private var headerSection: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 42, height: 42)
+                Image(systemName: "shippingbox.fill")
+                    .foregroundColor(.accentColor)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Game Assets")
+                    .font(.largeTitle)
+                    .bold()
+                Text(manager.isDownloading ? "Downloading…" : "Ready")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func glassSection<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.1))
+            )
     }
 }
 
