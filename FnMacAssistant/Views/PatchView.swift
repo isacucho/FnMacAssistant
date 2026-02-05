@@ -11,70 +11,91 @@ struct PatchView: View {
     @StateObject private var patchManager = PatchManager.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .center, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.15))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .foregroundColor(.accentColor)
+                }
 
-            // MARK: - Title
-            Text("Fortnite Mac Patcher")
-                .font(.largeTitle)
-                .bold()
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Fortnite Mac Patcher")
+                        .font(.largeTitle)
+                        .bold()
+                    Text(statusText)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
-            // MARK: - Description
+                Spacer()
+
+                if patchManager.patchCompleted {
+                    Text("Patched")
+                        .font(.caption2)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color.green.opacity(0.15))
+                        .foregroundColor(.green)
+                        .clipShape(Capsule())
+                } else if patchManager.isPatching {
+                    Text("Working…")
+                        .font(.caption2)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color.accentColor.opacity(0.15))
+                        .foregroundColor(.accentColor)
+                        .clipShape(Capsule())
+                }
+            }
+
             Text("""
-To run Fortnite on macOS, the game requires special entitlements.
-This patch adds those entitlements to the embedded.mobileprovision file,
-allowing Fortnite to launch correctly.
-
-The patch will open Fortnite automatically. Once it crashes,
-the patch will be applied.
+This patch adds the required entitlements to Fortnite’s embedded provisioning file.
+FnMacAssistant will open Fortnite, wait a few seconds, then apply the patch.
 """)
-            .font(.system(size: 15))
+            .font(.system(size: 14))
             .foregroundColor(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
-            // MARK: - Patch + Open Fortnite Buttons
-            HStack(spacing: 12) {
-
-                // PATCH BUTTON
-                Button {
-                    patchManager.startPatch()
-                } label: {
-                    ZStack {
-                        Text("Apply Patch")
-                            .font(.system(size: 15, weight: .semibold))
-                            .opacity(0)
-
-                        if patchManager.isPatching {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle())
-                        } else if patchManager.patchCompleted {
-                            Text("Patch Applied")
-                                .font(.system(size: 15, weight: .semibold))
-                        } else {
-                            Text("Apply Patch")
+            glassSection {
+                HStack(spacing: 12) {
+                    Button {
+                        patchManager.startPatch()
+                    } label: {
+                        HStack(spacing: 8) {
+                            if patchManager.isPatching {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle())
+                            } else {
+                                Image(systemName: patchManager.patchCompleted ? "checkmark.circle.fill" : "bolt.fill")
+                            }
+                            Text(patchManager.patchCompleted ? "Patch Applied" : "Apply Patch")
                                 .font(.system(size: 15, weight: .semibold))
                         }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
                     }
-                    .padding(.vertical, 8)
-                    .frame(width: 140)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(patchManager.isPatching)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(patchManager.isPatching)
 
-                if patchManager.patchCompleted {
-                    Button {
-                        launchFortniteViaShell()
-                    } label: {
-                        Text("Open Fortnite")
-                            .font(.system(size: 15, weight: .semibold))
-                            .padding(.vertical, 8)
-                            .frame(width: 140)
+                    Spacer()
+
+                    if patchManager.patchCompleted {
+                        Button {
+                            launchFortniteViaShell()
+                        } label: {
+                            Label("Open Fortnite", systemImage: "gamecontroller.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 12)
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.bordered)
                 }
             }
-            .padding(.top, 4)
 
-            // MARK: - Console Log
             VStack(alignment: .leading, spacing: 6) {
                 Text("Console Output")
                     .font(.headline)
@@ -82,11 +103,11 @@ the patch will be applied.
                 ScrollViewReader { proxy in
                     ScrollView {
                         Text(patchManager.logMessages.joined(separator: "\n"))
-                            .font(.system(size: 13, design: .monospaced))
+                            .font(.system(size: 12, design: .monospaced))
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .topLeading)
                             .padding(8)
-                            .textSelection(.enabled)   // ← allows full multiline selection
+                            .textSelection(.enabled)
                             .id("consoleText")
 
                         Color.clear
@@ -102,7 +123,7 @@ the patch will be applied.
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.3))
+                            .stroke(Color.secondary.opacity(0.25))
                     )
                     .frame(minHeight: 180, maxHeight: 220)
                 }
@@ -110,8 +131,20 @@ the patch will be applied.
 
             Spacer()
         }
-        .padding(32)
+        .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+private extension PatchView {
+    var statusText: String {
+        if patchManager.isPatching {
+            return "Applying patch…"
+        }
+        if patchManager.patchCompleted {
+            return "Ready to launch"
+        }
+        return "Ready"
     }
 }
 
@@ -124,5 +157,22 @@ private func launchFortniteViaShell() {
         process.arguments = ["/Applications/Fortnite.app"]
 
         do { try process.run() } catch { }
+    }
+}
+
+private extension PatchView {
+    @ViewBuilder
+    func glassSection<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.1))
+            )
     }
 }

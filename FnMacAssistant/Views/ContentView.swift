@@ -29,8 +29,8 @@ struct ContentView: View {
                     PatchView()
                 case .gameAssets:
                     GameAssetsView()
-                case .inGameDownloads:
-                    InGameDownloadsView()
+                case .faq:
+                    FAQView()
                 case .settings:
                     SettingsView()
                 }
@@ -84,10 +84,10 @@ struct SidebarView: View {
                     isSelected: selection == .gameAssets
                 ) { selection = .gameAssets }
                 SidebarButton(
-                    label: "In-Game Downloads",
-                    systemImage: "arrow.down.app.dashed",
-                    isSelected: selection == .inGameDownloads
-                ) { selection = .inGameDownloads }
+                    label: "FAQ",
+                    systemImage: "questionmark.circle.fill",
+                    isSelected: selection == .faq
+                ) { selection = .faq }
                 
                 SidebarButton(
                     label: "Settings",
@@ -160,6 +160,6 @@ enum SidebarSection {
     case downloads
     case patch
     case gameAssets
-    case inGameDownloads
+    case faq
     case settings
 }

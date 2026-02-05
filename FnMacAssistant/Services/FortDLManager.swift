@@ -53,6 +53,7 @@ final class FortDLManager: ObservableObject {
     @Published var isDone = false
     
     private var activeProcess: Process?
+    private var didNotifyForCurrentDownload = false
 
     private var cancellables: Set<AnyCancellable> = []
 
@@ -82,6 +83,7 @@ final class FortDLManager: ObservableObject {
     }
     
     var downloadProgress: Double {
+        if isDone { return 1 }
         guard totalBytes > 0 else { return 0 }
         return Double(downloadedBytes) / Double(totalBytes)
     }
@@ -206,6 +208,7 @@ final class FortDLManager: ObservableObject {
         isDownloading = true
         downloadedBytes = 0
         totalBytes = 0
+        didNotifyForCurrentDownload = false
         
         clearFortDLCache()
         runFortDL(arguments: args)
@@ -334,6 +337,7 @@ final class FortDLManager: ObservableObject {
             isInstalling = false
             isDone = true
             clearFortDLCache()
+            notifyIfNeeded()
         }
     }
     
@@ -450,6 +454,7 @@ final class FortDLManager: ObservableObject {
                 isDownloading = false
                 isInstalling = false
                 isDone = true
+                notifyIfNeeded()
             }
         }
     }
@@ -503,11 +508,33 @@ final class FortDLManager: ObservableObject {
         isDownloading = false
         isInstalling = false
         isDone = false
+        didNotifyForCurrentDownload = false
 
         downloadedBytes = 0
         totalBytes = 0
 
         clearFortDLCache()
+    }
+
+    func clearCompletedDownload() {
+        guard isDone else { return }
+        isDone = false
+        isDownloading = false
+        isInstalling = false
+        downloadedBytes = 0
+        totalBytes = 0
+        downloadStartDate = nil
+    }
+
+    private func notifyIfNeeded() {
+        guard !didNotifyForCurrentDownload else { return }
+        didNotifyForCurrentDownload = true
+        let enabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+        guard enabled else { return }
+        NotificationHelper.shared.post(
+            title: "Game assets installed",
+            body: "You can open Fortnite now."
+        )
     }
 
     // MARK: - Manual Manifest
