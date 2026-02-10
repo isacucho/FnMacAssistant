@@ -76,9 +76,11 @@ final class PatchManager: ObservableObject {
         let result = await applyProvisionPatch()
         switch result {
         case .success:
+            updateBackgroundHttpFolder()
             log("Patch successfully applied. You can now open Fortnite.")
             finish(true)
         case .alreadyApplied:
+            updateBackgroundHttpFolder()
             log("Patch already applied. No changes were made.")
             finish(false)
         case .failed:
@@ -204,6 +206,75 @@ final class PatchManager: ObservableObject {
             log("Failed to replace provisioning file. Check if FnMacAssistant has Full Disk Access.")
         }
         return success ? .success : .failed
+    }
+
+    // MARK: - BackgroundHttp Folder Update
+    private func updateBackgroundHttpFolder() {
+        guard let containerPath = FortniteContainerLocator.shared.getContainerPath() else {
+            log("Could not locate Fortnite container. BackgroundHttp update skipped.")
+            return
+        }
+
+        let backgroundHttpURL = URL(fileURLWithPath: containerPath)
+            .appendingPathComponent("Data/Documents/FortniteGame/PersistentDownloadDir/BackgroundHttp", isDirectory: true)
+
+        guard let buildVersion = readCloudBuildVersion(),
+              let folderName = buildFolderName(from: buildVersion)
+        else {
+            log("Could not determine build version for BackgroundHttp update.")
+            return
+        }
+
+        let fm = FileManager.default
+
+        do {
+            try fm.createDirectory(at: backgroundHttpURL, withIntermediateDirectories: true)
+            let contents = try fm.contentsOfDirectory(at: backgroundHttpURL, includingPropertiesForKeys: [.isDirectoryKey])
+            for item in contents where item.lastPathComponent.hasPrefix("++") {
+                try fm.removeItem(at: item)
+            }
+
+            let newFolderURL = backgroundHttpURL.appendingPathComponent(folderName, isDirectory: true)
+            if !fm.fileExists(atPath: newFolderURL.path) {
+                try fm.createDirectory(at: newFolderURL, withIntermediateDirectories: true)
+            }
+
+            log("BackgroundHttp folder set to \(folderName)")
+        } catch {
+            log("Failed to update BackgroundHttp folder: \(error.localizedDescription)")
+        }
+    }
+
+    private func readCloudBuildVersion() -> String? {
+        let cloudJSON =
+        "/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app/Cloud/cloudcontent.json"
+
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: cloudJSON)),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            return nil
+        }
+
+        return json["BuildVersion"] as? String
+    }
+
+    private func buildFolderName(from buildVersion: String) -> String? {
+        let pattern = "^(.*-)(\\d+(?:\\.\\d+){1,2})"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let range = NSRange(buildVersion.startIndex..<buildVersion.endIndex, in: buildVersion)
+        guard let match = regex.firstMatch(in: buildVersion, range: range),
+              let prefixRange = Range(match.range(at: 1), in: buildVersion),
+              let versionRange = Range(match.range(at: 2), in: buildVersion)
+        else { return nil }
+
+        let prefix = String(buildVersion[prefixRange])
+        var version = String(buildVersion[versionRange])
+        let parts = version.split(separator: ".").map(String.init)
+        if parts.count >= 3, parts.last == "1" {
+            version = parts.dropLast().joined(separator: ".")
+        }
+
+        return prefix + version
     }
     
     // MARK: - Shell Move Helper
