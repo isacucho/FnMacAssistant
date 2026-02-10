@@ -16,6 +16,7 @@ struct GameAssetsView: View {
     @State private var dontShowBRCosmeticsAgain = false
     @State private var consoleUserScrolledAway = false
     @State private var consoleViewportHeight: CGFloat = 0
+    @State private var showTagSelectionWarning = false
 
     @AppStorage("brCosmeticsWarningDisabled") private var brCosmeticsWarningDisabled = false
     @AppStorage("brCosmeticsWarnedBattleRoyale") private var brCosmeticsWarnedBattleRoyale = false
@@ -114,7 +115,12 @@ struct GameAssetsView: View {
                                     }
                                 }
 
-                                Toggle("Show individual tags", isOn: $manager.showAssets)
+                        Toggle("Show individual tags", isOn: $manager.showAssets)
+                            .onChange(of: manager.showAssets) { show in
+                                if !show && hasPartialTagSelection() {
+                                    showTagSelectionWarning = true
+                                }
+                            }
                             }
                         }
 
@@ -223,6 +229,14 @@ struct GameAssetsView: View {
             }
             .padding(24)
             .frame(minWidth: 420)
+        }
+        .alert("Individual Tags Selected", isPresented: $showTagSelectionWarning) {
+            Button("Deselect Tags", role: .destructive) {
+                manager.selectedAssets.removeAll()
+            }
+            Button("Keep Selected", role: .cancel) {}
+        } message: {
+            Text("You have individual tags selected. Do you want to clear them or keep them selected?")
         }
     }
 
@@ -536,6 +550,21 @@ struct GameAssetsView: View {
         case .festival:
             brCosmeticsWarnedFestival = true
         }
+    }
+
+    private func hasPartialTagSelection() -> Bool {
+        if manager.selectedAssets.isEmpty { return false }
+        for layer in manager.layers {
+            let layerAssets = Set(layer.assets.map(\.name))
+            if manager.selectedAssets.isSubset(of: layerAssets)
+                && manager.selectedLayers.contains(layer.name) {
+                continue
+            }
+            if !layerAssets.isDisjoint(with: manager.selectedAssets) {
+                return true
+            }
+        }
+        return false
     }
 
     private var headerSection: some View {
