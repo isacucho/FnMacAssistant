@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var showResetConfirm = false
     @State private var showFullDiskAlert = false
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @ObservedObject private var updateChecker = UpdateChecker.shared
 
     var body: some View {
         ScrollView {
@@ -151,6 +152,65 @@ You can disable them at any time.
                     }
                 }
 
+                // MARK: - Updates
+                glassSection {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Updates")
+                            .font(.headline)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Current version: \(updateChecker.currentVersion)")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+
+                            if let latest = updateChecker.latestVersion {
+                                Text("Latest version: \(latest)")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        if updateChecker.isUpdateAvailable, let latest = updateChecker.latestVersion {
+                            Text("A new version (\(latest)) is available.")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.orange)
+                        } else if updateChecker.isBetaBuild {
+                            Text("You're on a pre-release build.")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.orange)
+                        } else if updateChecker.latestVersion != nil {
+                            Text("You're up to date.")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+
+                        if let lastChecked = updateChecker.lastChecked {
+                            Text("Last checked: \(lastChecked.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+
+                        if let error = updateChecker.errorMessage {
+                            Text(error)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+
+                        HStack(spacing: 12) {
+                            Button(updateChecker.isChecking ? "Checking…" : "Check for Updates") {
+                                Task { await updateChecker.checkForUpdates(force: true) }
+                            }
+                            .disabled(updateChecker.isChecking)
+
+                            if updateChecker.isUpdateAvailable {
+                                Button("Open Releases") {
+                                    openReleasesPage()
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Divider()
 
                 HStack {
@@ -192,6 +252,9 @@ FnMacAssistant needs Full Disk Access to locate Fortnite's container.
 Open System Settings > Privacy & Security > Full Disk Access, then add and enable FnMacAssistant.
 """)
         }
+        .task {
+            await updateChecker.checkForUpdates()
+        }
     }
 
     // MARK: - Glass Section Builder
@@ -229,6 +292,12 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         defaults.removeObject(forKey: "brCosmeticsWarnedRocketRacing")
         defaults.removeObject(forKey: "brCosmeticsWarnedCreative")
         defaults.removeObject(forKey: "brCosmeticsWarnedFestival")
+    }
+
+    private func openReleasesPage() {
+        if let url = URL(string: "https://github.com/isacucho/FnMacAssistant/releases/latest") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private var headerSection: some View {
