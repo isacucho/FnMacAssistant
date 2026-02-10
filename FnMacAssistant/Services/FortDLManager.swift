@@ -206,6 +206,8 @@ final class FortDLManager: ObservableObject {
         }
 
         isDownloading = true
+        isInstalling = false
+        isDone = false
         downloadedBytes = 0
         totalBytes = 0
         didNotifyForCurrentDownload = false

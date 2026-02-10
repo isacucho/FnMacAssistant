@@ -168,6 +168,11 @@ struct ContentView: View {
 // MARK: - Sidebar View
 struct SidebarView: View {
     @Binding var selection: SidebarSection
+    @ObservedObject private var downloadManager = DownloadManager.shared
+    @ObservedObject private var fortDLManager = FortDLManager.shared
+
+    @State private var lastIpaFinishedID: UUID?
+    @State private var lastAssetsFinished: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -211,6 +216,50 @@ struct SidebarView: View {
             .padding(.horizontal, 8)
 
             Spacer()
+
+            if hasAnyDownloadSummary {
+                VStack(alignment: .leading, spacing: 10) {
+                    if selection != .downloads, let active = downloadManager.downloads.first {
+                        downloadSummaryCard(
+                            title: "IPA Download",
+                            subtitle: active.fileName,
+                            progress: active.progress,
+                            progressLabel: ipaProgressText(for: active),
+                            stateLabel: ipaStateLabel(for: active),
+                            showClear: active.state == .finished,
+                            showCancel: active.state != .finished,
+                            onClear: {
+                                downloadManager.clearDownloads()
+                            },
+                            onCancel: {
+                                downloadManager.cancelCurrentDownload()
+                                downloadManager.clearDownloads()
+                            }
+                        )
+                    }
+
+                    if selection != .gameAssets,
+                       (fortDLManager.isDownloading || fortDLManager.isInstalling || fortDLManager.isDone) {
+                        downloadSummaryCard(
+                            title: "Game Assets",
+                            subtitle: assetsSubtitle,
+                            progress: fortDLManager.downloadProgress,
+                            progressLabel: assetsProgressText,
+                            stateLabel: assetsStateLabel,
+                            showClear: fortDLManager.isDone,
+                            showCancel: fortDLManager.isDownloading,
+                            onClear: {
+                                fortDLManager.clearCompletedDownload()
+                            },
+                            onCancel: {
+                                fortDLManager.cancelDownload()
+                            }
+                        )
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.bottom, 12)
+            }
         }
         .frame(width: 200)
         .background(
@@ -222,6 +271,195 @@ struct SidebarView: View {
             .blur(radius: 10)
         )
         .overlay(Divider(), alignment: .trailing)
+        .onChange(of: downloadManager.downloads.first?.state) { state in
+            if state == .finished {
+                scheduleIpaAutoClear()
+            } else if state == nil {
+                lastIpaFinishedID = nil
+            }
+        }
+        .onChange(of: fortDLManager.isDone) { done in
+            if done, !lastAssetsFinished {
+                scheduleAssetsAutoClear()
+            }
+            lastAssetsFinished = done
+        }
+    }
+
+    private var hasAnyDownloadSummary: Bool {
+        let hasIPADownload = selection != .downloads && downloadManager.downloads.first != nil
+        let hasAssetsDownload = selection != .gameAssets &&
+            (fortDLManager.isDownloading || fortDLManager.isInstalling || fortDLManager.isDone)
+        return hasIPADownload || hasAssetsDownload
+    }
+
+    private var assetsSubtitle: String {
+        if fortDLManager.downloadAllAssets {
+            return "All assets"
+        }
+
+        let assetsCount = fortDLManager.selectedAssets.count
+        let layersCount = fortDLManager.selectedLayers.count
+
+        if layersCount == 1, let layerName = fortDLManager.selectedLayers.first,
+           isFullLayerSelected(layerName: layerName) {
+            return layerName
+        }
+        if assetsCount == 1, let name = fortDLManager.selectedAssets.first {
+            return name
+        }
+        if assetsCount > 1 {
+            return "Multiple tags"
+        }
+        if layersCount == 1, let name = fortDLManager.selectedLayers.first {
+            return name
+        }
+        if layersCount > 1 {
+            return "Multiple layers"
+        }
+
+        return "Game assets"
+    }
+
+    private func isFullLayerSelected(layerName: String) -> Bool {
+        guard let layer = fortDLManager.layers.first(where: { $0.name == layerName }) else {
+            return false
+        }
+        let assetNames = Set(layer.assets.map(\.name))
+        return !assetNames.isEmpty && assetNames.isSubset(of: fortDLManager.selectedAssets)
+    }
+
+    private func ipaProgressText(for active: DownloadItem) -> String {
+        if active.state == .finished {
+            return "Done"
+        }
+
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useMB, .useGB]
+        formatter.countStyle = .decimal
+
+        let downloaded = formatter.string(fromByteCount: active.totalBytesWritten)
+        let total = formatter.string(fromByteCount: active.totalBytesExpected)
+        return "\(downloaded) / \(total)"
+    }
+
+    private func ipaStateLabel(for active: DownloadItem) -> String {
+        switch active.state {
+        case .paused:
+            return "Paused"
+        case .finished:
+            return "Done"
+        case .failed:
+            return "Failed"
+        case .cancelled:
+            return "Cancelled"
+        default:
+            return String(format: "%.1f%%", active.progress * 100)
+        }
+    }
+
+    private var assetsProgressText: String {
+        if fortDLManager.isInstalling {
+            return "Installing…"
+        }
+        if fortDLManager.isDone {
+            return "Done"
+        }
+        return fortDLManager.downloadProgressLabel
+    }
+
+    private var assetsStateLabel: String {
+        if fortDLManager.isInstalling {
+            return "Installing"
+        }
+        if fortDLManager.isDone {
+            return "Done"
+        }
+        return fortDLManager.downloadPercentageLabel
+    }
+
+    private func scheduleIpaAutoClear() {
+        guard let active = downloadManager.downloads.first else { return }
+        if lastIpaFinishedID == active.id { return }
+        lastIpaFinishedID = active.id
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            if downloadManager.downloads.first?.id == active.id,
+               downloadManager.downloads.first?.state == .finished {
+                downloadManager.clearDownloads()
+            }
+        }
+    }
+
+    private func scheduleAssetsAutoClear() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            if fortDLManager.isDone {
+                fortDLManager.clearCompletedDownload()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func downloadSummaryCard(
+        title: String,
+        subtitle: String,
+        progress: Double,
+        progressLabel: String,
+        stateLabel: String,
+        showClear: Bool,
+        showCancel: Bool,
+        onClear: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Text(stateLabel)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+
+            Text(subtitle)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+
+            ProgressView(value: progress)
+                .progressViewStyle(.linear)
+
+            HStack {
+                Text(progressLabel)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                if showCancel {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                    .font(.system(size: 10))
+                    .buttonStyle(.bordered)
+                }
+
+                if showClear {
+                    Button("Clear") {
+                        onClear()
+                    }
+                    .font(.system(size: 10))
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+        .padding(8)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.white.opacity(0.1))
+        )
     }
 }
 
