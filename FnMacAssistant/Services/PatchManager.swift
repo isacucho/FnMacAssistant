@@ -54,19 +54,19 @@ final class PatchManager: ObservableObject {
         log("Launching Fortnite...")
         let launched = await runShellLaunch()
         guard launched else {
-            log("Failed to launch Fortnite. Try opening it manually once.")
+            log("Failed to launch Fortnite. Try opening it manually at least once.")
             finish(false)
             return
         }
 
-        log("Waiting up to 7 seconds before applying patch...")
+        log("Waiting for gatekeeper to verify the application...")
         let start = Date()
         var wasRunning = false
         while Date().timeIntervalSince(start) < 7 {
             if isFortniteRunning() {
                 wasRunning = true
             } else if wasRunning {
-                log("Fortnite closed early — applying patch now...")
+                log("Adding entitlements to embedded.mobileprovision...")
                 break
             }
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -81,7 +81,7 @@ final class PatchManager: ObservableObject {
             finish(true)
         case .alreadyApplied:
             updateBackgroundHttpFolder()
-            log("Patch already applied. No changes were made.")
+            log("Patch was already applied. No changes were made.")
             finish(false)
         case .failed:
             log("Failed to apply patch. If this happened due to permissions, grant Full Disk Access to FnMacAssistant and try again.")
@@ -110,7 +110,7 @@ final class PatchManager: ObservableObject {
 
         do {
             try fm.moveItem(atPath: preferredPath, toPath: fortniteAppPath)
-            log("Renamed Fortnite app to Fortnite.app")
+            log("Renamed Fortnite's bundle to Fortnite.app")
         } catch {
             log("Failed to rename Fortnite app. \(error.localizedDescription)")
         }
