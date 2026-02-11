@@ -54,8 +54,7 @@ final class FortDLManager: ObservableObject {
     
     private var activeProcess: Process?
     private var didNotifyForCurrentDownload = false
-    private var lastOutputDate: Date?
-    private var noProgressCheck: DispatchWorkItem?
+    private var wasCancelled = false
 
     private var cancellables: Set<AnyCancellable> = []
 
@@ -214,6 +213,7 @@ final class FortDLManager: ObservableObject {
         downloadedBytes = 0
         totalBytes = 0
         didNotifyForCurrentDownload = false
+        wasCancelled = false
         
         clearFortDLCache()
         runFortDL(arguments: args)
@@ -307,8 +307,6 @@ final class FortDLManager: ObservableObject {
         }
 
         try? process.run()
-        lastOutputDate = Date()
-        scheduleNoProgressCheck()
     }
 
     private func fortDLURL() -> URL {
@@ -318,9 +316,6 @@ final class FortDLManager: ObservableObject {
 
     private func log(_ str: String) {
         logOutput += str + "\n"
-        lastOutputDate = Date()
-        scheduleNoProgressCheck()
-
         // PROGRESS_BYTES <downloaded> <total>
         if str.hasPrefix("PROGRESS_BYTES") {
             let parts = str.split(separator: " ")
@@ -336,40 +331,20 @@ final class FortDLManager: ObservableObject {
             }
         }
 
-        if str.contains("Extracting files") {
+        if str.contains("Populating ChunkDownload cache") {
             isDownloading = false
             isInstalling = true
         }
 
-        if str.contains("Done:") {
+        if str.contains("Download complete (--download-only specified)") ||
+            str.contains("Cleaning up cache directory") ||
+            str.contains("Done:") {
             isDownloading = false
             isInstalling = false
             isDone = true
             clearFortDLCache()
             notifyIfNeeded()
         }
-    }
-
-    private func scheduleNoProgressCheck() {
-        guard isDownloading || isInstalling || activeProcess?.isRunning == true else { return }
-        noProgressCheck?.cancel()
-        let referenceDate = lastOutputDate
-
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            guard self.lastOutputDate == referenceDate else { return }
-            guard !self.isDone else { return }
-            guard self.activeProcess?.isRunning != true else { return }
-
-            self.isDownloading = false
-            self.isInstalling = false
-            self.isDone = true
-            self.clearFortDLCache()
-            self.notifyIfNeeded()
-        }
-
-        noProgressCheck = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
     }
     
     
@@ -511,6 +486,7 @@ final class FortDLManager: ObservableObject {
     private var fortDLCacheURL: URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("FnMacAssistant-cache", isDirectory: true)
+            .appendingPathComponent("fort-dl", isDirectory: true)
     }
 
     private func clearFortDLCache() {
@@ -556,6 +532,7 @@ final class FortDLManager: ObservableObject {
         isInstalling = false
         isDone = false
         didNotifyForCurrentDownload = false
+        wasCancelled = true
 
         downloadedBytes = 0
         totalBytes = 0
@@ -571,6 +548,20 @@ final class FortDLManager: ObservableObject {
         downloadedBytes = 0
         totalBytes = 0
         downloadStartDate = nil
+        wasCancelled = false
+    }
+
+    @MainActor
+    func resetDownloadStateIfIdle() {
+        guard !isDownloading && !isInstalling else { return }
+        isDone = false
+        isDownloading = false
+        isInstalling = false
+        downloadedBytes = 0
+        totalBytes = 0
+        downloadStartDate = nil
+        didNotifyForCurrentDownload = false
+        wasCancelled = false
     }
 
     private func notifyIfNeeded() {
