@@ -13,6 +13,8 @@ struct DownloadsView: View {
 
     @State private var shownVersion: String? = nil
     @State private var showCancelPrompt = false
+    @State private var showStorageAlert = false
+    @State private var storageAlertMessage = ""
     @State private var didAutoScrollToDownload = false
     private let downloadSpacerID = "DOWNLOAD_SPACER"
 
@@ -97,7 +99,7 @@ struct DownloadsView: View {
 
                     if let ipa = ipaFetcher.selectedIPA {
                         Button {
-                            handleDownloadRequest(for: ipa)
+                            Task { await handleDownloadRequest(for: ipa) }
                         } label: {
                             Label("Download", systemImage: "arrow.down.circle.fill")
                                 .font(.system(size: 18, weight: .semibold))
@@ -138,8 +140,8 @@ struct DownloadsView: View {
                     .padding()
             }
         }
-        .alert("Cancel Current Download?", isPresented: $showCancelPrompt) {
-            Button("Cancel", role: .destructive) {
+        .alert("Replace Current Download?", isPresented: $showCancelPrompt) {
+            Button("Cancel Current & Download", role: .destructive) {
                 downloadManager.cancelCurrentDownload()
                 if let ipa = ipaFetcher.selectedIPA,
                    let url = URL(string: ipa.download_url) {
@@ -148,7 +150,12 @@ struct DownloadsView: View {
             }
             Button("Keep Current", role: .cancel) {}
         } message: {
-            Text("Another download is already in progress.")
+            Text("Starting a new download will cancel the current one.")
+        }
+        .alert("Not Enough Storage", isPresented: $showStorageAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(storageAlertMessage)
         }
     }
 
@@ -182,10 +189,24 @@ struct DownloadsView: View {
         shownVersion = ipaFetcher.latestReleaseTag ?? "N/A"
     }
 
-    private func handleDownloadRequest(for ipa: IPAFetcher.IPAInfo) {
+    private func handleDownloadRequest(for ipa: IPAFetcher.IPAInfo) async {
         guard let url = URL(string: ipa.download_url) else { return }
 
-        if downloadManager.isDownloading {
+        if let requiredBytes = await remoteFileSizeBytes(for: url),
+           let availableBytes = availableDiskSpaceBytes(for: downloadFolderURL) {
+            let requiredWithBuffer = applyStorageBuffer(to: Int64(requiredBytes))
+            if requiredWithBuffer > availableBytes {
+            storageAlertMessage = storageMessage(
+                required: requiredWithBuffer,
+                available: availableBytes
+            )
+            showStorageAlert = true
+            return
+            }
+        }
+
+        if let active = downloadManager.downloads.first,
+           active.state != .finished {
             showCancelPrompt = true
         } else {
             downloadManager.startDownload(from: url)
@@ -199,10 +220,57 @@ struct DownloadsView: View {
         return formatter.string(fromByteCount: bytes)
     }
 
-    private var downloadPathLabel: String? {
-        let folder = downloadManager.defaultDownloadFolder ??
+    private var downloadFolderURL: URL? {
+        downloadManager.defaultDownloadFolder ??
             FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
-        guard let url = folder else { return nil }
+    }
+
+    private func availableDiskSpaceBytes(for url: URL?) -> Int64? {
+        guard let url else { return nil }
+        if let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
+           let capacity = values.volumeAvailableCapacityForImportantUsage {
+            return capacity
+        }
+        if let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityKey]),
+           let capacity = values.volumeAvailableCapacity {
+            return Int64(capacity)
+        }
+        return nil
+    }
+
+    private func remoteFileSizeBytes(for url: URL) async -> Int64? {
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD"
+        request.setValue("FnMacAssistant/2.0 (macOS)", forHTTPHeaderField: "User-Agent")
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse,
+               let length = http.value(forHTTPHeaderField: "Content-Length"),
+               let bytes = Int64(length) {
+                return bytes
+            }
+        } catch {
+            return nil
+        }
+        return nil
+    }
+
+    private func storageMessage(required: Int64, available: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useMB, .useGB]
+        formatter.countStyle = .decimal
+        let requiredLabel = formatter.string(fromByteCount: required)
+        let availableLabel = formatter.string(fromByteCount: available)
+        return "Required: \(requiredLabel). Available: \(availableLabel). Please free up space and try again."
+    }
+
+    private func applyStorageBuffer(to bytes: Int64) -> Int64 {
+        Int64(ceil(Double(bytes) * 1.05))
+    }
+
+    private var downloadPathLabel: String? {
+        guard let url = downloadFolderURL else { return nil }
         return url.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
     }
 

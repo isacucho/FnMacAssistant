@@ -279,9 +279,6 @@ struct SidebarView: View {
             }
         }
         .onChange(of: fortDLManager.isDone) { done in
-            if done, !lastAssetsFinished {
-                scheduleAssetsAutoClear()
-            }
             lastAssetsFinished = done
         }
     }
@@ -387,14 +384,6 @@ struct SidebarView: View {
             if downloadManager.downloads.first?.id == active.id,
                downloadManager.downloads.first?.state == .finished {
                 downloadManager.clearDownloads()
-            }
-        }
-    }
-
-    private func scheduleAssetsAutoClear() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            if fortDLManager.isDone {
-                fortDLManager.clearCompletedDownload()
             }
         }
     }
