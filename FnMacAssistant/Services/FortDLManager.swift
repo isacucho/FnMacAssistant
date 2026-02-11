@@ -55,6 +55,7 @@ final class FortDLManager: ObservableObject {
     private var activeProcess: Process?
     private var didNotifyForCurrentDownload = false
     private var wasCancelled = false
+    private var cacheMonitorTimer: Timer?
 
     private var cancellables: Set<AnyCancellable> = []
 
@@ -211,12 +212,13 @@ final class FortDLManager: ObservableObject {
         isInstalling = false
         isDone = false
         downloadedBytes = 0
-        totalBytes = 0
+        totalBytes = selectedDownloadSizeBytes
         didNotifyForCurrentDownload = false
         wasCancelled = false
         
         clearFortDLCache()
         runFortDL(arguments: args)
+        startCacheMonitoring()
     }
 
     // MARK: - Parsing
@@ -297,7 +299,6 @@ final class FortDLManager: ObservableObject {
 
             Task { @MainActor in
                 self.log(str)
-                self.parseProgress(from: str)
             }
             process.terminationHandler = { _ in
                 Task { @MainActor in
@@ -316,21 +317,6 @@ final class FortDLManager: ObservableObject {
 
     private func log(_ str: String) {
         logOutput += str + "\n"
-        // PROGRESS_BYTES <downloaded> <total>
-        if str.hasPrefix("PROGRESS_BYTES") {
-            let parts = str.split(separator: " ")
-            if parts.count == 3,
-               let downloaded = UInt64(parts[1]),
-               let total = UInt64(parts[2]) {
-
-                downloadedBytes = downloaded
-                totalBytes = total
-                isDownloading = true
-                isInstalling = false
-                isDone = false
-            }
-        }
-
         if str.contains("Populating ChunkDownload cache") {
             isDownloading = false
             isInstalling = true
@@ -342,6 +328,7 @@ final class FortDLManager: ObservableObject {
             isDownloading = false
             isInstalling = false
             isDone = true
+            stopCacheMonitoring()
             clearFortDLCache()
             notifyIfNeeded()
         }
@@ -439,48 +426,6 @@ final class FortDLManager: ObservableObject {
 
         return formatter.string(from: remaining) ?? "—"
     }
-    private func parseProgress(from output: String) {
-        let lines = output.split(separator: "\n")
-
-        for line in lines {
-            let text = String(line)
-
-            // ---- DOWNLOAD PROGRESS ----
-            if text.hasPrefix("PROGRESS ") {
-                // Format: PROGRESS <downloaded> <total>
-                let parts = text.split(separator: " ")
-                guard parts.count == 3,
-                      let downloaded = UInt64(parts[1]),
-                      let total = UInt64(parts[2])
-                else { continue }
-
-                if !isDownloading {
-                    isDownloading = true
-                    isInstalling = false
-                    isDone = false
-                    downloadStartDate = Date()
-                }
-
-                downloadedBytes = downloaded
-                totalBytes = total
-            }
-
-            // ---- INSTALL PHASE ----
-            else if text.contains("Extracting files") {
-                isDownloading = false
-                isInstalling = true
-            }
-
-            // ---- DONE ----
-            else if text.hasPrefix("Done:") {
-                isDownloading = false
-                isInstalling = false
-                isDone = true
-                notifyIfNeeded()
-            }
-        }
-    }
-    
     // MARK: - fort-dl Cache
 
     private var fortDLCacheURL: URL {
@@ -533,6 +478,7 @@ final class FortDLManager: ObservableObject {
         isDone = false
         didNotifyForCurrentDownload = false
         wasCancelled = true
+        stopCacheMonitoring()
 
         downloadedBytes = 0
         totalBytes = 0
@@ -549,6 +495,7 @@ final class FortDLManager: ObservableObject {
         totalBytes = 0
         downloadStartDate = nil
         wasCancelled = false
+        stopCacheMonitoring()
     }
 
     @MainActor
@@ -562,6 +509,47 @@ final class FortDLManager: ObservableObject {
         downloadStartDate = nil
         didNotifyForCurrentDownload = false
         wasCancelled = false
+        stopCacheMonitoring()
+    }
+
+    private func startCacheMonitoring() {
+        stopCacheMonitoring()
+        downloadStartDate = Date()
+        cacheMonitorTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            guard self.isDownloading || self.isInstalling else { return }
+            let bytes = self.cacheDirectorySize(at: self.fortDLCacheURL)
+            if bytes > 0 {
+                self.downloadedBytes = bytes
+            }
+            if self.totalBytes > 0,
+               self.downloadedBytes >= self.totalBytes,
+               !self.isDone {
+                self.isDownloading = false
+                self.isInstalling = true
+            }
+        }
+    }
+
+    private func stopCacheMonitoring() {
+        cacheMonitorTimer?.invalidate()
+        cacheMonitorTimer = nil
+    }
+
+    private func cacheDirectorySize(at url: URL) -> UInt64 {
+        guard let enumerator = FileManager.default.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else { return 0 }
+
+        var total: UInt64 = 0
+        for case let fileURL as URL in enumerator {
+            if let size = try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize {
+                total += UInt64(size)
+            }
+        }
+        return total
     }
 
     private func notifyIfNeeded() {
