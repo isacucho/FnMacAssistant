@@ -54,6 +54,8 @@ final class FortDLManager: ObservableObject {
     
     private var activeProcess: Process?
     private var didNotifyForCurrentDownload = false
+    private var lastOutputDate: Date?
+    private var noProgressCheck: DispatchWorkItem?
 
     private var cancellables: Set<AnyCancellable> = []
 
@@ -188,7 +190,8 @@ final class FortDLManager: ObservableObject {
 
         var args = [
             "--manifest-id", manifestID,
-            "-o", outputDir
+            "-o", outputDir,
+            "--download-only"
         ]
         
         args += ["-c", fortDLCacheURL.path]
@@ -304,6 +307,8 @@ final class FortDLManager: ObservableObject {
         }
 
         try? process.run()
+        lastOutputDate = Date()
+        scheduleNoProgressCheck()
     }
 
     private func fortDLURL() -> URL {
@@ -313,6 +318,8 @@ final class FortDLManager: ObservableObject {
 
     private func log(_ str: String) {
         logOutput += str + "\n"
+        lastOutputDate = Date()
+        scheduleNoProgressCheck()
 
         // PROGRESS_BYTES <downloaded> <total>
         if str.hasPrefix("PROGRESS_BYTES") {
@@ -342,6 +349,28 @@ final class FortDLManager: ObservableObject {
             notifyIfNeeded()
         }
     }
+
+    private func scheduleNoProgressCheck() {
+        guard isDownloading || isInstalling || activeProcess?.isRunning == true else { return }
+        noProgressCheck?.cancel()
+        let referenceDate = lastOutputDate
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            guard self.lastOutputDate == referenceDate else { return }
+            guard !self.isDone else { return }
+            guard self.activeProcess?.isRunning != true else { return }
+
+            self.isDownloading = false
+            self.isInstalling = false
+            self.isDone = true
+            self.clearFortDLCache()
+            self.notifyIfNeeded()
+        }
+
+        noProgressCheck = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
+    }
     
     
 
@@ -359,6 +388,22 @@ final class FortDLManager: ObservableObject {
             fromByteCount: Int64(totalBytes),
             countStyle: .file
         )
+    }
+
+    var selectedDownloadSizeBytes: UInt64 {
+        if downloadAllAssets {
+            let totalBytes = layers
+                .flatMap(\.assets)
+                .reduce(0) { $0 + $1.size }
+            return totalBytes
+        }
+
+        let totalBytes = layers
+            .flatMap(\.assets)
+            .filter { selectedAssets.contains($0.name) }
+            .reduce(0) { $0 + $1.size }
+
+        return totalBytes
     }
 
     private static func parseSizeToBytes(_ str: String) -> UInt64 {

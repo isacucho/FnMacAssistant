@@ -17,6 +17,9 @@ struct GameAssetsView: View {
     @State private var consoleUserScrolledAway = false
     @State private var consoleViewportHeight: CGFloat = 0
     @State private var showTagSelectionWarning = false
+    @State private var showCancelDownloadPrompt = false
+    @State private var showStorageAlert = false
+    @State private var storageAlertMessage = ""
 
     @AppStorage("brCosmeticsWarningDisabled") private var brCosmeticsWarningDisabled = false
     @AppStorage("brCosmeticsWarnedBattleRoyale") private var brCosmeticsWarnedBattleRoyale = false
@@ -144,8 +147,7 @@ struct GameAssetsView: View {
 
                             HStack {
                                 Button("Download Selected Assets") {
-                                    manager.download()
-                                    didAutoScrollToProgress = false
+                                    Task { await handleAssetsDownloadRequest() }
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .disabled(
@@ -238,6 +240,19 @@ struct GameAssetsView: View {
         } message: {
             Text("You have individual tags selected. Do you want to clear them or keep them selected?")
         }
+        .alert("Replace Current Download?", isPresented: $showCancelDownloadPrompt) {
+            Button("Cancel Current & Download", role: .destructive) {
+                Task { await confirmReplaceAssetsDownload() }
+            }
+            Button("Keep Current", role: .cancel) {}
+        } message: {
+            Text("Starting a new download will cancel the current one.")
+        }
+        .alert("Not Enough Storage", isPresented: $showStorageAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(storageAlertMessage)
+        }
     }
 
     // MARK: - Sticky Progress Bar View
@@ -309,6 +324,75 @@ struct GameAssetsView: View {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = ["/Applications/Fortnite.app"]
         try? process.run()
+    }
+
+    private func handleAssetsDownloadRequest() async {
+        guard await hasEnoughStorageForAssets() else { return }
+
+        if manager.isDownloading || manager.isInstalling {
+            showCancelDownloadPrompt = true
+        } else {
+            manager.download()
+            didAutoScrollToProgress = false
+        }
+    }
+
+    private func confirmReplaceAssetsDownload() async {
+        guard await hasEnoughStorageForAssets() else { return }
+        manager.cancelDownload()
+        manager.download()
+        didAutoScrollToProgress = false
+    }
+
+    private func hasEnoughStorageForAssets() async -> Bool {
+        let requiredBytes = Int64(manager.selectedDownloadSizeBytes)
+        if requiredBytes <= 0 { return true }
+
+        guard let outputURL = assetsOutputDirectory(),
+              let availableBytes = availableDiskSpaceBytes(for: outputURL)
+        else { return true }
+
+        let requiredWithBuffer = applyStorageBuffer(to: requiredBytes)
+        if requiredWithBuffer > availableBytes {
+            storageAlertMessage = storageMessage(
+                required: requiredWithBuffer,
+                available: availableBytes
+            )
+            showStorageAlert = true
+            return false
+        }
+        return true
+    }
+
+    private func assetsOutputDirectory() -> URL? {
+        guard let container = FortniteContainerLocator.shared.getContainerPath() else { return nil }
+        return URL(fileURLWithPath: container)
+            .appendingPathComponent("Data/Documents/FortniteGame/PersistentDownloadDir", isDirectory: true)
+    }
+
+    private func availableDiskSpaceBytes(for url: URL) -> Int64? {
+        if let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
+           let capacity = values.volumeAvailableCapacityForImportantUsage {
+            return capacity
+        }
+        if let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityKey]),
+           let capacity = values.volumeAvailableCapacity {
+            return Int64(capacity)
+        }
+        return nil
+    }
+
+    private func storageMessage(required: Int64, available: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useMB, .useGB]
+        formatter.countStyle = .decimal
+        let requiredLabel = formatter.string(fromByteCount: required)
+        let availableLabel = formatter.string(fromByteCount: available)
+        return "Required: \(requiredLabel). Available: \(availableLabel). Please free up space and try again."
+    }
+
+    private func applyStorageBuffer(to bytes: Int64) -> Int64 {
+        Int64(ceil(Double(bytes) * 1.05))
     }
 
     // MARK: - Console View
