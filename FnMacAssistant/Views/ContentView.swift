@@ -271,7 +271,6 @@ struct SidebarView: View {
             )
             .blur(radius: 10)
         )
-        .overlay(Divider(), alignment: .trailing)
     }
 
     private var hasAnyDownloadSummary: Bool {
