@@ -214,7 +214,8 @@ struct SidebarView: View {
             }
             .padding(.top, 10)
             .padding(.horizontal, 8)
-
+            .focusSection()
+            
             Spacer()
 
             if hasAnyDownloadSummary {
