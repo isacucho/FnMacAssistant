@@ -56,6 +56,11 @@ final class FortDLManager: ObservableObject {
     private var didNotifyForCurrentDownload = false
     private var wasCancelled = false
     private var cacheMonitorTimer: Timer?
+    private var lastDownloadArguments: [String]?
+    private var autoResumeTimer: Timer?
+    private var stallCheckTimer: Timer?
+    private var lastProgressBytes: UInt64 = 0
+    private var lastProgressDate: Date?
 
     private var cancellables: Set<AnyCancellable> = []
 
@@ -217,8 +222,10 @@ final class FortDLManager: ObservableObject {
         wasCancelled = false
         
         clearFortDLCache()
+        lastDownloadArguments = args
         runFortDL(arguments: args)
         startCacheMonitoring()
+        scheduleStallCheck()
     }
 
     // MARK: - Parsing
@@ -292,18 +299,28 @@ final class FortDLManager: ObservableObject {
         process.standardOutput = pipe
         process.standardError = pipe
 
-        pipe.fileHandleForReading.readabilityHandler = { handle in
+        let handle = pipe.fileHandleForReading
+        handle.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
             guard !data.isEmpty else { return }
             let str = String(decoding: data, as: UTF8.self)
 
+            guard let strongSelf = self else { return }
             Task { @MainActor in
-                self.log(str)
+                strongSelf.log(str)
             }
-            process.terminationHandler = { _ in
-                Task { @MainActor in
-                    self.clearFortDLCache()
+        }
+
+        process.terminationHandler = { [weak self, handle] process in
+            let remaining = handle.readDataToEndOfFile()
+            guard let strongSelf = self else { return }
+            Task { @MainActor in
+                handle.readabilityHandler = nil
+                if !remaining.isEmpty {
+                    let str = String(decoding: remaining, as: UTF8.self)
+                    strongSelf.log(str)
                 }
+                strongSelf.handleProcessTermination(process.terminationStatus)
             }
         }
 
@@ -329,6 +346,8 @@ final class FortDLManager: ObservableObject {
             isInstalling = false
             isDone = true
             stopCacheMonitoring()
+            stopAutoResume()
+            stopStallCheck()
             clearFortDLCache()
             notifyIfNeeded()
         }
@@ -479,6 +498,8 @@ final class FortDLManager: ObservableObject {
         didNotifyForCurrentDownload = false
         wasCancelled = true
         stopCacheMonitoring()
+        stopAutoResume()
+        stopStallCheck()
 
         downloadedBytes = 0
         totalBytes = 0
@@ -496,6 +517,8 @@ final class FortDLManager: ObservableObject {
         downloadStartDate = nil
         wasCancelled = false
         stopCacheMonitoring()
+        stopAutoResume()
+        stopStallCheck()
     }
 
     @MainActor
@@ -510,24 +533,112 @@ final class FortDLManager: ObservableObject {
         didNotifyForCurrentDownload = false
         wasCancelled = false
         stopCacheMonitoring()
+        stopAutoResume()
+        stopStallCheck()
     }
 
     private func startCacheMonitoring() {
         stopCacheMonitoring()
         downloadStartDate = Date()
+        lastProgressBytes = 0
+        lastProgressDate = Date()
         cacheMonitorTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            guard self.isDownloading || self.isInstalling else { return }
-            let bytes = self.cacheDirectorySize(at: self.fortDLCacheURL)
-            if bytes > 0 {
-                self.downloadedBytes = bytes
+            guard let strongSelf = self else { return }
+            Task { @MainActor in
+                strongSelf.handleCacheMonitorTick()
             }
-            if self.totalBytes > 0,
-               self.downloadedBytes >= self.totalBytes,
-               !self.isDone {
-                self.isDownloading = false
-                self.isInstalling = true
+        }
+    }
+
+    private func handleProcessTermination(_ status: Int32) {
+        activeProcess = nil
+
+        if wasCancelled || isDone {
+            return
+        }
+
+        if status != 0 || (isDownloading || isInstalling) {
+            log("⚠️ Download interrupted. Attempting to resume every 5 seconds with the same command...")
+            startAutoResume()
+        }
+    }
+
+    private func startAutoResume() {
+        autoResumeTimer?.invalidate()
+        autoResumeTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            guard let strongSelf = self else { return }
+            Task { @MainActor in
+                strongSelf.handleAutoResumeTick()
             }
+        }
+    }
+
+    private func stopAutoResume() {
+        autoResumeTimer?.invalidate()
+        autoResumeTimer = nil
+    }
+
+
+    private func scheduleStallCheck() {
+        stallCheckTimer?.invalidate()
+        stallCheckTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            guard let strongSelf = self else { return }
+            Task { @MainActor in
+                strongSelf.handleStallCheckTick()
+            }
+        }
+    }
+
+    private func stopStallCheck() {
+        stallCheckTimer?.invalidate()
+        stallCheckTimer = nil
+    }
+
+    @MainActor
+    private func handleCacheMonitorTick() {
+        guard isDownloading || isInstalling else { return }
+        let bytes = cacheDirectorySize(at: fortDLCacheURL)
+        if bytes > 0 {
+            downloadedBytes = bytes
+        }
+        if totalBytes > 0,
+           downloadedBytes >= totalBytes,
+           !isDone {
+            isDownloading = false
+            isInstalling = true
+        }
+    }
+
+    @MainActor
+    private func handleAutoResumeTick() {
+        guard activeProcess == nil else { return }
+        guard let args = lastDownloadArguments else { return }
+
+        log("🔄 Resuming download...")
+        isDownloading = true
+        isInstalling = false
+        isDone = false
+        wasCancelled = false
+        runFortDL(arguments: args)
+        startCacheMonitoring()
+    }
+
+    @MainActor
+    private func handleStallCheckTick() {
+        guard isDownloading else { return }
+
+        if downloadedBytes != lastProgressBytes {
+            lastProgressBytes = downloadedBytes
+            lastProgressDate = Date()
+            return
+        }
+
+        if let last = lastProgressDate, Date().timeIntervalSince(last) >= 10 {
+            log("⚠️ Download stalled. Attempting to resume every 5 seconds with the same command...")
+            activeProcess?.terminate()
+            activeProcess = nil
+            startAutoResume()
+            lastProgressDate = Date()
         }
     }
 
