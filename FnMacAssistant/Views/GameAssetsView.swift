@@ -67,7 +67,7 @@ struct GameAssetsView: View {
                                     Spacer()
 
                                     Toggle("Manual", isOn: $manager.useManualManifest)
-                                        .onChange(of: manager.useManualManifest) { enabled in
+                                        .onChange(of: manager.useManualManifest) { _, enabled in
                                             manager.setManualManifestEnabled(enabled)
                                         }
                                     .toggleStyle(.switch)
@@ -83,7 +83,7 @@ struct GameAssetsView: View {
                                         .textFieldStyle(.roundedBorder)
                                         .font(.system(.body, design: .monospaced))
                                         .frame(minWidth: 240)
-                                        .onChange(of: manager.manualManifestID) { value in
+                                        .onChange(of: manager.manualManifestID) { _, value in
                                             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
                                             if trimmed != value {
                                                 manager.manualManifestID = trimmed
@@ -106,7 +106,7 @@ struct GameAssetsView: View {
                                     "Download all assets (\(manager.totalDownloadSize ?? "—"))",
                                     isOn: $manager.downloadAllAssets
                                 )
-                                .onChange(of: manager.downloadAllAssets) { enabled in
+                                .onChange(of: manager.downloadAllAssets) { _, enabled in
                                     if enabled {
                                         manager.selectedLayers = Set(manager.layers.map(\.name))
                                         manager.selectedAssets = Set(
@@ -119,7 +119,7 @@ struct GameAssetsView: View {
                                 }
 
                         Toggle("Show individual tags", isOn: $manager.showAssets)
-                            .onChange(of: manager.showAssets) { show in
+                            .onChange(of: manager.showAssets) { _, show in
                                 if !show && hasPartialTagSelection() {
                                     showTagSelectionWarning = true
                                 }
@@ -198,7 +198,7 @@ struct GameAssetsView: View {
             // =====================
             // AUTO-SCROLL ON START
             // =====================
-            .onChange(of: showsProgressBar) { showing in
+            .onChange(of: showsProgressBar) { _, showing in
                 guard showing else { return }
 
                 DispatchQueue.main.async {

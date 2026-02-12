@@ -271,16 +271,6 @@ struct SidebarView: View {
             .blur(radius: 10)
         )
         .overlay(Divider(), alignment: .trailing)
-        .onChange(of: downloadManager.downloads.first?.state) { state in
-            if state == .finished {
-                scheduleIpaAutoClear()
-            } else if state == nil {
-                lastIpaFinishedID = nil
-            }
-        }
-        .onChange(of: fortDLManager.isDone) { done in
-            lastAssetsFinished = done
-        }
     }
 
     private var hasAnyDownloadSummary: Bool {

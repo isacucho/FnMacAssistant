@@ -144,7 +144,7 @@ You can disable them at any time.
                         .foregroundColor(.secondary)
 
                         Toggle("Enable notifications", isOn: $notificationsEnabled)
-                            .onChange(of: notificationsEnabled) { enabled in
+                            .onChange(of: notificationsEnabled) { _, enabled in
                                 if enabled {
                                     NotificationHelper.shared.requestAuthorization()
                                 }
