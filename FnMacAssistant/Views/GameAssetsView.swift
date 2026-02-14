@@ -37,9 +37,7 @@ struct GameAssetsView: View {
         ScrollViewReader { proxy in
             ZStack(alignment: .bottom) {
 
-                // =====================
-                // MAIN SCROLL CONTENT
-                // =====================
+              
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
 
@@ -173,12 +171,10 @@ struct GameAssetsView: View {
                             }
                         }
 
-                        // MARK: Anchor point for auto-scroll
                         Color.clear
                             .frame(height: 1)
                             .id(progressBarID)
 
-                        // Bottom padding so content never hides behind progress bar
                         if showsProgressBar {
                             Spacer()
                                 .frame(height: progressBarHeight + 24)
@@ -188,16 +184,12 @@ struct GameAssetsView: View {
                     .padding()
                 }
 
-                // =====================
-                // STICKY PROGRESS BAR
-                // =====================
+              
                 if showsProgressBar {
                     progressBar
                 }
             }
-            // =====================
-            // AUTO-SCROLL ON START
-            // =====================
+           
             .onChange(of: showsProgressBar) { _, showing in
                 guard showing else { return }
 
@@ -255,11 +247,11 @@ struct GameAssetsView: View {
         }
     }
 
-    // MARK: - Sticky Progress Bar View
+    // MARK: -  Progress Bar View
 
     private var progressBar: some View {
         VStack(spacing: 8) {
-            ProgressView(value: manager.downloadProgress)
+            ProgressView(value: min(1, max(0, manager.downloadProgress)))
                 .progressViewStyle(.linear)
 
             HStack {
@@ -458,7 +450,7 @@ struct GameAssetsView: View {
         .frame(minHeight: 160, maxHeight: 220)
     }
 
-    // MARK: - Masonry layout (unchanged)
+    // MARK: - Masonry layout
 
     private func masonryColumns(
         layers: [FortDLManager.Layer],
@@ -483,7 +475,7 @@ struct GameAssetsView: View {
         return columns
     }
 
-    // MARK: - Layer Card (unchanged)
+    // MARK: - Layer Card
 
     @ViewBuilder
     private func LayerCard(layer: FortDLManager.Layer) -> some View {

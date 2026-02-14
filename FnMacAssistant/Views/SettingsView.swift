@@ -31,7 +31,6 @@ struct SettingsView: View {
                     Text("Download Settings")
                         .font(.headline)
 
-                    // ===== Download Folder Section =====
                     glassSection {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Download Location")

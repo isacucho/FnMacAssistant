@@ -45,7 +45,6 @@ final class UpdateChecker: ObservableObject {
             return true
         }
         if numericCompare == .orderedSame {
-            // Stable release should be considered newer than a prerelease.
             if current.hasPrerelease && !latest.hasPrerelease {
                 return true
             }
