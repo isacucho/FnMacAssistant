@@ -482,7 +482,6 @@ final class FortDLManager: ObservableObject {
             // Send SIGINT (Ctrl-C)
             process.interrupt()
 
-            // Fallback hard kill after short delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 if process.isRunning {
                     process.terminate()

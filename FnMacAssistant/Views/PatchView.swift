@@ -9,6 +9,8 @@ import SwiftUI
 
 struct PatchView: View {
     @StateObject private var patchManager = PatchManager.shared
+    @AppStorage("enableInGameDownloadFolder") private var enableInGameDownloadFolder = false
+    @State private var showInGameDownloadInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -60,38 +62,73 @@ FnMacAssistant will open Fortnite, wait a few seconds, then apply the patch.
             .fixedSize(horizontal: false, vertical: true)
 
             glassSection {
-                HStack(spacing: 12) {
-                    Button {
-                        patchManager.startPatch()
-                    } label: {
-                        HStack(spacing: 8) {
-                            if patchManager.isPatching {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle())
-                            } else {
-                                Image(systemName: patchManager.patchCompleted ? "checkmark.circle.fill" : "bolt.fill")
-                            }
-                            Text(patchManager.patchCompleted ? "Patch Applied" : "Apply Patch")
-                                .font(.system(size: 15, weight: .semibold))
-                        }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 14)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(patchManager.isPatching)
-
-                    Spacer()
-
-                    if patchManager.patchCompleted {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
                         Button {
-                            launchFortniteViaShell()
+                            patchManager.startPatch()
                         } label: {
-                            Label("Open Fortnite", systemImage: "gamecontroller.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                                .padding(.vertical, 10)
-                                .padding(.horizontal, 12)
+                            HStack(spacing: 8) {
+                                if patchManager.isPatching {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle())
+                                } else {
+                                    Image(systemName: patchManager.patchCompleted ? "checkmark.circle.fill" : "bolt.fill")
+                                }
+                                Text(patchManager.patchCompleted ? "Patch Applied" : "Apply Patch")
+                                    .font(.system(size: 15, weight: .semibold))
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 14)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(patchManager.isPatching)
+
+                        Spacer()
+
+                        HStack(spacing: 8) {
+                            Toggle("Enable in-game download folder", isOn: $enableInGameDownloadFolder)
+                                .onChange(of: enableInGameDownloadFolder) { _, enabled in
+                                    if enabled {
+                                        patchManager.prepareInGameDownloadFolder()
+                                    } else {
+                                        patchManager.removeInGameDownloadFolder()
+                                    }
+                                }
+                                .toggleStyle(.switch)
+
+                            Button {
+                                showInGameDownloadInfo = true
+                            } label: {
+                                Image(systemName: "questionmark.circle")
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .onHover { hovering in
+                                showInGameDownloadInfo = hovering
+                            }
+                            .popover(isPresented: $showInGameDownloadInfo, arrowEdge: .top) {
+                                Text("""
+In-game downloads may not work as expected. You might need to use the app’s update helper or game assets downloader to get the files. This can also accumulate data if downloads fail.
+""")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(width: 320)
+                                .padding(12)
+                            }
+                        }
+
+                        if patchManager.patchCompleted {
+                            Button {
+                                launchFortniteViaShell()
+                            } label: {
+                                Label("Open Fortnite", systemImage: "gamecontroller.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .padding(.vertical, 10)
+                                    .padding(.horizontal, 12)
+                            }
+                            .buttonStyle(.bordered)
+                        }
                     }
                 }
             }
@@ -125,7 +162,7 @@ FnMacAssistant will open Fortnite, wait a few seconds, then apply the patch.
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(Color.secondary.opacity(0.25))
                     )
-                    .frame(minHeight: 180, maxHeight: 220)
+                    .frame(maxHeight: .infinity)
                 }
             }
 

@@ -76,17 +76,52 @@ final class PatchManager: ObservableObject {
         let result = await applyProvisionPatch()
         switch result {
         case .success:
-            updateBackgroundHttpFolder()
+            if UserDefaults.standard.bool(forKey: "enableInGameDownloadFolder") {
+                updateBackgroundHttpFolder()
+            }
             log("Patch successfully applied. You can now open Fortnite.")
             finish(true)
         case .alreadyApplied:
-            updateBackgroundHttpFolder()
+            if UserDefaults.standard.bool(forKey: "enableInGameDownloadFolder") {
+                updateBackgroundHttpFolder()
+            }
             log("Patch was already applied. No changes were made.")
             finish(false)
         case .failed:
             log("Failed to apply patch. If this happened due to permissions, grant Full Disk Access to FnMacAssistant and try again.")
             await promptFullDiskAccess()
             finish(false)
+        }
+    }
+
+    // MARK: - In-Game Download Folder
+    @MainActor
+    func prepareInGameDownloadFolder() {
+        updateBackgroundHttpFolder()
+    }
+
+    @MainActor
+    func removeInGameDownloadFolder() {
+        guard let containerPath = FortniteContainerLocator.shared.getContainerPath() else {
+            log("Could not locate Fortnite container. BackgroundHttp cleanup skipped.")
+            return
+        }
+
+        let backgroundHttpURL = URL(fileURLWithPath: containerPath)
+            .appendingPathComponent("Data/Documents/FortniteGame/PersistentDownloadDir/BackgroundHttp", isDirectory: true)
+
+        let fm = FileManager.default
+
+        guard fm.fileExists(atPath: backgroundHttpURL.path) else { return }
+
+        do {
+            let contents = try fm.contentsOfDirectory(at: backgroundHttpURL, includingPropertiesForKeys: [.isDirectoryKey])
+            for item in contents where item.lastPathComponent.hasPrefix("++") {
+                try fm.removeItem(at: item)
+            }
+            log("BackgroundHttp folder cleaned.")
+        } catch {
+            log("Failed to clean BackgroundHttp folder: \(error.localizedDescription)")
         }
     }
 

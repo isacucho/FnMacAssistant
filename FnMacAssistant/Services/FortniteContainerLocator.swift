@@ -30,12 +30,10 @@ final class FortniteContainerLocator: ObservableObject {
     // MARK: - Public API
 
     func getContainerPath() -> String? {
-        // Return cached value if available
         if let cached = cachedPath, !cached.isEmpty {
             return cached
         }
 
-        // Otherwise, locate and cache automatically
         let found = locateContainer()
         cachedPath = found
         return found
