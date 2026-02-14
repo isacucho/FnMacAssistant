@@ -63,7 +63,7 @@ final class IPAFetcher: ObservableObject {
         isLoading = false
     }
 
-    // MARK: - GitHub Gist API (no caching)
+    // MARK: - GitHub Gist API
 
     private func fetchLatestGistRawURL() async -> String? {
         let apiURL = URL(string: "https://api.github.com/gists/\(gistID)")!
@@ -90,15 +90,15 @@ final class IPAFetcher: ObservableObject {
             let gist = try JSONDecoder().decode(GistResponse.self, from: data)
 
             guard let rawURL = gist.files[gistFileName]?.raw_url else {
-                print("❌ list.json not found in gist")
+                print("list.json not found in gist")
                 return nil
             }
 
-            print("✅ Latest Gist raw URL:", rawURL)
+            print("Latest Gist raw URL:", rawURL)
             return rawURL
 
         } catch {
-            print("❌ Failed to fetch Gist metadata:", error)
+            print("Failed to fetch Gist metadata:", error)
             return nil
         }
     }
@@ -130,14 +130,14 @@ final class IPAFetcher: ObservableObject {
                 return nil
             }
 
-            print("📄 Raw JSON:", String(data: data, encoding: .utf8) ?? "Invalid JSON")
+            print("Raw JSON:", String(data: data, encoding: .utf8) ?? "Invalid JSON")
 
             let decoded = try JSONDecoder().decode([IPAInfo].self, from: data)
-            print("📦 Loaded \(decoded.count) IPAs")
+            print("\(decoded.count) IPAs found")
             return decoded
 
         } catch {
-            print("❌ IPA JSON error:", error)
+            print("IPA JSON error:", error)
             return nil
         }
     }

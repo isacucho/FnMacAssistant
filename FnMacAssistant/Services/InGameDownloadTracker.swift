@@ -54,7 +54,6 @@ final class InGameDownloadTracker: ObservableObject {
             let libraryPath = URL(fileURLWithPath: container).appendingPathComponent(libraryRelativePath).path
             let chunkDownloadFullPath = URL(fileURLWithPath: container)
                 .appendingPathComponent(chunkDownloadPath).path
-            // (as you requested: not deleted, unchanged, but harmless)
         }
 
         isDownloadingFiles = true
@@ -167,7 +166,6 @@ final class InGameDownloadTracker: ObservableObject {
         let jsonPath = URL(fileURLWithPath: container).appendingPathComponent(jsonRelativePath).path
         let libraryPath = URL(fileURLWithPath: container).appendingPathComponent(libraryRelativePath).path
 
-        // ✔ FIXED: missing chunkDownloadFullPath
         let chunkDownloadFullPath = URL(fileURLWithPath: container)
             .appendingPathComponent(chunkDownloadPath).path
 
@@ -237,7 +235,6 @@ final class InGameDownloadTracker: ObservableObject {
             let librarySize = folderSize(at: libraryPath)
             let chunkSize = folderSize(at: chunkDownloadFullPath)
 
-            // ✔ FIXED: combined size now works
             let combinedSize = librarySize + chunkSize
 
             let realDownloaded = max(currentDownloadedJSON, combinedSize, cumulativeDownloaded)

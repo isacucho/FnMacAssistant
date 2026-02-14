@@ -20,7 +20,7 @@ enum DownloadState: String, Codable {
 final class DownloadItem: ObservableObject, Identifiable {
     let id = UUID()
     let url: URL
-    @Published var progress: Double = 0.0        // 0.0 .. 1.0
+    @Published var progress: Double = 0.0        
     @Published var state: DownloadState = .idle
     @Published var totalBytesWritten: Int64 = 0
     @Published var totalBytesExpected: Int64 = NSURLSessionTransferSizeUnknown

@@ -92,7 +92,7 @@ final class FortDLManager: ObservableObject {
     var downloadProgress: Double {
         if isDone { return 1 }
         guard totalBytes > 0 else { return 0 }
-        return Double(downloadedBytes) / Double(totalBytes)
+        return min(1, Double(downloadedBytes) / Double(totalBytes))
     }
 
     var downloadProgressLabel: String {

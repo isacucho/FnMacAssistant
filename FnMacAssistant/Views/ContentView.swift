@@ -33,6 +33,8 @@ struct ContentView: View {
                     PatchView()
                 case .gameAssets:
                     GameAssetsView()
+                case .updateAssistant:
+                    UpdateAssistantView()
                 case .faq:
                     FAQView()
                 case .settings:
@@ -170,6 +172,7 @@ struct SidebarView: View {
     @Binding var selection: SidebarSection
     @ObservedObject private var downloadManager = DownloadManager.shared
     @ObservedObject private var fortDLManager = FortDLManager.shared
+    @ObservedObject private var updateAssistant = UpdateAssistantManager.shared
 
     @State private var lastIpaFinishedID: UUID?
     @State private var lastAssetsFinished: Bool = false
@@ -200,6 +203,12 @@ struct SidebarView: View {
                     systemImage: "shippingbox.fill",
                     isSelected: selection == .gameAssets
                 ) { selection = .gameAssets }
+
+                SidebarButton(
+                    label: "Update Assistant",
+                    systemImage: "arrow.triangle.2.circlepath",
+                    isSelected: selection == .updateAssistant
+                ) { selection = .updateAssistant }
                 SidebarButton(
                     label: "FAQ",
                     systemImage: "questionmark.circle.fill",
@@ -256,6 +265,25 @@ struct SidebarView: View {
                             }
                         )
                     }
+
+                    if selection != .updateAssistant,
+                       (updateAssistant.isDownloading || updateAssistant.isDone) {
+                        downloadSummaryCard(
+                            title: "Update Assistant",
+                            subtitle: updateAssistant.statusMessage,
+                            progress: updateAssistant.downloadProgress,
+                            progressLabel: updateAssistantProgressText,
+                            stateLabel: updateAssistantStateLabel,
+                            showClear: updateAssistant.isDone,
+                            showCancel: updateAssistant.isDownloading,
+                            onClear: {
+                                updateAssistant.stop()
+                            },
+                            onCancel: {
+                                updateAssistant.stop()
+                            }
+                        )
+                    }
                 }
                 .padding(.horizontal, 10)
                 .padding(.bottom, 12)
@@ -277,7 +305,9 @@ struct SidebarView: View {
         let hasIPADownload = selection != .downloads && downloadManager.downloads.first != nil
         let hasAssetsDownload = selection != .gameAssets &&
             (fortDLManager.isDownloading || fortDLManager.isInstalling || fortDLManager.isDone)
-        return hasIPADownload || hasAssetsDownload
+        let hasUpdateAssistant = selection != .updateAssistant &&
+            (updateAssistant.isDownloading || updateAssistant.isDone)
+        return hasIPADownload || hasAssetsDownload || hasUpdateAssistant
     }
 
     private var assetsSubtitle: String {
@@ -365,6 +395,20 @@ struct SidebarView: View {
         return fortDLManager.downloadPercentageLabel
     }
 
+    private var updateAssistantProgressText: String {
+        if updateAssistant.isDone {
+            return "Done"
+        }
+        return updateAssistant.downloadProgressLabel
+    }
+
+    private var updateAssistantStateLabel: String {
+        if updateAssistant.isDone {
+            return "Done"
+        }
+        return updateAssistant.downloadPercentageLabel
+    }
+
     private func scheduleIpaAutoClear() {
         guard let active = downloadManager.downloads.first else { return }
         if lastIpaFinishedID == active.id { return }
@@ -442,7 +486,7 @@ struct SidebarView: View {
     }
 }
 
-// MARK: - Sidebar Button (modern hover + select style)
+// MARK: - Sidebar Button 
 struct SidebarButton: View {
     let label: String
     let systemImage: String
@@ -489,6 +533,7 @@ enum SidebarSection {
     case downloads
     case patch
     case gameAssets
+    case updateAssistant
     case faq
     case settings
 }
