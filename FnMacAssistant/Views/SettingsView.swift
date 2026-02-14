@@ -125,6 +125,16 @@ struct SettingsView: View {
                             } label: {
                                 Text("Reset")
                             }
+                            Spacer()
+                            Button("Show in Finder") {
+                                if let path = containerLocator.getContainerPath() {
+                                    let url = URL(fileURLWithPath: path, isDirectory: true)
+                                    if !NSWorkspace.shared.openFile(path, withApplication: "Finder") {
+                                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                                    }
+                                }
+                            }
+                            .disabled(containerLocator.getContainerPath() == nil)
                         }
                     }
                 }

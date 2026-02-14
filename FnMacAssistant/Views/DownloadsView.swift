@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct DownloadsView: View {
     @ObservedObject var downloadManager = DownloadManager.shared
@@ -332,14 +333,52 @@ struct DownloadsView: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.green)
                 } else {
-                    Text("\(downloaded) / \(total) downloaded")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 10) {
+                        Text("\(downloaded) / \(total) downloaded")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Spacer()
+
+                        Text(String(format: "%.1f%%", active.progress * 100))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Button {
+                            downloadManager.pauseOrResume(active)
+                        } label: {
+                            Label(
+                                active.state == .paused ? "Resume" : "Pause",
+                                systemImage: active.state == .paused ? "play.fill" : "pause.fill"
+                            )
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button(role: .destructive) {
+                            withAnimation {
+                                downloadManager.cancelCurrentDownload()
+                                downloadManager.clearDownloads()
+                            }
+                        } label: {
+                            Label("Cancel", systemImage: "xmark.circle.fill")
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
 
-            HStack {
-                if active.state == .finished {
+            if active.state == .finished {
+                HStack {
+                    Button {
+                        if let fileURL = active.localFileURL {
+                            NSWorkspace.shared.activateFileViewerSelecting([fileURL])
+                        }
+                    } label: {
+                        Label("Show in Finder", systemImage: "folder")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(active.localFileURL == nil)
+
                     Button(role: .destructive) {
                         withAnimation {
                             downloadManager.clearDownloads()
@@ -348,28 +387,8 @@ struct DownloadsView: View {
                         Label("Clear", systemImage: "trash.fill")
                     }
                     .buttonStyle(.bordered)
-                } else {
-                    Button {
-                        downloadManager.pauseOrResume(active)
-                    } label: {
-                        Label(
-                            active.state == .paused ? "Resume" : "Pause",
-                            systemImage: active.state == .paused ? "play.fill" : "pause.fill"
-                        )
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button(role: .destructive) {
-                        withAnimation {
-                            downloadManager.cancelCurrentDownload()
-                            downloadManager.clearDownloads()
-                        }
-                    } label: {
-                        Label("Cancel", systemImage: "xmark.circle.fill")
-                    }
-                    .buttonStyle(.bordered)
+                    Spacer()
                 }
-                Spacer()
             }
         }
         .padding()
