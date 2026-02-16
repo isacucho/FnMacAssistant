@@ -12,6 +12,11 @@ struct SettingsView: View {
     @StateObject private var containerLocator = FortniteContainerLocator.shared
     @State private var showResetConfirm = false
     @State private var showFullDiskAlert = false
+    @State private var showExtraContainersSheet = false
+    @State private var autoSelectedContainer: FortniteContainerLocator.ContainerCandidate?
+    @State private var extraContainers: [FortniteContainerLocator.ContainerCandidate] = []
+    @State private var selectedExtraContainerPaths: Set<String> = []
+    @State private var deleteExtrasErrorMessage: String?
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @ObservedObject private var updateChecker = UpdateChecker.shared
 
@@ -96,8 +101,12 @@ struct SettingsView: View {
                         HStack(spacing: 12) {
 
                             Button("Find Automatically") {
-                                if let found = containerLocator.locateContainer() {
-                                    containerLocator.cachedPath = found
+                                if let result = containerLocator.locateContainerWithDetails() {
+                                    containerLocator.cachedPath = result.selected.path
+                                    autoSelectedContainer = result.selected
+                                    extraContainers = result.additional
+                                    selectedExtraContainerPaths = Set(result.additional.map(\.path))
+                                    showExtraContainersSheet = !result.additional.isEmpty
                                 } else {
                                     showFullDiskAlert = true
                                 }
@@ -261,6 +270,104 @@ FnMacAssistant needs Full Disk Access to locate Fortnite's container.
 Open System Settings > Privacy & Security > Full Disk Access, then add and enable FnMacAssistant.
 """)
         }
+        .sheet(isPresented: $showExtraContainersSheet) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Multiple Fortnite Containers Found")
+                    .font(.title3.weight(.semibold))
+
+                Text("FnMacAssistant automatically selected the container with the most Fortnite data. Do you want to delete the other detected containers?")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let selected = autoSelectedContainer {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Selected container (kept):")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.secondary)
+                        Text(selected.path)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(.secondary.opacity(0.75))
+                            .textSelection(.enabled)
+                        HStack(spacing: 14) {
+                            Text("Last modified: \(formatDate(selected.modified))")
+                            Text("Size: \(formatBytes(selected.dataSize))")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    }
+                    .padding(10)
+                    .containerBackground(.ultraThickMaterial, for: .window)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+
+                Text("If you want to use a different container, close this dialog and choose it with Select Manually.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(extraContainers) { candidate in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Toggle(isOn: Binding(
+                                    get: { selectedExtraContainerPaths.contains(candidate.path) },
+                                    set: { isOn in
+                                        if isOn {
+                                            selectedExtraContainerPaths.insert(candidate.path)
+                                        } else {
+                                            selectedExtraContainerPaths.remove(candidate.path)
+                                        }
+                                    }
+                                )) {
+                                    Text(candidate.path)
+                                        .font(.system(size: 12, design: .monospaced))
+                                        .textSelection(.enabled)
+                                }
+
+                                HStack(spacing: 14) {
+                                    Text("Last modified: \(formatDate(candidate.modified))")
+                                    Text("Size: \(formatBytes(candidate.dataSize))")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            }
+                            .padding(10)
+                            .containerBackground(.ultraThickMaterial, for: .window)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        }
+                    }
+                }
+                .frame(maxHeight: 280)
+
+                HStack {
+                    Button("Keep All") {
+                        showExtraContainersSheet = false
+                    }
+
+                    Spacer()
+
+                    Button("Delete Selected", role: .destructive) {
+                        deleteSelectedExtraContainers()
+                    }
+                    .disabled(selectedExtraContainerPaths.isEmpty)
+                }
+            }
+            .padding(20)
+            .frame(width: 640)
+        }
+        .alert("Delete Failed", isPresented: Binding(
+            get: { deleteExtrasErrorMessage != nil },
+            set: { newValue in
+                if !newValue {
+                    deleteExtrasErrorMessage = nil
+                }
+            }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteExtrasErrorMessage ?? "Could not delete selected containers.")
+        }
         .task {
             await updateChecker.checkForUpdates()
         }
@@ -301,6 +408,28 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         defaults.removeObject(forKey: "brCosmeticsWarnedRocketRacing")
         defaults.removeObject(forKey: "brCosmeticsWarnedCreative")
         defaults.removeObject(forKey: "brCosmeticsWarnedFestival")
+    }
+
+    private func deleteSelectedExtraContainers() {
+        do {
+            try containerLocator.deleteContainers(paths: Array(selectedExtraContainerPaths))
+            extraContainers.removeAll { selectedExtraContainerPaths.contains($0.path) }
+            selectedExtraContainerPaths.removeAll()
+            showExtraContainersSheet = false
+        } catch {
+            deleteExtrasErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        if date == .distantPast {
+            return "Unknown"
+        }
+        return date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private func formatBytes(_ bytes: UInt64) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 
     private func openReleasesPage() {
