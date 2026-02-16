@@ -32,9 +32,13 @@ struct DownloadsView: View {
                             Text("Latest Version")
                                 .font(.headline)
                             Spacer()
-                            Text(shownVersion ?? (ipaFetcher.isLoading ? "Fetching…" : "N/A"))
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                                .foregroundColor(.secondary)
+                            if ipaFetcher.isLoading {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Text(shownVersion ?? "N/A")
+                                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                    .foregroundColor(.secondary)
+                            }
                         }
 
                         HStack {
@@ -49,16 +53,13 @@ struct DownloadsView: View {
 
                             Spacer()
 
-                            if ipaFetcher.isLoading {
-                                ProgressView().scaleEffect(0.9)
-                            } else {
-                                Button {
-                                    Task { await refreshIPAs() }
-                                } label: {
-                                    Label("Refresh", systemImage: "arrow.clockwise")
-                                }
-                                .buttonStyle(.bordered)
+                            Button {
+                                Task { await refreshIPAs() }
+                            } label: {
+                                Label("Refresh", systemImage: "arrow.clockwise")
                             }
+                            .buttonStyle(.bordered)
+                            .disabled(ipaFetcher.isLoading)
                         }
 
                         if let pathLabel = downloadPathLabel {
