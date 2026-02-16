@@ -181,7 +181,7 @@ struct GameAssetsView: View {
                                 .id(bottomSpacerID)
                         }
                     }
-                    .padding()
+                    .padding(24)
                 }
 
               
