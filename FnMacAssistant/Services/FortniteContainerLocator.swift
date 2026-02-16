@@ -61,7 +61,7 @@ final class FortniteContainerLocator: ObservableObject {
             return nil
         }
 
-        var candidates: [(url: URL, modified: Date)] = []
+        var candidates: [(url: URL, dataSize: UInt64, modified: Date)] = []
 
         for dir in containerDirs {
             guard (try? dir.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else {
@@ -75,11 +75,51 @@ final class FortniteContainerLocator: ObservableObject {
 
             if metadataContainsFortnite(at: metadataPlist) {
                 let modDate = (try? dir.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date.distantPast
-                candidates.append((dir, modDate))
+                let dataSize = fortniteDataSize(in: dir)
+                candidates.append((dir, dataSize, modDate))
             }
         }
 
-        return candidates.sorted { $0.modified > $1.modified }.first?.url.path
+        return candidates.sorted {
+            if $0.dataSize == $1.dataSize {
+                return $0.modified > $1.modified
+            }
+            return $0.dataSize > $1.dataSize
+        }.first?.url.path
+    }
+
+    private func fortniteDataSize(in containerURL: URL) -> UInt64 {
+        let fortniteGamePath = containerURL
+            .appendingPathComponent("Data/Documents/FortniteGame", isDirectory: true)
+
+        return directorySize(at: fortniteGamePath)
+    }
+
+    private func directorySize(at url: URL) -> UInt64 {
+        guard let enumerator = FileManager.default.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileSizeKey],
+            options: [.skipsHiddenFiles],
+            errorHandler: nil
+        ) else {
+            return 0
+        }
+
+        var total: UInt64 = 0
+        for case let fileURL as URL in enumerator {
+            guard let values = try? fileURL.resourceValues(forKeys: [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileSizeKey]),
+                  values.isRegularFile == true else {
+                continue
+            }
+
+            if let allocated = values.totalFileAllocatedSize {
+                total += UInt64(allocated)
+            } else if let fileSize = values.fileSize {
+                total += UInt64(fileSize)
+            }
+        }
+
+        return total
     }
 
     private func metadataContainsFortnite(at url: URL) -> Bool {

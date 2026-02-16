@@ -393,7 +393,7 @@ struct DownloadsView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
+        .containerBackground(.ultraThickMaterial, for: .window)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .shadow(radius: 8)
     }
@@ -466,7 +466,7 @@ https://discord.gg/nfEBGJBfHD
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial)
+            .containerBackground(.ultraThickMaterial, for: .window)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

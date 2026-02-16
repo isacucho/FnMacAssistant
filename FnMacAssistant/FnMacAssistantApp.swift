@@ -20,6 +20,7 @@ struct FnMacAssistantApp: App {
         }
         .defaultSize(width: windowSize.width, height: windowSize.height)
         .windowResizability(.contentMinSize)
+        .windowToolbarStyle(.unifiedCompact)
         .commands {
         }
     }
