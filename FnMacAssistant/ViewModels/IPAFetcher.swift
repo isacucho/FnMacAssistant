@@ -40,9 +40,8 @@ final class IPAFetcher: ObservableObject {
     // MARK: - Public API
 
     func fetchAvailableIPAs() async {
+        let previousSelection = selectedIPA
         isLoading = true
-        availableIPAs.removeAll()
-        latestReleaseTag = nil
 
         guard let rawURL = await fetchLatestGistRawURL(),
               let ipaList = await fetchFromJSONSource(rawURL) else {
@@ -51,7 +50,12 @@ final class IPAFetcher: ObservableObject {
         }
 
         availableIPAs = ipaList
-        selectedIPA = ipaList.first
+        if let previousSelection,
+           let matched = ipaList.first(where: { $0.id == previousSelection.id }) {
+            selectedIPA = matched
+        } else {
+            selectedIPA = ipaList.first
+        }
 
         if let first = ipaList.first,
            let version = extractVersion(from: first.name) {
