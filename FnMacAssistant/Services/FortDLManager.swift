@@ -71,6 +71,7 @@ final class FortDLManager: ObservableObject {
 
     @AppStorage("fortdlManualManifestID") private var storedManualManifestID = ""
     @AppStorage("fortdlUseDownloadOnly") private var useDownloadOnly = true
+    @AppStorage("fortdlGameDataDownloadPath") private var gameDataDownloadPath = ""
 
     private var autoManifestID: String?
 
@@ -191,8 +192,8 @@ final class FortDLManager: ObservableObject {
               let container = FortniteContainerLocator.shared.getContainerPath()
         else { return }
 
-        let outputDir =
-        "\(container)/Data/Documents/FortniteGame/PersistentDownloadDir"
+        let defaultOutputDir = "\(container)/Data/Documents/FortniteGame/PersistentDownloadDir"
+        let outputDir = gameDataDownloadPath.isEmpty ? defaultOutputDir : gameDataDownloadPath
 
         var args = [
             "--manifest-id", manifestID,
