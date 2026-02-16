@@ -10,6 +10,19 @@ import AppKit
 import Combine   
 
 final class FortniteContainerLocator: ObservableObject {
+    struct ContainerCandidate: Identifiable, Hashable {
+        let path: String
+        let dataSize: UInt64
+        let modified: Date
+
+        var id: String { path }
+    }
+
+    struct LocateResult {
+        let selected: ContainerCandidate
+        let additional: [ContainerCandidate]
+    }
+
     static let shared = FortniteContainerLocator()
 
     @Published var cachedPath: String? {
@@ -50,6 +63,26 @@ final class FortniteContainerLocator: ObservableObject {
     // MARK: - Automatic detection
 
     func locateContainer() -> String? {
+        locateContainerWithDetails()?.selected.path
+    }
+
+    func locateContainerWithDetails() -> LocateResult? {
+        let candidates = findContainerCandidates()
+        guard let selected = candidates.first else {
+            return nil
+        }
+
+        let additional = Array(candidates.dropFirst())
+        return LocateResult(selected: selected, additional: additional)
+    }
+
+    func deleteContainers(paths: [String]) throws {
+        for path in Set(paths) {
+            try FileManager.default.removeItem(atPath: path)
+        }
+    }
+
+    private func findContainerCandidates() -> [ContainerCandidate] {
         let containersURL = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Containers")
 
@@ -58,10 +91,10 @@ final class FortniteContainerLocator: ObservableObject {
             includingPropertiesForKeys: [.contentModificationDateKey, .isDirectoryKey],
             options: .skipsHiddenFiles
         ) else {
-            return nil
+            return []
         }
 
-        var candidates: [(url: URL, dataSize: UInt64, modified: Date)] = []
+        var candidates: [ContainerCandidate] = []
 
         for dir in containerDirs {
             guard (try? dir.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else {
@@ -76,16 +109,39 @@ final class FortniteContainerLocator: ObservableObject {
             if metadataContainsFortnite(at: metadataPlist) {
                 let modDate = (try? dir.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date.distantPast
                 let dataSize = fortniteDataSize(in: dir)
-                candidates.append((dir, dataSize, modDate))
+                candidates.append(
+                    ContainerCandidate(
+                        path: dir.path,
+                        dataSize: dataSize,
+                        modified: modDate
+                    )
+                )
             }
         }
 
+        let tinyThresholdBytes: UInt64 = 5 * 1024 * 1024
+        let allTiny = !candidates.isEmpty && candidates.allSatisfy { $0.dataSize < tinyThresholdBytes }
+
         return candidates.sorted {
+            if allTiny {
+                let lhsHasLowercaseFortniteFolder = hasLowercaseFortniteFolder(in: $0.path)
+                let rhsHasLowercaseFortniteFolder = hasLowercaseFortniteFolder(in: $1.path)
+                if lhsHasLowercaseFortniteFolder != rhsHasLowercaseFortniteFolder {
+                    return lhsHasLowercaseFortniteFolder
+                }
+            }
             if $0.dataSize == $1.dataSize {
                 return $0.modified > $1.modified
             }
             return $0.dataSize > $1.dataSize
-        }.first?.url.path
+        }
+    }
+
+    private func hasLowercaseFortniteFolder(in containerPath: String) -> Bool {
+        let url = URL(fileURLWithPath: containerPath, isDirectory: true)
+            .appendingPathComponent("data/Documents/FortniteGame", isDirectory: true)
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
 
     private func fortniteDataSize(in containerURL: URL) -> UInt64 {
