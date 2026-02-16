@@ -32,7 +32,34 @@ struct UpdateAssistantView: View {
                         quickActionsCard
 
                         VStack(alignment: .leading, spacing: 10) {
-                            Toggle("Show console", isOn: $manager.showConsole)
+                            HStack(alignment: .center, spacing: 12) {
+                                if manager.isRunning {
+                                    Button("Stop") {
+                                        if manager.isDownloading {
+                                            manager.requestCancelDownload()
+                                        } else {
+                                            manager.stop()
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                } else {
+                                    Button("Start Update") {
+                                        if suppressStartPrompt {
+                                            manager.start()
+                                        } else {
+                                            dontShowStartPrompt = false
+                                            showStartPrompt = true
+                                        }
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .controlSize(.large)
+                                    .font(.system(size: 20, weight: .semibold))
+                                }
+
+                                Spacer()
+
+                                Toggle("Show console logs", isOn: $manager.showConsole)
+                            }
 
                             if manager.showConsole {
                                 consoleView
@@ -64,14 +91,16 @@ struct UpdateAssistantView: View {
         }
         .sheet(isPresented: $showStartPrompt) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Start Download Process?")
+                Text("Start Update?")
                     .font(.title2)
                     .bold()
 
                 Text("""
 This will open Fortnite and begin the download assistant.
 
-If Fortnite shows a Download button, click it. The assistant will continue automatically.
+If you are updating the base game, do not touch anything while the process runs.
+If you are installing a game mode, open your desired game mode and click Download. The assistant will continue automatically.
+When the download is finished, you will see a Download button with no update size in Fortnite. Click it to complete installation.
 """)
                 .font(.system(size: 13))
                 .foregroundColor(.secondary)
@@ -111,8 +140,8 @@ If Fortnite shows a Download button, click it. The assistant will continue autom
                 Text("Update Assistant")
                     .font(.largeTitle)
                     .bold()
-                Text(manager.statusMessage)
-                    .font(.caption)
+                Text("Created by Altermine")
+                    .font(.caption2)
                     .foregroundColor(.secondary)
             }
 
@@ -142,51 +171,26 @@ If Fortnite shows a Download button, click it. The assistant will continue autom
                 Text("Overview")
                     .font(.headline)
 
-                Text("This assistant watches Fortnite’s download log, captures all requested chunks, and downloads them directly into your game data folder.")
+                Text("This assistant watches Fortnite’s download log, captures requested chunks, and downloads them directly into your game data folder.")
                     .font(.system(size: 13))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                HStack(spacing: 10) {
-                    if manager.isRunning {
-                        Button("Stop") {
-                            if manager.isDownloading {
-                                manager.requestCancelDownload()
-                            } else {
-                                manager.stop()
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                    } else {
-                        Button("Start Download Process") {
-                            if suppressStartPrompt {
-                                manager.start()
-                            } else {
-                                dontShowStartPrompt = false
-                                showStartPrompt = true
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .font(.system(size: 16, weight: .semibold))
-                        .padding(.vertical, 6)
-                    }
-
-                    if manager.isDone {
-                        Button {
-                            openFortnite()
-                        } label: {
-                            Label("Open Fortnite", systemImage: "gamecontroller.fill")
-                        }
-                        .buttonStyle(.bordered)
-                    }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("What to do")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Base game update: click Start Update and do not touch anything until the assistant finishes.")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Game mode install: click Start Update, go to your desired game mode in Fortnite, then click Download. The rest proceeds automatically. When done, you will see a Download button with no download size insde Fortnite. Click it to complete installation.")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if manager.isRunning {
                     Text("Fortnite will open automatically.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                } else {
-                    Text("Ready when you are :)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -214,9 +218,9 @@ If Fortnite shows a Download button, click it. The assistant will continue autom
             Text("How it works")
                 .font(.headline)
 
-            stepRow(index: "1", text: "Start the process to open Fortnite.")
-            stepRow(index: "2", text: "If prompted, click Download in Fortnite.")
-            stepRow(index: "3", text: "The assistant closes Fortnite, downloads files, and reopens when ready.")
+            stepRow(index: "1", text: "Click Start Update.")
+            stepRow(index: "2", text: "Base game update: do not touch anything while it runs.")
+            stepRow(index: "3", text: "Game mode install: open your desired game mode and click Download. When finished, click the Download button with no download size inside Fortnite to complete installation.")
 
             Divider()
         }
@@ -348,6 +352,10 @@ If Fortnite shows a Download button, click it. The assistant will continue autom
         .frame(maxWidth: .infinity)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.1))
+        )
         .padding()
         .shadow(radius: 8)
     }
@@ -369,7 +377,7 @@ If Fortnite shows a Download button, click it. The assistant will continue autom
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial)
+            .containerBackground(.ultraThickMaterial, for: .window)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

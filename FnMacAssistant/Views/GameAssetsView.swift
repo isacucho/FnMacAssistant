@@ -301,7 +301,7 @@ struct GameAssetsView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
+        .containerBackground(.ultraThickMaterial, for: .window)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .padding()
         .shadow(radius: 8)
@@ -544,7 +544,7 @@ struct GameAssetsView: View {
             }
         }
         .padding(manager.showAssets ? 16 : 10)
-        .background(.ultraThinMaterial)
+        .containerBackground(.ultraThickMaterial, for: .window)
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
@@ -657,8 +657,8 @@ struct GameAssetsView: View {
                 Text("Game Assets")
                     .font(.largeTitle)
                     .bold()
-                Text(manager.isDownloading ? "Downloading…" : "Ready")
-                    .font(.caption)
+                Text("Powered by fort-dl by sneakyf1shy")
+                    .font(.caption2)
                     .foregroundColor(.secondary)
             }
 
@@ -673,7 +673,7 @@ struct GameAssetsView: View {
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial)
+            .containerBackground(.ultraThickMaterial, for: .window)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

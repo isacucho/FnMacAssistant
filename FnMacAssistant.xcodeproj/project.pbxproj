@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		31A1B2012F7A000100C0A101 /* UpdateAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */; };
-		31A1B2012F7A000100C0A102 /* UpdateAssistantManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */; };
 		3008A9112EBD2FCC00647857 /* FnMacAssistantApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */; };
 		3008A9122EBD2FCC00647857 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3008A90B2EBD2FCC00647857 /* Assets.xcassets */; };
 		3008A9192EBD302D00647857 /* DownloadItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9182EBD302400647857 /* DownloadItem.swift */; };
@@ -31,6 +29,8 @@
 		30C9CF0C2F3BBF2900A7EE45 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */; };
 		30DCDF522F226E8F000D6758 /* fort-dl in Resources */ = {isa = PBXBuildFile; fileRef = 30DCDF512F226E8F000D6758 /* fort-dl */; };
 		30DCDF532F226EF2000D6758 /* fort-dl in Copy Files */ = {isa = PBXBuildFile; fileRef = 30DCDF512F226E8F000D6758 /* fort-dl */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		31A1B2012F7A000100C0A101 /* UpdateAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */; };
+		31A1B2012F7A000100C0A102 /* UpdateAssistantManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -48,8 +48,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantView.swift; sourceTree = "<group>"; };
-		31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantManager.swift; sourceTree = "<group>"; };
 		3008A8EE2EBD2D8800647857 /* FnMacAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FnMacAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3008A90B2EBD2FCC00647857 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FnMacAssistantApp.swift; sourceTree = "<group>"; };
@@ -72,6 +70,8 @@
 		309947AE2EC3ADFE008B1F2A /* PatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchView.swift; sourceTree = "<group>"; };
 		30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 		30DCDF512F226E8F000D6758 /* fort-dl */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "fort-dl"; sourceTree = "<group>"; };
+		31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantView.swift; sourceTree = "<group>"; };
+		31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -421,7 +421,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 2.0b3;
+				MARKETING_VERSION = 2.0b4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.isacucho.FnMacAssistant;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -472,7 +472,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 2.0b3;
+				MARKETING_VERSION = 2.0b4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.isacucho.FnMacAssistant;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;

@@ -205,7 +205,7 @@ private extension PatchView {
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial)
+            .containerBackground(.ultraThickMaterial, for: .window)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

@@ -43,7 +43,7 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(.ultraThinMaterial)
+        .containerBackground(.ultraThickMaterial, for: .window)
         .sheet(item: $startupSheet) { sheet in
             switch sheet {
             case .update:
@@ -172,7 +172,7 @@ struct SidebarView: View {
     @Binding var selection: SidebarSection
     @ObservedObject private var downloadManager = DownloadManager.shared
     @ObservedObject private var fortDLManager = FortDLManager.shared
-    @ObservedObject private var updateAssistant = UpdateAssistantManager.shared
+    @ObservedObject private var updateAssistantManager = UpdateAssistantManager.shared
 
     @State private var lastIpaFinishedID: UUID?
     @State private var lastAssetsFinished: Bool = false
@@ -268,20 +268,20 @@ struct SidebarView: View {
                     }
 
                     if selection != .updateAssistant,
-                       (updateAssistant.isDownloading || updateAssistant.isDone) {
+                       (updateAssistantManager.isDownloading || updateAssistantManager.isDone) {
                         downloadSummaryCard(
                             title: "Update Assistant",
-                            subtitle: updateAssistant.statusMessage,
-                            progress: updateAssistant.downloadProgress,
+                            subtitle: updateAssistantManager.statusMessage,
+                            progress: updateAssistantManager.downloadProgress,
                             progressLabel: updateAssistantProgressText,
                             stateLabel: updateAssistantStateLabel,
-                            showClear: updateAssistant.isDone,
-                            showCancel: updateAssistant.isDownloading,
+                            showClear: updateAssistantManager.isDone,
+                            showCancel: updateAssistantManager.isDownloading,
                             onClear: {
-                                updateAssistant.stop()
+                                updateAssistantManager.stop()
                             },
                             onCancel: {
-                                updateAssistant.stop()
+                                updateAssistantManager.stop()
                             }
                         )
                     }
@@ -306,7 +306,7 @@ struct SidebarView: View {
         let hasAssetsDownload = selection != .gameAssets &&
             (fortDLManager.isDownloading || fortDLManager.isInstalling || fortDLManager.isDone)
         let hasUpdateAssistant = selection != .updateAssistant &&
-            (updateAssistant.isDownloading || updateAssistant.isDone)
+            (updateAssistantManager.isDownloading || updateAssistantManager.isDone)
         return hasIPADownload || hasAssetsDownload || hasUpdateAssistant
     }
 
@@ -396,17 +396,17 @@ struct SidebarView: View {
     }
 
     private var updateAssistantProgressText: String {
-        if updateAssistant.isDone {
+        if updateAssistantManager.isDone {
             return "Done"
         }
-        return updateAssistant.downloadProgressLabel
+        return updateAssistantManager.downloadProgressLabel
     }
 
     private var updateAssistantStateLabel: String {
-        if updateAssistant.isDone {
+        if updateAssistantManager.isDone {
             return "Done"
         }
-        return updateAssistant.downloadPercentageLabel
+        return updateAssistantManager.downloadPercentageLabel
     }
 
     private func scheduleIpaAutoClear() {
@@ -477,7 +477,7 @@ struct SidebarView: View {
             }
         }
         .padding(8)
-        .background(.ultraThinMaterial)
+        .containerBackground(.ultraThickMaterial, for: .window)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 8)

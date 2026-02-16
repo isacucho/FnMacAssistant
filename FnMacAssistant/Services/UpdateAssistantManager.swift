@@ -18,7 +18,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     @Published var isPaused = false
     @Published var statusMessage: String = "Ready"
     @Published var logOutput: String = ""
-    @Published var showConsole: Bool = true
+    @Published var showConsole: Bool = false
 
     @Published var downloadedBytes: Int64 = 0
     @Published var totalBytes: Int64 = 0
@@ -93,14 +93,17 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         Task { @MainActor in
             let alert = NSAlert()
             alert.messageText = "Cancel download?"
-            alert.informativeText = "This will stop the update assistant and delete any downloaded data from this session."
+            alert.informativeText = "You can stop and keep downloaded files, or stop and delete downloaded files from this session."
             alert.alertStyle = .critical
-            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "Keep Downloading")
+            alert.addButton(withTitle: "Stop Without Deleting")
             alert.addButton(withTitle: "Delete & Stop")
-            alert.buttons[1].hasDestructiveAction = true
+            alert.buttons[2].hasDestructiveAction = true
 
             let response = alert.runModal()
             if response == .alertSecondButtonReturn {
+                stopInternal(deleteDownloaded: false)
+            } else if response == .alertThirdButtonReturn {
                 stopInternal(deleteDownloaded: true)
             }
         }
@@ -113,6 +116,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             DispatchQueue.main.async {
                 self.isPaused = true
                 self.statusMessage = "Paused"
+                self.appendLog("Download paused.")
+                print("[UpdateAssistant] Download paused.")
             }
         }
     }
@@ -124,6 +129,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             DispatchQueue.main.async {
                 self.isPaused = false
                 self.statusMessage = "Downloading…"
+                self.appendLog("Download resumed.")
+                print("[UpdateAssistant] Download resumed.")
             }
         }
     }
@@ -170,7 +177,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             openFortnite()
             updateStatus("Waiting for Fortnite log reset…")
         } else {
-            updateStatus("Fortnite is already open. Tracking current log…")
+            updateStatus("Fortnite is already open. Scanning current log…")
+            appendLog("Fortnite is already open. Scanning current log for ongoing downloads.")
         }
 
         if !wasRunning {
@@ -182,14 +190,15 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             }
         }
 
-        prepareLogReader(logPath: logPath, skipExisting: wasRunning)
+        // If Fortnite is already open, include existing log content so ongoing downloads are picked up.
+        prepareLogReader(logPath: logPath, skipExisting: false)
 
         updateStatus("Waiting for download link…")
         appendLog("If you are updating a game mode, click the Download button in Fortnite.\n" +
                   "Update Assistant will close Fortnite as soon as it detects the download link.\n")
 
         let requestRegex = try? NSRegularExpression(
-            pattern: "LogFortInstallBundleManager: Display: InstallBundleSourceBPS: Requesting Chunk [^\\s]* from CDN for Request (\\S*) .* (\\d+) (https://.*) \\[(ChunkDb|Direct Install)\\]$",
+            pattern: "LogFortInstallBundleManager: Display: InstallBundleSourceBPS: Requesting Chunk [^\\s]* from CDN for Request (\\S*) \\[(\\d+)/(\\d+)\\]: (\\d+) (https://.*) \\[(ChunkDb|Direct Install)\\]$",
             options: [.anchorsMatchLines]
         )
 
@@ -206,6 +215,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         var pendingTasks: [DownloadTask] = []
         var pendingKeySet: Set<String> = []
         var lastLinkDetected: Date?
+        var chunkProgressByTarget: [String: (expected: Int, observed: Set<Int>)] = [:]
+        let incompleteChunkWaitTimeout: TimeInterval = 5
 
         while !Task.isCancelled {
             if Task.isCancelled { break }
@@ -229,15 +240,26 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                 guard let match = requestRegex.firstMatch(in: line, options: [], range: fullRange) else { continue }
 
                 let target = nsLine.substring(with: match.range(at: 1))
-                let sizeStr = nsLine.substring(with: match.range(at: 2))
-                let urlStr = nsLine.substring(with: match.range(at: 3))
-                let typeStr = nsLine.substring(with: match.range(at: 4))
+                let currentPartStr = nsLine.substring(with: match.range(at: 2))
+                let totalPartsStr = nsLine.substring(with: match.range(at: 3))
+                let sizeStr = nsLine.substring(with: match.range(at: 4))
+                let urlStr = nsLine.substring(with: match.range(at: 5))
+                let typeStr = nsLine.substring(with: match.range(at: 6))
                 let isDirect = (typeStr == "Direct Install")
 
                 guard let size = Int64(sizeStr),
                       let url = URL(string: urlStr) else {
                     replaceLog("ERROR: Invalid download task data, skipping.")
                     continue
+                }
+
+                if !isDirect,
+                   let currentPart = Int(currentPartStr),
+                   let totalParts = Int(totalPartsStr) {
+                    var progress = chunkProgressByTarget[target] ?? (expected: totalParts, observed: [])
+                    progress.expected = max(progress.expected, totalParts)
+                    progress.observed.insert(currentPart)
+                    chunkProgressByTarget[target] = progress
                 }
 
                 var filename = url.lastPathComponent
@@ -301,6 +323,18 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             if let lastLink = lastLinkDetected {
                 let elapsed = Date().timeIntervalSince(lastLink)
                 if elapsed >= 2, !pendingTasks.isEmpty {
+                    let incompleteTargets = chunkProgressByTarget
+                        .filter { $0.value.expected > 0 && $0.value.observed.count < $0.value.expected }
+                    if !incompleteTargets.isEmpty && elapsed < incompleteChunkWaitTimeout {
+                        let summary = incompleteTargets
+                            .map { "\($0.key): \($0.value.observed.count)/\($0.value.expected)" }
+                            .sorted()
+                            .joined(separator: ", ")
+                        replaceLog("Waiting for remaining chunk requests before closing Fortnite... \(summary)")
+                        try? await Task.sleep(nanoseconds: 300_000_000)
+                        continue
+                    }
+
                     replaceLog("Batch complete. Preparing downloads…")
 
                     if !didCloseFortnite {
@@ -310,9 +344,20 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                         didCloseFortnite = true
                     }
 
+                    let hasDirectInstall = pendingTasks.contains(where: { $0.isDirect })
+                    let hasChunkDb = pendingTasks.contains(where: { !$0.isDirect })
+                    if hasDirectInstall && hasChunkDb {
+                        appendLog("Mixed batch detected (Direct Install + ChunkDb). Downloading both entry types.")
+                    } else if hasDirectInstall {
+                        appendLog("Direct Install entries detected. Downloading Direct Install entries.")
+                    } else {
+                        appendLog("ChunkDb entries detected. Downloading ChunkDb entries.")
+                    }
+
                     let filtered = pendingTasks.filter { !fileExists($0.fullPath, size: $0.size) }
                     pendingTasks.removeAll()
                     pendingKeySet.removeAll()
+                    chunkProgressByTarget.removeAll()
                     lastLinkDetected = nil
 
                     if filtered.isEmpty {
@@ -326,35 +371,57 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                     DispatchQueue.main.async { self.isDownloading = true }
 
                     var baseDownloaded: Int64 = 0
-                    if filtered.contains(where: { $0.isDirect }) {
-                        appendLog("Base game download detected.")
-                    } else {
-                        appendLog("Game mode download detected.")
-                    }
+
                     for task in filtered {
                         if Task.isCancelled { break }
-                        do {
-                            let destURL = URL(fileURLWithPath: task.fullPath)
-                            try await downloadFile(
-                                from: task.url,
-                                to: destURL,
-                                expectedSize: task.size,
-                                baseDownloadedBytes: baseDownloaded
-                            )
-                            baseDownloaded += task.size
-                            self.batchDownloadedPaths.append(task.fullPath)
-                            self.batchTargetDirs.insert((task.fullPath as NSString).deletingLastPathComponent)
-                            appendLog("Saving to: \(task.relativePath)")
-                        } catch {
-                            replaceLog("DOWNLOAD ERROR: \(error.localizedDescription)")
-                            appendLog("Skipping the task.")
+                        var completed = false
+                        var attempt = 0
+                        while !Task.isCancelled, !completed {
+                            do {
+                                let destURL = URL(fileURLWithPath: task.fullPath)
+                                try await downloadFile(
+                                    from: task.url,
+                                    to: destURL,
+                                    expectedSize: task.size,
+                                    baseDownloadedBytes: baseDownloaded
+                                )
+                                completed = true
+                                baseDownloaded += task.size
+                                self.batchDownloadedPaths.append(task.fullPath)
+                                self.batchTargetDirs.insert((task.fullPath as NSString).deletingLastPathComponent)
+                                appendLog("Saving to: \(task.relativePath)")
+                            } catch {
+                                attempt += 1
+                                let isRetryable = shouldRetryDownload(error)
+                                replaceLog("DOWNLOAD ERROR: \(error.localizedDescription)")
+                                if isNetworkConnectionLostError(error) {
+                                    let networkMessage = "Network connection lost. Waiting to retry download."
+                                    appendLog(networkMessage)
+                                    print("[UpdateAssistant] \(networkMessage)")
+                                }
+                                if !Task.isCancelled {
+                                    let retryMessage = isRetryable
+                                        ? "Retrying (\(attempt)) after temporary interruption…"
+                                        : "Retrying (\(attempt)) after error…"
+                                    appendLog(retryMessage)
+                                    print("[UpdateAssistant] \(retryMessage)")
+                                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                }
+                            }
                         }
                         appendLog("\n")
+                    }
+
+                    if Task.isCancelled {
+                        appendLog("\nAborted")
+                        finalize(success: false)
+                        return
                     }
 
                     DispatchQueue.main.async {
                         self.downloadedBytes = baseDownloaded
                     }
+                    appendLog("Downloaded a total of \(formatSize(bytes: baseDownloaded)).")
 
                     finalize(success: true)
                     return
@@ -695,7 +762,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             let now = Date()
             let elapsed = now.timeIntervalSince(state.startDate)
 
-            if now.timeIntervalSince(state.lastLogUpdate) > 0.25 {
+            if now.timeIntervalSince(state.lastLogUpdate) >= 0.5 {
                 let speed = elapsed > 0 ? self.formatSpeed(bytesPerSec: Double(state.downloadedBytes) / elapsed) : ""
                 let sizeLabel = self.formatSizeProgress(downloaded: state.downloadedBytes, total: state.expectedBytes)
                 let speedLabel = speed.isEmpty ? "" : " at \(speed)"
@@ -704,10 +771,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                     self.replaceLog("Downloading: \(sizeLabel)\(speedLabel)")
                 }
                 state.lastLogUpdate = now
-            } else {
-                DispatchQueue.main.async {
-                    self.downloadedBytes = state.baseDownloadedBytes + state.downloadedBytes
-                }
             }
 
             self.downloadState = state
@@ -811,6 +874,34 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             return "\(percent)% — \(formatSize(bytes: downloaded)) of \(formatSize(bytes: total))"
         }
         return formatSize(bytes: downloaded)
+    }
+
+    private func shouldRetryDownload(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        guard nsError.domain == NSURLErrorDomain else { return false }
+
+        switch nsError.code {
+        case NSURLErrorCancelled,
+             NSURLErrorTimedOut,
+             NSURLErrorNetworkConnectionLost,
+             NSURLErrorNotConnectedToInternet,
+             NSURLErrorCannotConnectToHost,
+             NSURLErrorCannotFindHost,
+             NSURLErrorDNSLookupFailed,
+             NSURLErrorDataNotAllowed,
+             NSURLErrorInternationalRoamingOff,
+             NSURLErrorCallIsActive,
+             NSURLErrorCannotLoadFromNetwork:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func isNetworkConnectionLostError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        guard nsError.domain == NSURLErrorDomain else { return false }
+        return nsError.code == NSURLErrorNetworkConnectionLost || nsError.code == NSURLErrorNotConnectedToInternet
     }
 
     private func parseDirectInstallConfig(
