@@ -10,8 +10,6 @@ import SwiftUI
 struct UpdateAssistantView: View {
     @ObservedObject private var manager = UpdateAssistantManager.shared
 
-    @State private var consoleUserScrolledAway = false
-    @State private var consoleViewportHeight: CGFloat = 0
     @State private var showStartPrompt = false
     @State private var dontShowStartPrompt = false
     @AppStorage("updateAssistantSuppressStartPrompt") private var suppressStartPrompt = false
@@ -21,6 +19,10 @@ struct UpdateAssistantView: View {
 
     private var showsProgressBar: Bool {
         manager.isDownloading || manager.isDone
+    }
+
+    private var shouldAutoScrollConsole: Bool {
+        !manager.isPaused && !manager.isDone
     }
 
     var body: some View {
@@ -230,53 +232,43 @@ When the download is finished, you will see a Download button with no update siz
     // MARK: - Console View
 
     private var consoleView: some View {
-        GeometryReader { viewportProxy in
-            let height = viewportProxy.size.height
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(manager.logOutput)
-                            .font(.system(size: 12, design: .monospaced))
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                            .textSelection(.enabled)
-                            .padding(8)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(manager.logOutput)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .textSelection(.enabled)
+                        .padding(8)
 
-                        GeometryReader { bottomProxy in
-                            Color.clear
-                                .preference(
-                                    key: UpdateConsoleBottomOffsetKey.self,
-                                    value: bottomProxy.frame(in: .named("updateConsoleScroll")).maxY
-                                )
-                        }
+                    Color.clear
                         .frame(height: 1)
                         .id("consoleBottom")
-                    }
                 }
-                .coordinateSpace(name: "updateConsoleScroll")
-                .background(Color(NSColor.textBackgroundColor).opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.secondary.opacity(0.3))
-                )
-                .onChange(of: manager.logOutput) {
-                    if !consoleUserScrolledAway {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            proxy.scrollTo("consoleBottom", anchor: .bottom)
-                        }
-                    }
+            }
+            .background(Color(NSColor.textBackgroundColor).opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.secondary.opacity(0.3))
+            )
+            .onChange(of: manager.logOutput) {
+                guard shouldAutoScrollConsole else { return }
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo("consoleBottom", anchor: .bottom)
                 }
-                .onAppear {
-                    consoleViewportHeight = height
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        proxy.scrollTo("consoleBottom", anchor: .bottom)
-                    }
+            }
+            .onAppear {
+                guard shouldAutoScrollConsole else { return }
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo("consoleBottom", anchor: .bottom)
                 }
-                .onPreferenceChange(UpdateConsoleBottomOffsetKey.self) { bottomY in
-                    consoleViewportHeight = height
-                    let atBottom = bottomY <= height + 8
-                    consoleUserScrolledAway = !atBottom
+            }
+            .onChange(of: manager.isPaused) { _, isPaused in
+                guard !isPaused && shouldAutoScrollConsole else { return }
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo("consoleBottom", anchor: .bottom)
                 }
             }
         }
@@ -376,12 +368,5 @@ When the download is finished, you will see a Download button with no update siz
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(Color.white.opacity(0.1))
             )
-    }
-}
-
-private struct UpdateConsoleBottomOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
     }
 }
