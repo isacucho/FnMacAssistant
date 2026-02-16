@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var deleteExtrasErrorMessage: String?
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("fortdlUseDownloadOnly") private var fortdlUseDownloadOnly = true
+    @AppStorage("fortdlGameDataDownloadPath") private var fortdlGameDataDownloadPath = ""
     @ObservedObject private var updateChecker = UpdateChecker.shared
 
     var body: some View {
@@ -82,6 +83,39 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("fort-dl Settings")
                                 .font(.headline)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Game Data Download Path")
+                                    .font(.subheadline)
+
+                                Text("Current selected path: \(fortdlCurrentPathLabel)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                    .textSelection(.enabled)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            HStack(spacing: 12) {
+                                Button("Change Path…") {
+                                    let panel = NSOpenPanel()
+                                    panel.title = "Select fort-dl Game Data Download Path"
+                                    panel.message = "Choose where fort-dl should save game data downloads."
+                                    panel.canChooseDirectories = true
+                                    panel.canChooseFiles = false
+                                    panel.allowsMultipleSelection = false
+                                    panel.prompt = "Select"
+
+                                    if panel.runModal() == .OK, let url = panel.url {
+                                        fortdlGameDataDownloadPath = url.path
+                                    }
+                                }
+
+                                Button("Use Default ($CONTAINER)") {
+                                    fortdlGameDataDownloadPath = ""
+                                }
+                            }
+
+                            Divider()
 
                             Toggle("Run fort-dl with --download-only", isOn: $fortdlUseDownloadOnly)
 
@@ -420,12 +454,20 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         defaults.removeObject(forKey: "FortniteContainerPath")
         defaults.removeObject(forKey: "fortdlManualManifestID")
         defaults.removeObject(forKey: "fortdlUseDownloadOnly")
+        defaults.removeObject(forKey: "fortdlGameDataDownloadPath")
         defaults.removeObject(forKey: "notificationsEnabled")
         defaults.removeObject(forKey: "brCosmeticsWarningDisabled")
         defaults.removeObject(forKey: "brCosmeticsWarnedBattleRoyale")
         defaults.removeObject(forKey: "brCosmeticsWarnedRocketRacing")
         defaults.removeObject(forKey: "brCosmeticsWarnedCreative")
         defaults.removeObject(forKey: "brCosmeticsWarnedFestival")
+    }
+
+    private var fortdlCurrentPathLabel: String {
+        if fortdlGameDataDownloadPath.isEmpty {
+            return "$CONTAINER/Data/Documents/FortniteGame/PersistentDownloadDir"
+        }
+        return fortdlGameDataDownloadPath
     }
 
     private func deleteSelectedExtraContainers() {
