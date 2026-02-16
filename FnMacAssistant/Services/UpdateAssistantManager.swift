@@ -53,6 +53,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private var downloadTask: URLSessionDataTask?
     private var batchDownloadedPaths: [String] = []
     private var batchTargetDirs: Set<String> = []
+    private var didNotifyForCurrentRun = false
 
     private struct DownloadState {
         var tempURL: URL
@@ -171,6 +172,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             self.logLines.removeAll()
             self.logOutput = ""
         }
+        didNotifyForCurrentRun = false
         batchTargetDirs.removeAll()
         batchDownloadedPaths.removeAll()
     }
@@ -229,6 +231,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         var lastLinkDetected: Date?
         var chunkProgressByTarget: [String: (expected: Int, observed: Set<Int>)] = [:]
         let incompleteChunkWaitTimeout: TimeInterval = 5
+        let bundleDetectionWaitSeconds: TimeInterval = 3
 
         while !Task.isCancelled {
             if Task.isCancelled { break }
@@ -335,7 +338,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
             if let lastLink = lastLinkDetected {
                 let elapsed = Date().timeIntervalSince(lastLink)
-                if elapsed >= 2, !pendingTasks.isEmpty {
+                if elapsed >= bundleDetectionWaitSeconds, !pendingTasks.isEmpty {
                     let incompleteTargets = chunkProgressByTarget
                         .filter { $0.value.expected > 0 && $0.value.observed.count < $0.value.expected }
                     if !incompleteTargets.isEmpty && elapsed < incompleteChunkWaitTimeout {
@@ -564,12 +567,26 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             self.isPaused = false
             self.statusMessage = success ? "Done" : "Stopped"
         }
+        if success {
+            notifyIfNeeded()
+        }
     }
 
     private func updateStatus(_ message: String) {
         DispatchQueue.main.async {
             self.statusMessage = message
         }
+    }
+
+    private func notifyIfNeeded() {
+        guard !didNotifyForCurrentRun else { return }
+        didNotifyForCurrentRun = true
+        let enabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+        guard enabled else { return }
+        NotificationHelper.shared.post(
+            title: "Update Assistant finished",
+            body: "Update downloads are complete. You can open Fortnite now."
+        )
     }
 
     private func appendLog(_ message: String) {
@@ -965,7 +982,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         }
 
         let targetLower = target.lowercased()
-        let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z]{2})?)(?:optional)?$"#
+        let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z0-9]{2,3})?)(?:optional)?$"#
         let languageRegex = try? NSRegularExpression(pattern: languagePattern, options: [])
         let targetRange = NSRange(location: 0, length: targetLower.utf16.count)
         let languageCode: String? = {
@@ -975,12 +992,24 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             return String(targetLower[codeRange])
         }()
 
-        let normalized = targetLower
-            .replacingOccurrences(of: ".", with: "")
-            .replacingOccurrences(of: " ", with: "")
-            .replacingOccurrences(of: "-", with: "")
-            .replacingOccurrences(of: "_", with: "")
+        var normalized = targetLower
             .replacingOccurrences(of: "optional", with: "")
+            .replacingOccurrences(of: ".", with: "_")
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "-", with: "_")
+
+        while normalized.contains("__") {
+            normalized = normalized.replacingOccurrences(of: "__", with: "_")
+        }
+        normalized = normalized.trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+
+        if normalized.hasPrefix("gfp"), !normalized.hasPrefix("gfp_"), normalized.count > 3 {
+            normalized = "gfp_" + String(normalized.dropFirst(3))
+        }
+
+        if normalized == "gfp_brcosmeticsinstallondemand" {
+            normalized = "gfp_brcosmeticsondemandiad"
+        }
 
         let lowerPath = path.lowercased()
         let shouldRewrite =
@@ -1003,7 +1032,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
     private func writeOptionalLanguagePlaceholderCopyIfNeeded(for task: DownloadTask) {
         let targetLower = task.target.lowercased()
-        let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z]{2})?)optional$"#
+        let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z0-9]{2,3})?)optional$"#
         guard let languageRegex = try? NSRegularExpression(pattern: languagePattern, options: []) else { return }
         let range = NSRange(location: 0, length: targetLower.utf16.count)
         guard let match = languageRegex.firstMatch(in: targetLower, options: [], range: range),
