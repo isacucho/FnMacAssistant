@@ -223,7 +223,8 @@ struct SidebarView: View {
             }
             .padding(.top, 10)
             .padding(.horizontal, 8)
-
+            .focusSection()
+            
             Spacer()
 
             if hasAnyDownloadSummary {
@@ -298,7 +299,6 @@ struct SidebarView: View {
             )
             .blur(radius: 10)
         )
-        .overlay(Divider(), alignment: .trailing)
     }
 
     private var hasAnyDownloadSummary: Bool {
@@ -506,9 +506,8 @@ struct SidebarButton: View {
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .background(RoundedRectangle(cornerRadius: 8).foregroundStyle(backgroundColor))
             .animation(.easeInOut(duration: 0.15), value: isHovered)
         }
         .buttonStyle(.plain)
