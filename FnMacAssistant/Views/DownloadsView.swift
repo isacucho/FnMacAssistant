@@ -393,8 +393,12 @@ struct DownloadsView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .containerBackground(.ultraThickMaterial, for: .window)
+        .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.1))
+        )
         .shadow(radius: 8)
     }
 

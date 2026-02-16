@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var selectedExtraContainerPaths: Set<String> = []
     @State private var deleteExtrasErrorMessage: String?
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @AppStorage("fortdlUseDownloadOnly") private var fortdlUseDownloadOnly = true
     @ObservedObject private var updateChecker = UpdateChecker.shared
 
     var body: some View {
@@ -73,6 +74,22 @@ struct SettingsView: View {
                                 Button("Reset to Default") {
                                     downloadManager.resetDownloadFolder()
                                 }
+                            }
+                        }
+                    }
+
+                    glassSection {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("fort-dl Settings")
+                                .font(.headline)
+
+                            Toggle("Run fort-dl with --download-only", isOn: $fortdlUseDownloadOnly)
+
+                            if !fortdlUseDownloadOnly {
+                                Text("Warning: Not using --download-only can temporarily use about double the storage space while downloading and installing.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.orange)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                     }
@@ -402,6 +419,7 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         defaults.removeObject(forKey: "defaultDownloadFolderPath")
         defaults.removeObject(forKey: "FortniteContainerPath")
         defaults.removeObject(forKey: "fortdlManualManifestID")
+        defaults.removeObject(forKey: "fortdlUseDownloadOnly")
         defaults.removeObject(forKey: "notificationsEnabled")
         defaults.removeObject(forKey: "brCosmeticsWarningDisabled")
         defaults.removeObject(forKey: "brCosmeticsWarnedBattleRoyale")
