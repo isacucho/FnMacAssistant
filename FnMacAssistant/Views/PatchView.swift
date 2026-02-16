@@ -168,7 +168,7 @@ In-game downloads may not work as expected. You might need to use the app’s up
 
             Spacer()
         }
-        .padding(28)
+        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
