@@ -14,6 +14,7 @@ struct DownloadsView: View {
 
     @State private var shownVersion: String? = nil
     @State private var showCancelPrompt = false
+    private let ipaPickerWidth: CGFloat = 340
     @State private var showStorageAlert = false
     @State private var storageAlertMessage = ""
     @State private var didAutoScrollToDownload = false
@@ -41,15 +42,31 @@ struct DownloadsView: View {
                             }
                         }
 
-                        HStack {
-                            Picker("Select IPA:", selection: $ipaFetcher.selectedIPA) {
-                                ForEach(ipaFetcher.availableIPAs) { ipa in
-                                    Text(ipa.name).tag(Optional(ipa))
+                        HStack(spacing: 10) {
+                            Text("Select IPA")
+                                .font(.system(size: 14, weight: .semibold))
+
+                            if ipaFetcher.isLoading {
+                                Text("Loading...")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: ipaPickerWidth, alignment: .leading)
+                            } else {
+                                Picker("Select IPA", selection: $ipaFetcher.selectedIPA) {
+                                    if ipaFetcher.availableIPAs.isEmpty {
+                                        Text("No IPA available")
+                                            .tag(Optional<IPAFetcher.IPAInfo>.none)
+                                    } else {
+                                        ForEach(ipaFetcher.availableIPAs) { ipa in
+                                            Text(ipa.name).tag(Optional(ipa))
+                                        }
+                                    }
                                 }
+                                .labelsHidden()
+                                .font(.system(size: 14, weight: .semibold))
+                                .pickerStyle(.menu)
+                                .frame(width: ipaPickerWidth, alignment: .leading)
                             }
-                            .font(.system(size: 14, weight: .semibold))
-                            .pickerStyle(.menu)
-                            .frame(minWidth: 260)
 
                             Spacer()
 
