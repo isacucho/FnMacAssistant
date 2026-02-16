@@ -11,6 +11,7 @@ import Combine
 
 final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDelegate {
     static let shared = UpdateAssistantManager()
+    private static let showConsoleDefaultsKey = "updateAssistantShowConsole"
 
     @Published var isDownloading = false
     @Published var isTracking = false
@@ -18,7 +19,18 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     @Published var isPaused = false
     @Published var statusMessage: String = "Ready"
     @Published var logOutput: String = ""
-    @Published var showConsole: Bool = false
+    @Published var showConsole: Bool = {
+        let defaults = UserDefaults.standard
+        let key = "updateAssistantShowConsole"
+        if defaults.object(forKey: key) == nil {
+            return false
+        }
+        return defaults.bool(forKey: key)
+    }() {
+        didSet {
+            UserDefaults.standard.set(showConsole, forKey: Self.showConsoleDefaultsKey)
+        }
+    }
 
     @Published var downloadedBytes: Int64 = 0
     @Published var totalBytes: Int64 = 0
@@ -313,7 +325,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                             relativePath: relativePath,
                             fullPath: fullPath,
                             size: fileSize,
-                            isDirect: isDirect
+                            isDirect: isDirect,
+                            target: target
                         )
                     )
                 }
@@ -389,6 +402,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                                 baseDownloaded += task.size
                                 self.batchDownloadedPaths.append(task.fullPath)
                                 self.batchTargetDirs.insert((task.fullPath as NSString).deletingLastPathComponent)
+                                writeOptionalLanguagePlaceholderCopyIfNeeded(for: task)
                                 appendLog("Saving to: \(task.relativePath)")
                             } catch {
                                 attempt += 1
@@ -945,20 +959,78 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     }
 
     private func adjustPlaceholderFilenameIfNeeded(_ filename: String, target: String) -> String {
-        let normalized = target.lowercased()
+        let path = filename.replacingOccurrences(of: "\\", with: "/")
+        guard path.contains("/defaulttags/") else {
+            return filename
+        }
+
+        let targetLower = target.lowercased()
+        let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z]{2})?)(?:optional)?$"#
+        let languageRegex = try? NSRegularExpression(pattern: languagePattern, options: [])
+        let targetRange = NSRange(location: 0, length: targetLower.utf16.count)
+        let languageCode: String? = {
+            guard let languageRegex,
+                  let match = languageRegex.firstMatch(in: targetLower, options: [], range: targetRange),
+                  let codeRange = Range(match.range(at: 1), in: targetLower) else { return nil }
+            return String(targetLower[codeRange])
+        }()
+
+        let normalized = targetLower
+            .replacingOccurrences(of: ".", with: "")
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: "-", with: "")
             .replacingOccurrences(of: "_", with: "")
+            .replacingOccurrences(of: "optional", with: "")
 
-        let path = filename.replacingOccurrences(of: "\\", with: "/")
-        guard path.contains("/defaulttags/"),
-              path.lowercased().hasSuffix("tagplaceholder_fnone.txt") else {
+        let lowerPath = path.lowercased()
+        let shouldRewrite =
+            lowerPath.hasSuffix("tagplaceholder_fnone.txt")
+            || lowerPath.contains("/tagplaceholder_lang.")
+
+        guard shouldRewrite else {
             return filename
         }
 
         let base = (path as NSString).deletingLastPathComponent
-        let newName = "tagplaceholder_\(normalized).txt"
+        let newName: String
+        if let languageCode {
+            newName = "tagplaceholder_lang\(languageCode).txt"
+        } else {
+            newName = "tagplaceholder_\(normalized).txt"
+        }
         return (base as NSString).appendingPathComponent(newName)
+    }
+
+    private func writeOptionalLanguagePlaceholderCopyIfNeeded(for task: DownloadTask) {
+        let targetLower = task.target.lowercased()
+        let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z]{2})?)optional$"#
+        guard let languageRegex = try? NSRegularExpression(pattern: languagePattern, options: []) else { return }
+        let range = NSRange(location: 0, length: targetLower.utf16.count)
+        guard let match = languageRegex.firstMatch(in: targetLower, options: [], range: range),
+              let languageRange = Range(match.range(at: 1), in: targetLower) else { return }
+
+        let sourcePath = task.fullPath.replacingOccurrences(of: "\\", with: "/")
+        let sourceLower = sourcePath.lowercased()
+        guard sourceLower.contains("/defaulttags/"),
+              sourceLower.hasSuffix(".txt") else { return }
+
+        let languageCode = String(targetLower[languageRange])
+        let optionalName = "tagplaceholder_lang\(languageCode)optional.txt"
+        let optionalPath = ((sourcePath as NSString).deletingLastPathComponent as NSString)
+            .appendingPathComponent(optionalName)
+
+        let fm = FileManager.default
+        if fm.fileExists(atPath: optionalPath) {
+            try? fm.removeItem(atPath: optionalPath)
+        }
+
+        do {
+            try fm.copyItem(atPath: sourcePath, toPath: optionalPath)
+            batchDownloadedPaths.append(optionalPath)
+            appendLog("Saving to: \((task.relativePath as NSString).deletingLastPathComponent)/\(optionalName)")
+        } catch {
+            appendLog("WARNING: Failed to duplicate optional language placeholder: \(error.localizedDescription)")
+        }
     }
 }
 
@@ -968,4 +1040,5 @@ private struct DownloadTask {
     let fullPath: String
     let size: Int64
     let isDirect: Bool
+    let target: String
 }

@@ -260,12 +260,6 @@ When the download is finished, you will see a Download button with no update siz
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.secondary.opacity(0.3))
                 )
-                .gesture(
-                    DragGesture()
-                        .onChanged { _ in
-                            consoleUserScrolledAway = true
-                        }
-                )
                 .onChange(of: manager.logOutput) {
                     if !consoleUserScrolledAway {
                         withAnimation(.easeOut(duration: 0.2)) {
@@ -281,9 +275,8 @@ When the download is finished, you will see a Download button with no update siz
                 }
                 .onPreferenceChange(UpdateConsoleBottomOffsetKey.self) { bottomY in
                     consoleViewportHeight = height
-                    if bottomY <= height + 8 {
-                        consoleUserScrolledAway = false
-                    }
+                    let atBottom = bottomY <= height + 8
+                    consoleUserScrolledAway = !atBottom
                 }
             }
         }

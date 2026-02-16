@@ -70,6 +70,7 @@ final class FortDLManager: ObservableObject {
     @Published var manualManifestID: String = ""
 
     @AppStorage("fortdlManualManifestID") private var storedManualManifestID = ""
+    @AppStorage("fortdlUseDownloadOnly") private var useDownloadOnly = true
 
     private var autoManifestID: String?
 
@@ -195,9 +196,12 @@ final class FortDLManager: ObservableObject {
 
         var args = [
             "--manifest-id", manifestID,
-            "-o", outputDir,
-            "--download-only"
+            "-o", outputDir
         ]
+
+        if useDownloadOnly {
+            args.append("--download-only")
+        }
         
         args += ["-c", fortDLCacheURL.path]
 
