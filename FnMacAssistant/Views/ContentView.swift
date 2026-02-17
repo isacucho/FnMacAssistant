@@ -16,34 +16,46 @@ struct ContentView: View {
     @State private var startupSheet: StartupSheet?
 
     var body: some View {
-        HStack(spacing: 0) {
-            if isSidebarVisible {
-                SidebarView(selection: $selection)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-                    .zIndex(1)
-            }
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.16),
+                    Color.black.opacity(0.06)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .blur(radius: 12)
 
-            Divider()
-
-            ZStack {
-                switch selection {
-                case .downloads:
-                    DownloadsView(downloadManager: DownloadManager.shared)
-                case .patch:
-                    PatchView()
-                case .gameAssets:
-                    GameAssetsView()
-                case .updateAssistant:
-                    UpdateAssistantView()
-                case .faq:
-                    FAQView()
-                case .settings:
-                    SettingsView()
+            HStack(spacing: 0) {
+                if isSidebarVisible {
+                    SidebarView(selection: $selection)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                        .zIndex(1)
                 }
+
+                Divider()
+
+                ZStack {
+                    switch selection {
+                    case .downloads:
+                        DownloadsView(downloadManager: DownloadManager.shared)
+                    case .patch:
+                        PatchView()
+                    case .gameAssets:
+                        GameAssetsView()
+                    case .updateAssistant:
+                        UpdateAssistantView()
+                    case .faq:
+                        FAQView()
+                    case .settings:
+                        SettingsView()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .containerBackground(.ultraThickMaterial, for: .window)
+        .containerBackground(.ultraThinMaterial, for: .window)
         .sheet(item: $startupSheet) { sheet in
             switch sheet {
             case .update:
@@ -291,14 +303,6 @@ struct SidebarView: View {
             }
         }
         .frame(width: 200)
-        .background(
-            LinearGradient(
-                colors: [Color.black.opacity(0.1), Color.black.opacity(0.05)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .blur(radius: 10)
-        )
     }
 
     private var hasAnyDownloadSummary: Bool {
@@ -477,7 +481,7 @@ struct SidebarView: View {
             }
         }
         .padding(8)
-        .containerBackground(.ultraThickMaterial, for: .window)
+        .containerBackground(.ultraThinMaterial, for: .window)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 8)

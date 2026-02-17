@@ -125,7 +125,7 @@ struct DownloadsView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .prominentActionButton()
                         .padding(.horizontal, 8)
                         .padding(.bottom, 8)
                     }
@@ -488,7 +488,7 @@ https://discord.gg/nfEBGJBfHD
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .containerBackground(.ultraThickMaterial, for: .window)
+            .containerBackground(.ultraThinMaterial, for: .window)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

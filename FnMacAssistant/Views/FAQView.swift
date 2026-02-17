@@ -124,9 +124,14 @@ private struct FAQCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-        .containerBackground(.ultraThickMaterial, for: .window)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .containerBackground(.ultraThinMaterial, for: .window)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.06), radius: 6, y: 3)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.1))
+        )
     }
 }
 
