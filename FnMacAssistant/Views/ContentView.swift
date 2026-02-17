@@ -220,16 +220,16 @@ struct SidebarView: View {
                 ) { selection = .patch }
                 
                 SidebarButton(
-                    label: "Game Assets",
-                    systemImage: "shippingbox.fill",
-                    isSelected: selection == .gameAssets
-                ) { selection = .gameAssets }
-
-                SidebarButton(
                     label: "Update Assistant",
                     systemImage: "arrow.triangle.2.circlepath",
                     isSelected: selection == .updateAssistant
                 ) { selection = .updateAssistant }
+
+                SidebarButton(
+                    label: "Game Assets",
+                    systemImage: "shippingbox.fill",
+                    isSelected: selection == .gameAssets
+                ) { selection = .gameAssets }
                 SidebarButton(
                     label: "FAQ",
                     systemImage: "questionmark.circle.fill",
