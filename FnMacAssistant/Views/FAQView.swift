@@ -98,40 +98,38 @@ private struct FAQCard: View {
     @State private var isExpanded = false
 
     var body: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExpanded.toggle()
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(item.question)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .foregroundColor(.secondary)
             }
-        } label: {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text(item.question)
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .foregroundColor(.secondary)
-                }
 
-                if isExpanded {
-                    Text(item.answer)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+            if isExpanded {
+                Text(item.answer)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(RoundedRectangle(cornerRadius: 14))
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color.white.opacity(0.1))
         )
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isExpanded.toggle()
+            }
+        }
+        .accessibilityAddTraits(.isButton)
     }
 }
 
