@@ -372,7 +372,7 @@ struct GameAssetsView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .containerBackground(.ultraThinMaterial, for: .window)
+        .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
@@ -753,7 +753,7 @@ struct GameAssetsView: View {
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .containerBackground(.ultraThinMaterial, for: .window)
+            .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

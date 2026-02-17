@@ -488,7 +488,7 @@ https://discord.gg/nfEBGJBfHD
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .containerBackground(.ultraThinMaterial, for: .window)
+            .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

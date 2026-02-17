@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selection: SidebarSection = .downloads
     @State private var isSidebarVisible: Bool = true
     @ObservedObject private var updateChecker = UpdateChecker.shared
@@ -19,8 +20,12 @@ struct ContentView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color.black.opacity(0.16),
-                    Color.black.opacity(0.06)
+                    colorScheme == .dark
+                    ? Color.black.opacity(0.16)
+                    : Color.white.opacity(0.42),
+                    colorScheme == .dark
+                    ? Color.black.opacity(0.06)
+                    : Color.white.opacity(0.22)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -55,7 +60,10 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .containerBackground(.ultraThinMaterial, for: .window)
+        .containerBackground(
+            colorScheme == .dark ? .ultraThickMaterial : .regularMaterial,
+            for: .window
+        )
         .sheet(item: $startupSheet) { sheet in
             switch sheet {
             case .update:
@@ -181,6 +189,7 @@ struct ContentView: View {
 
 // MARK: - Sidebar View
 struct SidebarView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var selection: SidebarSection
     @ObservedObject private var downloadManager = DownloadManager.shared
     @ObservedObject private var fortDLManager = FortDLManager.shared
@@ -481,7 +490,10 @@ struct SidebarView: View {
             }
         }
         .padding(8)
-        .containerBackground(.ultraThinMaterial, for: .window)
+        .containerBackground(
+            colorScheme == .dark ? .ultraThickMaterial : .regularMaterial,
+            for: .window
+        )
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
