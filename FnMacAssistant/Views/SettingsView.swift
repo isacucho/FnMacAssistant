@@ -348,7 +348,7 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
                         .foregroundColor(.secondary)
                     }
                     .padding(10)
-                    .containerBackground(.ultraThinMaterial, for: .window)
+                    .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
 
@@ -384,7 +384,7 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
                                 .foregroundColor(.secondary)
                             }
                             .padding(10)
-                            .containerBackground(.ultraThinMaterial, for: .window)
+                            .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
                     }
@@ -432,7 +432,7 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .containerBackground(.ultraThinMaterial, for: .window)
+            .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
