@@ -357,6 +357,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                         appendLog("Closing Fortnite…")
                         terminateFortnite()
                         terminateUserNSURLSessiond()
+                        clearNSURLSessionDownloadsCache(containerPath: containerPath)
                         didCloseFortnite = true
                     }
 
@@ -761,6 +762,31 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             } else {
                 appendLog("WARNING: Failed to stop downloader process \(pid).")
             }
+        }
+    }
+
+    private func clearNSURLSessionDownloadsCache(containerPath: String) {
+        let fm = FileManager.default
+        let downloadsURL = URL(fileURLWithPath: containerPath)
+            .appendingPathComponent("Data/Library/Caches/com.apple.nsurlsessiond/Downloads", isDirectory: true)
+
+        guard fm.fileExists(atPath: downloadsURL.path) else {
+            appendLog("NSURLSession downloads cache folder not found. Skipping cleanup.")
+            return
+        }
+
+        do {
+            let contents = try fm.contentsOfDirectory(
+                at: downloadsURL,
+                includingPropertiesForKeys: nil,
+                options: []
+            )
+            for item in contents {
+                try fm.removeItem(at: item)
+            }
+            appendLog("Cleared NSURLSession downloads cache.")
+        } catch {
+            appendLog("WARNING: Failed to clear NSURLSession downloads cache: \(error.localizedDescription)")
         }
     }
 
