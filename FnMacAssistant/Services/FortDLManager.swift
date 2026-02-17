@@ -68,6 +68,9 @@ final class FortDLManager: ObservableObject {
     @Published var downloadStartDate: Date?
     @Published var useManualManifest: Bool = false
     @Published var manualManifestID: String = ""
+    @Published var showMissingFortniteInstallHint = false
+    @Published var showFullINIRetryHint = false
+    @Published var fullINIRetryHintDetails: String = ""
 
     @AppStorage("fortdlManualManifestID") private var storedManualManifestID = ""
     @AppStorage("fortdlUseDownloadOnly") private var useDownloadOnly = true
@@ -135,6 +138,7 @@ final class FortDLManager: ObservableObject {
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else {
             log("❌ Failed to read cloudcontent.json")
+            showMissingFortniteInstallHint = true
             return
         }
 
@@ -148,6 +152,7 @@ final class FortDLManager: ObservableObject {
 
         updateManifestID()
         log("✔ Manifest ID: \(manifestID ?? "unknown")")
+        showMissingFortniteInstallHint = false
     }
 
     // MARK: - Fetch layers / assets
@@ -178,6 +183,7 @@ final class FortDLManager: ObservableObject {
 
             Task { @MainActor in
                 self.logOutput = output
+                self.detectKnownErrors(in: output)
                 self.parseOutput(output)
             }
         }
@@ -250,15 +256,21 @@ final class FortDLManager: ObservableObject {
         let blocks = output.components(separatedBy: "\n\n")
 
         for block in blocks {
-            guard block.contains(":"),
-                  !block.lowercased().hasPrefix("total download size")
-            else { continue }
-
             let lines = block
                 .split(separator: "\n")
                 .map(String.init)
 
-            let header = lines.first!
+            guard let rawHeader = lines.first else { continue }
+            let headerLine = rawHeader.trimmingCharacters(in: .whitespaces)
+
+            // Real fort-dl layer blocks look like:
+            // "LayerName:" + asset rows + "Total: ..."
+            guard headerLine.hasSuffix(":"),
+                  lines.contains(where: { $0.contains("Total:") }),
+                  !block.lowercased().hasPrefix("total download size")
+            else { continue }
+
+            let header = rawHeader
                 .replacingOccurrences(of: ":", with: "")
 
             if header.hasPrefix("Available tags") { continue }
@@ -285,6 +297,8 @@ final class FortDLManager: ObservableObject {
 
                     return Asset(name: name, size: sizeBytes)
                 }
+
+            guard !assets.isEmpty else { continue }
 
             layers.append(
                 Layer(name: header, totalSize: size, assets: assets)
@@ -339,6 +353,8 @@ final class FortDLManager: ObservableObject {
 
     private func log(_ str: String) {
         logOutput += str + "\n"
+        detectKnownErrors(in: str)
+
         if str.contains("Populating ChunkDownload cache") {
             isDownloading = false
             isInstalling = true
@@ -350,11 +366,48 @@ final class FortDLManager: ObservableObject {
             isDownloading = false
             isInstalling = false
             isDone = true
+            showFullINIRetryHint = false
+            fullINIRetryHintDetails = ""
             stopCacheMonitoring()
             stopAutoResume()
             stopStallCheck()
             clearFortDLCache()
             notifyIfNeeded()
+        }
+    }
+
+    private func detectKnownErrors(in outputChunk: String) {
+        let lowerChunk = outputChunk.lowercased()
+        let lowerAll = logOutput.lowercased()
+
+        if lowerChunk.contains("failed to read cloudcontent.json") ||
+            lowerAll.contains("failed to read cloudcontent.json") {
+            showMissingFortniteInstallHint = true
+        }
+
+        let hasFullINI = lowerChunk.contains("full.ini") || lowerAll.contains("full.ini")
+        let hasConnectionFailure = lowerChunk.contains("error sending request for url") ||
+            lowerChunk.contains("error trying to connect") ||
+            lowerChunk.contains("connection closed via error") ||
+            lowerChunk.contains("failed to download") ||
+            lowerChunk.contains("dns error") ||
+            lowerChunk.contains("failed to lookup address information") ||
+            lowerChunk.contains("name or service not known") ||
+            lowerChunk.contains("nodename nor servname provided") ||
+            lowerChunk.contains("temporary failure in name resolution") ||
+            lowerAll.contains("error sending request for url") ||
+            lowerAll.contains("error trying to connect") ||
+            lowerAll.contains("connection closed via error") ||
+            lowerAll.contains("failed to download") ||
+            lowerAll.contains("dns error") ||
+            lowerAll.contains("failed to lookup address information") ||
+            lowerAll.contains("name or service not known") ||
+            lowerAll.contains("nodename nor servname provided") ||
+            lowerAll.contains("temporary failure in name resolution")
+
+        if hasFullINI && hasConnectionFailure {
+            showFullINIRetryHint = true
+            fullINIRetryHintDetails = outputChunk
         }
     }
     
@@ -692,6 +745,9 @@ final class FortDLManager: ObservableObject {
     }
 
     func refreshManifest() {
+        showFullINIRetryHint = false
+        fullINIRetryHintDetails = ""
+
         if useManualManifest, !manualManifestID.isEmpty {
             updateManifestID()
             fetchAvailableLayers()
@@ -699,6 +755,11 @@ final class FortDLManager: ObservableObject {
             loadManifest()
             fetchAvailableLayers()
         }
+    }
+
+    func retryFullINIRequest() {
+        log("🔄 Retrying full.ini request...")
+        refreshManifest()
     }
 
     private func updateManifestID() {
