@@ -20,6 +20,8 @@ final class PatchManager: ObservableObject {
     private let fortniteAppPath = "/Applications/Fortnite.app"
     private let altFortniteAppPath = "/Applications/Fortnite-1.app"
     private let legacyFortniteAppPath = "/Applications/FortniteClient-IOS-Shipping.app"
+    private let iOSFolderPath = "/Applications/iOS"
+    private let iOSLegacyFortniteAppPath = "/Applications/iOS/FortniteClient-IOS-Shipping.app"
     
     private init() {}
     
@@ -128,6 +130,19 @@ final class PatchManager: ObservableObject {
     // MARK: - Normalize App Name
     private func normalizeFortniteAppName() {
         let fm = FileManager.default
+        if fm.fileExists(atPath: iOSFolderPath) && fm.fileExists(atPath: iOSLegacyFortniteAppPath) {
+            if fm.fileExists(atPath: legacyFortniteAppPath) {
+                log("Found iOS Fortnite bundle, but one already exists in Applications root.")
+            } else {
+                do {
+                    try fm.moveItem(atPath: iOSLegacyFortniteAppPath, toPath: legacyFortniteAppPath)
+                    log("Moved FortniteClient-IOS-Shipping.app from /Applications/iOS to /Applications.")
+                } catch {
+                    log("Failed to move FortniteClient-IOS-Shipping.app from iOS folder. \(error.localizedDescription)")
+                }
+            }
+        }
+
         let altExists = fm.fileExists(atPath: altFortniteAppPath)
         let legacyExists = fm.fileExists(atPath: legacyFortniteAppPath)
         guard altExists || legacyExists else { return }
