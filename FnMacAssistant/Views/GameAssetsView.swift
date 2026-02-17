@@ -126,20 +126,30 @@ struct GameAssetsView: View {
                         }
 
                         glassSection {
-                            let columnCount = manager.showAssets ? 2 : 4
-                            let columns = masonryColumns(
-                                layers: manager.layers,
-                                columnCount: columnCount
-                            )
+                            if manager.showAssets {
+                                let columns = masonryColumns(layers: manager.layers, columnCount: 2)
 
-                            HStack(alignment: .top, spacing: 12) {
-                                ForEach(columns.indices, id: \.self) { columnIndex in
-                                    VStack(spacing: 12) {
-                                        ForEach(columns[columnIndex]) { layer in
-                                            LayerCard(layer: layer)
+                                HStack(alignment: .top, spacing: 12) {
+                                    ForEach(columns.indices, id: \.self) { columnIndex in
+                                        VStack(spacing: 12) {
+                                            ForEach(columns[columnIndex]) { layer in
+                                                LayerCard(layer: layer)
+                                            }
                                         }
+                                        .frame(maxWidth: .infinity, alignment: .topLeading)
                                     }
-                                    .frame(maxWidth: .infinity)
+                                }
+                            } else {
+                                let columns = Array(
+                                    repeating: GridItem(.flexible(), spacing: 12, alignment: .top),
+                                    count: 4
+                                )
+
+                                LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+                                    ForEach(manager.layers) { layer in
+                                        LayerCard(layer: layer)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
                                 }
                             }
 
@@ -454,21 +464,15 @@ struct GameAssetsView: View {
         .frame(minHeight: 160, maxHeight: 220)
     }
 
-    // MARK: - Masonry layout
-
     private func masonryColumns(
         layers: [FortDLManager.Layer],
         columnCount: Int
     ) -> [[FortDLManager.Layer]] {
-
         var columns = Array(repeating: [FortDLManager.Layer](), count: columnCount)
         var heights = Array(repeating: CGFloat(0), count: columnCount)
 
         for layer in layers {
-            let estimatedHeight: CGFloat =
-                manager.showAssets
-                ? 90 + CGFloat(layer.assets.count) * 22
-                : 90
+            let estimatedHeight = 90 + CGFloat(layer.assets.count) * 22
 
             if let index = heights.enumerated().min(by: { $0.element < $1.element })?.offset {
                 columns[index].append(layer)
@@ -547,9 +551,20 @@ struct GameAssetsView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(manager.showAssets ? 16 : 10)
-        .containerBackground(.ultraThickMaterial, for: .window)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .background {
+            if manager.showAssets {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(.ultraThinMaterial)
+            }
+        }
+        .overlay {
+            if manager.showAssets {
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.1))
+            }
+        }
     }
 
     // MARK: - BRCosmetics Warning
@@ -677,7 +692,7 @@ struct GameAssetsView: View {
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .containerBackground(.ultraThickMaterial, for: .window)
+            .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
