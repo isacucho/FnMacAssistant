@@ -157,7 +157,7 @@ struct GameAssetsView: View {
                                 Button("Download Selected Assets") {
                                     Task { await handleAssetsDownloadRequest() }
                                 }
-                                .buttonStyle(.borderedProminent)
+                                .prominentActionButton()
                                 .disabled(
                                     !manager.downloadAllAssets &&
                                     manager.selectedLayers.isEmpty &&
@@ -228,7 +228,7 @@ struct GameAssetsView: View {
                     Button("OK") {
                         showBRCosmeticsWarning = false
                     }
-                    .buttonStyle(.borderedProminent)
+                    .prominentActionButton()
                 }
             }
             .padding(24)
@@ -311,7 +311,7 @@ struct GameAssetsView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
+        .containerBackground(.ultraThinMaterial, for: .window)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
@@ -692,7 +692,7 @@ struct GameAssetsView: View {
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial)
+            .containerBackground(.ultraThinMaterial, for: .window)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

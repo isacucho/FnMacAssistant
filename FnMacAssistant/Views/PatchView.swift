@@ -80,7 +80,7 @@ FnMacAssistant will open Fortnite, wait a few seconds, then apply the patch.
                             .padding(.vertical, 10)
                             .padding(.horizontal, 14)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .prominentActionButton()
                         .disabled(patchManager.isPatching)
 
                         Spacer()
@@ -133,36 +133,38 @@ In-game downloads may not work as expected. You might need to use the app’s up
                 }
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Console Output")
-                    .font(.headline)
+            glassSection {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Console Output")
+                        .font(.headline)
 
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        Text(patchManager.logMessages.joined(separator: "\n"))
-                            .font(.system(size: 12, design: .monospaced))
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                            .padding(8)
-                            .textSelection(.enabled)
-                            .id("consoleText")
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            Text(patchManager.logMessages.joined(separator: "\n"))
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .topLeading)
+                                .padding(8)
+                                .textSelection(.enabled)
+                                .id("consoleText")
 
-                        Color.clear
-                            .frame(height: 1)
-                            .id("consoleBottom")
-                    }
-                    .onChange(of: patchManager.logMessages.count) {
-                        withAnimation {
-                            proxy.scrollTo("consoleBottom", anchor: .bottom)
+                            Color.clear
+                                .frame(height: 1)
+                                .id("consoleBottom")
                         }
+                        .onChange(of: patchManager.logMessages.count) {
+                            withAnimation {
+                                proxy.scrollTo("consoleBottom", anchor: .bottom)
+                            }
+                        }
+                        .background(Color(NSColor.textBackgroundColor).opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.secondary.opacity(0.25))
+                        )
+                        .frame(maxHeight: .infinity)
                     }
-                    .background(Color(NSColor.textBackgroundColor).opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.25))
-                    )
-                    .frame(maxHeight: .infinity)
                 }
             }
 
@@ -205,7 +207,7 @@ private extension PatchView {
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .containerBackground(.ultraThickMaterial, for: .window)
+            .containerBackground(.ultraThinMaterial, for: .window)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)

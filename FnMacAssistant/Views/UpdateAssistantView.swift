@@ -33,38 +33,38 @@ struct UpdateAssistantView: View {
                         headerSection
                         quickActionsCard
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .center, spacing: 12) {
-                                if manager.isRunning {
-                                    Button("Stop") {
-                                        if manager.isDownloading {
-                                            manager.requestCancelDownload()
-                                        } else {
-                                            manager.stop()
+                        glassSection {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(alignment: .center, spacing: 12) {
+                                    if manager.isRunning {
+                                        Button("Stop") {
+                                            if manager.isDownloading {
+                                                manager.requestCancelDownload()
+                                            } else {
+                                                manager.stop()
+                                            }
                                         }
-                                    }
-                                    .buttonStyle(.bordered)
-                                } else {
-                                    Button("Start Update") {
-                                        if suppressStartPrompt {
-                                            manager.start()
-                                        } else {
-                                            dontShowStartPrompt = false
-                                            showStartPrompt = true
+                                        .buttonStyle(.bordered)
+                                    } else {
+                                        Button("Start Update") {
+                                            if suppressStartPrompt {
+                                                manager.start()
+                                            } else {
+                                                dontShowStartPrompt = false
+                                                showStartPrompt = true
+                                            }
                                         }
+                                        .prominentActionButton(large: true)
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .controlSize(.large)
-                                    .font(.system(size: 20, weight: .semibold))
+
+                                    Spacer()
+
+                                    Toggle("Show console logs", isOn: $manager.showConsole)
                                 }
 
-                                Spacer()
-
-                                Toggle("Show console logs", isOn: $manager.showConsole)
-                            }
-
-                            if manager.showConsole {
-                                consoleView
+                                if manager.showConsole {
+                                    consoleView
+                                }
                             }
                         }
 
@@ -362,7 +362,7 @@ When the download is finished, you will see a Download button with no update siz
         content()
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .containerBackground(.ultraThickMaterial, for: .window)
+            .containerBackground(.ultraThinMaterial, for: .window)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
