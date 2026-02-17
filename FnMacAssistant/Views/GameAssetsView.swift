@@ -20,6 +20,7 @@ struct GameAssetsView: View {
     @State private var showCancelDownloadPrompt = false
     @State private var showStorageAlert = false
     @State private var storageAlertMessage = ""
+    @State private var showFullINIFailureAlert = false
 
     @AppStorage("brCosmeticsWarningDisabled") private var brCosmeticsWarningDisabled = false
     @AppStorage("brCosmeticsWarnedBattleRoyale") private var brCosmeticsWarnedBattleRoyale = false
@@ -46,6 +47,53 @@ struct GameAssetsView: View {
                         Text("Download Fortnite game assets without launching the game.")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
+
+                        if manager.showMissingFortniteInstallHint {
+                            glassSection {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Label("Fortnite installation not found", systemImage: "exclamationmark.triangle.fill")
+                                        .font(.headline)
+                                        .foregroundColor(.orange)
+
+                                    Text("Fort-dl could not read cloudcontent.json, which usually means Fortnite is not installed.")
+                                        .foregroundColor(.secondary)
+
+                                    Text("If you want to continue anyway, enable Manual and enter the manifest ID you want to use.")
+                                        .foregroundColor(.secondary)
+
+                                    Button("Enable Manual Manifest") {
+                                        manager.setManualManifestEnabled(true)
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                            }
+                        }
+
+                        if manager.showFullINIRetryHint {
+                            glassSection {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Label("Could not download full.ini", systemImage: "wifi.exclamationmark")
+                                        .font(.headline)
+                                        .foregroundColor(.orange)
+
+                                    Text("Connection to Epic's server failed while fetching full.ini. Check your connection and try again.")
+                                        .foregroundColor(.secondary)
+
+                                    if !manager.fullINIRetryHintDetails.isEmpty {
+                                        Text(manager.fullINIRetryHintDetails)
+                                            .font(.system(size: 11, design: .monospaced))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(3)
+                                            .textSelection(.enabled)
+                                    }
+
+                                    Button("Retry") {
+                                        manager.retryFullINIRequest()
+                                    }
+                                    .prominentActionButton()
+                                }
+                            }
+                        }
 
                         glassSection {
                             VStack(alignment: .leading, spacing: 12) {
@@ -254,6 +302,19 @@ struct GameAssetsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(storageAlertMessage)
+        }
+        .alert("Could not download full.ini", isPresented: $showFullINIFailureAlert) {
+            Button("Retry") {
+                manager.retryFullINIRequest()
+            }
+            Button("Dismiss", role: .cancel) {}
+        } message: {
+            Text("Connection to Epic's servers failed while downloading full.ini. You can retry now.")
+        }
+        .onChange(of: manager.showFullINIRetryHint) { _, shouldShow in
+            if shouldShow {
+                showFullINIFailureAlert = true
+            }
         }
     }
 
