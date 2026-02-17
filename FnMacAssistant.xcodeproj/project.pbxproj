@@ -27,7 +27,6 @@
 		308A54742EC78BFC00D136F6 /* FortniteContainerLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */; };
 		309947AF2EC3ADFE008B1F2A /* PatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309947AE2EC3ADFE008B1F2A /* PatchView.swift */; };
 		30C9CF0C2F3BBF2900A7EE45 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */; };
-		30DCDF522F226E8F000D6758 /* fort-dl in Resources */ = {isa = PBXBuildFile; fileRef = 30DCDF512F226E8F000D6758 /* fort-dl */; };
 		30DCDF532F226EF2000D6758 /* fort-dl in Copy Files */ = {isa = PBXBuildFile; fileRef = 30DCDF512F226E8F000D6758 /* fort-dl */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		31A1B2012F7A000100C0A101 /* UpdateAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */; };
 		31A1B2012F7A000100C0A102 /* UpdateAssistantManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */; };
@@ -226,7 +225,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				3008A9122EBD2FCC00647857 /* Assets.xcassets in Resources */,
-				30DCDF522F226E8F000D6758 /* fort-dl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -400,7 +398,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = Q662HCB3TY;
 				ENABLE_APP_SANDBOX = NO;
@@ -451,7 +449,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = Q662HCB3TY;
 				ENABLE_APP_SANDBOX = NO;
