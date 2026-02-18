@@ -70,6 +70,9 @@ FnMacAssistant will open Fortnite, wait a few seconds, then apply the patch.
                             HStack(spacing: 8) {
                                 if patchManager.isPatching {
                                     ProgressView()
+                                    .scaleEffect(0.6)
+                                    .frame(width: 13, height: 13,
+                                           alignment: .center)
                                         .progressViewStyle(CircularProgressViewStyle())
                                 } else {
                                     Image(systemName: patchManager.patchCompleted ? "checkmark.circle.fill" : "bolt.fill")
