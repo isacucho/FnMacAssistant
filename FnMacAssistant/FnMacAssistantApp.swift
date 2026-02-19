@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct FnMacAssistantApp: App {
     @StateObject private var downloadManager = DownloadManager()
+    @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
     private let windowSize = CGSize(width: 900, height: 510)
 
     var body: some Scene {
@@ -22,6 +23,12 @@ struct FnMacAssistantApp: App {
         .windowResizability(.contentMinSize)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") {
+                    sparkleUpdater.checkForUpdates()
+                }
+                .disabled(!sparkleUpdater.canCheckForUpdates)
+            }
         }
     }
 }

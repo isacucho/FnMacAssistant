@@ -20,7 +20,7 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("fortdlUseDownloadOnly") private var fortdlUseDownloadOnly = true
     @AppStorage("fortdlGameDataDownloadPath") private var fortdlGameDataDownloadPath = ""
-    @ObservedObject private var updateChecker = UpdateChecker.shared
+    @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
 
     var body: some View {
         ScrollView {
@@ -228,53 +228,50 @@ You can disable them at any time.
                             .font(.headline)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Current version: \(updateChecker.currentVersion)")
+                            Text("Current version: \(sparkleUpdater.currentVersion)")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
-
-                            if let latest = updateChecker.latestVersion {
-                                Text("Latest version: \(latest)")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.secondary)
-                            }
                         }
 
-                        if updateChecker.isUpdateAvailable, let latest = updateChecker.latestVersion {
-                            Text("A new version (\(latest)) is available.")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.orange)
-                        } else if updateChecker.isBetaBuild {
+                        if sparkleUpdater.isPrereleaseBuild {
                             Text("You're on a pre-release build.")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.orange)
-                        } else if updateChecker.latestVersion != nil {
-                            Text("You're up to date.")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
                         }
 
-                        if let lastChecked = updateChecker.lastChecked {
-                            Text("Last checked: \(lastChecked.formatted(date: .abbreviated, time: .shortened))")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
+                        HStack(alignment: .top, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Toggle("Automatically check for updates", isOn: autoCheckBinding)
+                                Toggle("Automatically download updates", isOn: autoDownloadBinding)
+                                    .disabled(!sparkleUpdater.automaticallyChecksForUpdates)
+                            }
 
-                        if let error = updateChecker.errorMessage {
-                            Text(error)
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                            Spacer()
+
+                            HStack(spacing: 8) {
+                                Text("Update Channel")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                Picker("Update Channel", selection: channelBinding) {
+                                    ForEach(SparkleUpdaterService.UpdateChannel.allCases) { channel in
+                                        Text(channel.title).tag(channel)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .controlSize(.small)
+                                .labelsHidden()
+                                .frame(width: 110)
+                            }
                         }
 
                         HStack(spacing: 12) {
-                            Button(updateChecker.isChecking ? "Checking…" : "Check for Updates") {
-                                Task { await updateChecker.checkForUpdates(force: true) }
+                            Button("Check for Updates…") {
+                                sparkleUpdater.checkForUpdates()
                             }
-                            .disabled(updateChecker.isChecking)
+                            .disabled(!sparkleUpdater.canCheckForUpdates)
 
-                            if updateChecker.isUpdateAvailable {
-                                Button("Open Releases") {
-                                    openReleasesPage()
-                                }
+                            Button("Open Releases") {
+                                openReleasesPage()
                             }
                         }
                     }
@@ -419,9 +416,6 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         } message: {
             Text(deleteExtrasErrorMessage ?? "Could not delete selected containers.")
         }
-        .task {
-            await updateChecker.checkForUpdates()
-        }
     }
 
     // MARK: - Glass Section Builder
@@ -496,6 +490,39 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         if let url = URL(string: "https://github.com/isacucho/FnMacAssistant/releases/latest") {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    private var channelBinding: Binding<SparkleUpdaterService.UpdateChannel> {
+        Binding(
+            get: { sparkleUpdater.selectedChannel },
+            set: { newValue in
+                DispatchQueue.main.async {
+                    sparkleUpdater.setChannel(newValue)
+                }
+            }
+        )
+    }
+
+    private var autoCheckBinding: Binding<Bool> {
+        Binding(
+            get: { sparkleUpdater.automaticallyChecksForUpdates },
+            set: { newValue in
+                DispatchQueue.main.async {
+                    sparkleUpdater.setAutomaticallyChecksForUpdates(newValue)
+                }
+            }
+        )
+    }
+
+    private var autoDownloadBinding: Binding<Bool> {
+        Binding(
+            get: { sparkleUpdater.automaticallyDownloadsUpdates },
+            set: { newValue in
+                DispatchQueue.main.async {
+                    sparkleUpdater.setAutomaticallyDownloadsUpdates(newValue)
+                }
+            }
+        )
     }
 
     private var headerSection: some View {

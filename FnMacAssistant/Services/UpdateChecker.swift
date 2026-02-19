@@ -7,179 +7,107 @@
 
 import Foundation
 import Combine
+import Sparkle
 
-@MainActor
-final class UpdateChecker: ObservableObject {
-    static let shared = UpdateChecker()
+final class SparkleUpdaterService: NSObject, ObservableObject {
+    static let shared = SparkleUpdaterService()
 
-    @Published private(set) var isChecking = false
-    @Published private(set) var latestVersion: String?
-    @Published private(set) var lastChecked: Date?
-    @Published private(set) var errorMessage: String?
+    enum UpdateChannel: String, CaseIterable, Identifiable {
+        case stable
+        case beta
 
-    private let session: URLSession
-    private let cacheExpiry: TimeInterval = 600
-    private let releasesAPI = URL(string: "https://api.github.com/repos/isacucho/FnMacAssistant/releases/latest")!
+        var id: String { rawValue }
 
-    private let cacheLatestKey = "updateChecker.latestVersion"
-    private let cacheCheckedKey = "updateChecker.lastChecked"
-    private let cacheETagKey = "updateChecker.latestETag"
-
-    private init(session: URLSession = .shared) {
-        self.session = session
-        self.latestVersion = UserDefaults.standard.string(forKey: cacheLatestKey)
-        self.lastChecked = UserDefaults.standard.object(forKey: cacheCheckedKey) as? Date
+        var title: String {
+            switch self {
+            case .stable: return "Stable"
+            case .beta: return "Beta"
+            }
+        }
     }
+
+    @Published private(set) var canCheckForUpdates = false
+    @Published private(set) var automaticallyChecksForUpdates = false
+    @Published private(set) var automaticallyDownloadsUpdates = false
+    @Published private(set) var selectedChannel: UpdateChannel
+
+    let updaterController: SPUStandardUpdaterController
+    private let updaterDelegateProxy: SparkleChannelDelegate
+    private let selectedChannelKey = "sparkle.selectedChannel"
 
     var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0"
     }
 
-    var isUpdateAvailable: Bool {
-        guard let latestVersion else { return false }
-        let current = parseVersion(currentVersion)
-        let latest = parseVersion(latestVersion)
-        let numericCompare = compareNumeric(current.parts, latest.parts)
-
-        if numericCompare == .orderedAscending {
-            return true
-        }
-        if numericCompare == .orderedSame {
-            if current.hasPrerelease && !latest.hasPrerelease {
-                return true
-            }
-        }
-        return false
+    var isPrereleaseBuild: Bool {
+        let version = currentVersion
+        return version.contains("-") || version.rangeOfCharacter(from: .letters) != nil
     }
 
-    var isBetaBuild: Bool {
-        guard let latestVersion else {
-            return parseVersion(currentVersion).hasPrerelease
-        }
-        let current = parseVersion(currentVersion)
-        let latest = parseVersion(latestVersion)
-        let numericCompare = compareNumeric(current.parts, latest.parts)
-        return current.hasPrerelease || numericCompare == .orderedDescending
+    private override init() {
+        let stored = UserDefaults.standard.string(forKey: selectedChannelKey)
+        let initialChannel = UpdateChannel(rawValue: stored ?? "") ?? .stable
+        selectedChannel = initialChannel
+        updaterDelegateProxy = SparkleChannelDelegate(channel: initialChannel)
+        updaterController = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: updaterDelegateProxy,
+            userDriverDelegate: nil
+        )
+        super.init()
+        bindUpdaterState()
+        refreshState()
     }
 
-    var isBetaWithStableSameVersion: Bool {
-        guard let latestVersion else { return false }
-        let current = parseVersion(currentVersion)
-        let latest = parseVersion(latestVersion)
-        let numericCompare = compareNumeric(current.parts, latest.parts)
-        return current.hasPrerelease && !latest.hasPrerelease && numericCompare == .orderedSame
+    func checkForUpdates() {
+        updaterController.checkForUpdates(nil)
     }
 
-    func checkForUpdates(force: Bool = false) async {
-        if !force, let lastChecked, Date().timeIntervalSince(lastChecked) < cacheExpiry,
-           latestVersion != nil {
-            return
-        }
-
-        isChecking = true
-        errorMessage = nil
-        defer { isChecking = false }
-
-        var request = URLRequest(url: releasesAPI)
-        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-
-        if let etag = UserDefaults.standard.string(forKey: cacheETagKey) {
-            request.setValue(etag, forHTTPHeaderField: "If-None-Match")
-        }
-
-        do {
-            let (data, response) = try await session.data(for: request)
-            let httpResponse = response as? HTTPURLResponse
-
-            if httpResponse?.statusCode == 304 {
-                updateCacheTimestamps()
-                return
-            }
-
-            guard httpResponse?.statusCode == 200 else {
-                throw URLError(.badServerResponse)
-            }
-
-            if let etag = httpResponse?.allHeaderFields["ETag"] as? String {
-                UserDefaults.standard.set(etag, forKey: cacheETagKey)
-            }
-
-            let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
-            let normalizedVersion = release.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
-            latestVersion = normalizedVersion
-            updateCacheTimestamps()
-            UserDefaults.standard.set(normalizedVersion, forKey: cacheLatestKey)
-        } catch {
-            errorMessage = "Failed to check for updates."
-            if latestVersion == nil {
-                latestVersion = UserDefaults.standard.string(forKey: cacheLatestKey)
-            }
-        }
+    func setAutomaticallyChecksForUpdates(_ enabled: Bool) {
+        updaterController.updater.automaticallyChecksForUpdates = enabled
+        refreshState()
     }
 
-    private func updateCacheTimestamps() {
-        let now = Date()
-        lastChecked = now
-        UserDefaults.standard.set(now, forKey: cacheCheckedKey)
+    func setAutomaticallyDownloadsUpdates(_ enabled: Bool) {
+        updaterController.updater.automaticallyDownloadsUpdates = enabled
+        refreshState()
     }
 
-    private func parseVersion(_ value: String) -> (parts: [Int], hasPrerelease: Bool) {
-        var numericParts: [Int] = []
-        var currentNumber = ""
-        var hasPrerelease = false
-        var inPrerelease = false
+    func setChannel(_ channel: UpdateChannel) {
+        guard channel != selectedChannel else { return }
+        selectedChannel = channel
+        updaterDelegateProxy.channel = channel
+        UserDefaults.standard.set(channel.rawValue, forKey: selectedChannelKey)
+        updaterController.updater.resetUpdateCycleAfterShortDelay()
+    }
 
-        for char in value {
-            if inPrerelease {
-                continue
+    private func bindUpdaterState() {
+        updaterController.updater.publisher(for: \.canCheckForUpdates)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.canCheckForUpdates = value
             }
-
-            if char.isNumber {
-                currentNumber.append(char)
-            } else if char == "." {
-                if !currentNumber.isEmpty {
-                    numericParts.append(Int(currentNumber) ?? 0)
-                    currentNumber = ""
-                }
-            } else {
-                if !currentNumber.isEmpty {
-                    numericParts.append(Int(currentNumber) ?? 0)
-                    currentNumber = ""
-                }
-                hasPrerelease = true
-                inPrerelease = true
-            }
-        }
-
-        if !currentNumber.isEmpty {
-            numericParts.append(Int(currentNumber) ?? 0)
-        }
-
-        if value.rangeOfCharacter(from: .letters) != nil {
-            hasPrerelease = true
-        }
-
-        return (numericParts, hasPrerelease)
+            .store(in: &cancellables)
     }
 
-    private func compareNumeric(_ lhsParts: [Int], _ rhsParts: [Int]) -> ComparisonResult {
-        let maxCount = max(lhsParts.count, rhsParts.count)
-
-        for index in 0..<maxCount {
-            let left = index < lhsParts.count ? lhsParts[index] : 0
-            let right = index < rhsParts.count ? rhsParts[index] : 0
-            if left < right { return .orderedAscending }
-            if left > right { return .orderedDescending }
-        }
-
-        return .orderedSame
+    private func refreshState() {
+        canCheckForUpdates = updaterController.updater.canCheckForUpdates
+        automaticallyChecksForUpdates = updaterController.updater.automaticallyChecksForUpdates
+        automaticallyDownloadsUpdates = updaterController.updater.automaticallyDownloadsUpdates
     }
+
+    private var cancellables = Set<AnyCancellable>()
 }
 
-private struct GitHubRelease: Decodable {
-    let tagName: String
+private final class SparkleChannelDelegate: NSObject, SPUUpdaterDelegate {
+    var channel: SparkleUpdaterService.UpdateChannel
 
-    private enum CodingKeys: String, CodingKey {
-        case tagName = "tag_name"
+    init(channel: SparkleUpdaterService.UpdateChannel) {
+        self.channel = channel
+        super.init()
+    }
+
+    func allowedChannels(for updater: SPUUpdater) -> Set<String> {
+        channel == .beta ? ["beta"] : []
     }
 }
