@@ -11,8 +11,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selection: SidebarSection = .downloads
     @State private var isSidebarVisible: Bool = true
-    @ObservedObject private var updateChecker = UpdateChecker.shared
-    @AppStorage("suppressUpdatePopupVersion") private var suppressUpdatePopupVersion = ""
+    @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
     @AppStorage("suppressPrereleasePopupVersion") private var suppressPrereleasePopupVersion = ""
     @State private var startupSheet: StartupSheet?
 
@@ -66,17 +65,6 @@ struct ContentView: View {
         )
         .sheet(item: $startupSheet) { sheet in
             switch sheet {
-            case .update:
-                UpdatePromptSheet(
-                    title: "Update Available",
-                    message: updateMessage,
-                    suppressLabel: "Do not show again",
-                    suppressValue: updateSuppressBinding,
-                    primaryTitle: "Open Releases",
-                    primaryAction: openReleasesPage,
-                    secondaryTitle: "Later",
-                    onDismiss: { startupSheet = nil }
-                )
             case .prerelease:
                 UpdatePromptSheet(
                     title: "Pre-release Build",
@@ -103,62 +91,18 @@ struct ContentView: View {
             }
         }
         .task {
-            await updateChecker.checkForUpdates()
-            if updateChecker.isUpdateAvailable {
-                if updateChecker.isBetaWithStableSameVersion {
-                    if !isUpdateSuppressedForLatest {
-                        startupSheet = .update
-                    }
-                } else if !isUpdateSuppressedForLatest {
-                    startupSheet = .update
-                }
-            } else if updateChecker.isBetaBuild && !isPrereleaseSuppressedForCurrent {
+            if sparkleUpdater.isPrereleaseBuild && !isPrereleaseSuppressedForCurrent {
                 startupSheet = .prerelease
             }
         }
-    }
-
-    private var updateMessage: String {
-        if updateChecker.isBetaWithStableSameVersion {
-            return "A stable build of your current version is available. Please update to improve stability."
-        }
-        if let latest = updateChecker.latestVersion {
-            return "A new version (\(latest)) is available. Please update to avoid issues."
-        }
-        return "A new version is available. Please update to avoid issues."
     }
 
     private var prereleaseMessage: String {
         "You're running a pre-release build. You might encounter issues. If you find any, please report them in the testers channel on the Discord."
     }
 
-    private var isUpdateSuppressedForLatest: Bool {
-        guard let latest = updateChecker.latestVersion else { return false }
-        return suppressUpdatePopupVersion == updateSuppressionKey(latestVersion: latest)
-    }
-
     private var isPrereleaseSuppressedForCurrent: Bool {
-        suppressPrereleasePopupVersion == updateChecker.currentVersion
-    }
-
-    private var updateSuppressBinding: Binding<Bool> {
-        Binding(
-            get: { isUpdateSuppressedForLatest },
-            set: { isOn in
-                if isOn, let latest = updateChecker.latestVersion {
-                    suppressUpdatePopupVersion = updateSuppressionKey(latestVersion: latest)
-                } else {
-                    suppressUpdatePopupVersion = ""
-                }
-            }
-        )
-    }
-
-    private func updateSuppressionKey(latestVersion: String) -> String {
-        if updateChecker.isBetaWithStableSameVersion {
-            return "\(latestVersion)|\(updateChecker.currentVersion)"
-        }
-        return latestVersion
+        suppressPrereleasePopupVersion == sparkleUpdater.currentVersion
     }
 
     private var prereleaseSuppressBinding: Binding<Bool> {
@@ -166,18 +110,12 @@ struct ContentView: View {
             get: { isPrereleaseSuppressedForCurrent },
             set: { isOn in
                 if isOn {
-                    suppressPrereleasePopupVersion = updateChecker.currentVersion
+                    suppressPrereleasePopupVersion = sparkleUpdater.currentVersion
                 } else {
                     suppressPrereleasePopupVersion = ""
                 }
             }
         )
-    }
-
-    private func openReleasesPage() {
-        if let url = URL(string: "https://github.com/isacucho/FnMacAssistant/releases/latest") {
-            NSWorkspace.shared.open(url)
-        }
     }
 
     private func openDiscord() {
@@ -554,7 +492,6 @@ enum SidebarSection {
 }
 
 private enum StartupSheet: String, Identifiable {
-    case update
     case prerelease
 
     var id: String { rawValue }
