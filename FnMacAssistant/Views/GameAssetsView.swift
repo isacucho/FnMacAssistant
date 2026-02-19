@@ -419,10 +419,9 @@ struct GameAssetsView: View {
               let availableBytes = availableDiskSpaceBytes(for: outputURL)
         else { return true }
 
-        let requiredWithBuffer = applyStorageBuffer(to: requiredBytes)
-        if requiredWithBuffer > availableBytes {
+        if requiredBytes > availableBytes {
             storageAlertMessage = storageMessage(
-                required: requiredWithBuffer,
+                required: requiredBytes,
                 available: availableBytes
             )
             showStorageAlert = true
@@ -456,10 +455,6 @@ struct GameAssetsView: View {
         let requiredLabel = formatter.string(fromByteCount: required)
         let availableLabel = formatter.string(fromByteCount: available)
         return "Required: \(requiredLabel). Available: \(availableLabel). Please free up space and try again."
-    }
-
-    private func applyStorageBuffer(to bytes: Int64) -> Int64 {
-        Int64(ceil(Double(bytes) * 1.05))
     }
 
     // MARK: - Console View
