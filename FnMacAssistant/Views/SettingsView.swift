@@ -17,6 +17,7 @@ struct SettingsView: View {
     @State private var extraContainers: [FortniteContainerLocator.ContainerCandidate] = []
     @State private var selectedExtraContainerPaths: Set<String> = []
     @State private var deleteExtrasErrorMessage: String?
+    @State private var didAttemptInitialContainerDetection = false
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("fortdlUseDownloadOnly") private var fortdlUseDownloadOnly = true
     @AppStorage("fortdlGameDataDownloadPath") private var fortdlGameDataDownloadPath = ""
@@ -187,14 +188,14 @@ struct SettingsView: View {
                             }
                             Spacer()
                             Button("Show in Finder") {
-                                if let path = containerLocator.getContainerPath() {
+                                if let path = containerLocator.cachedPath {
                                     let url = URL(fileURLWithPath: path, isDirectory: true)
                                     if !NSWorkspace.shared.openFile(path, withApplication: "Finder") {
                                         NSWorkspace.shared.activateFileViewerSelecting([url])
                                     }
                                 }
                             }
-                            .disabled(containerLocator.getContainerPath() == nil)
+                            .disabled(containerLocator.cachedPath == nil)
                         }
                     }
                 }
@@ -296,6 +297,9 @@ You can disable them at any time.
             .padding(24)
         }
         .scrollBounceBehavior(.basedOnSize)
+        .onAppear {
+            detectContainerIfNeeded()
+        }
         .alert("Reset All Settings?", isPresented: $showResetConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Reset", role: .destructive) {
@@ -489,6 +493,22 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
     private func openReleasesPage() {
         if let url = URL(string: "https://github.com/isacucho/FnMacAssistant/releases/latest") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func detectContainerIfNeeded() {
+        guard !didAttemptInitialContainerDetection else { return }
+        didAttemptInitialContainerDetection = true
+
+        guard containerLocator.cachedPath == nil else { return }
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let found = containerLocator.locateContainer()
+            DispatchQueue.main.async {
+                if containerLocator.cachedPath == nil {
+                    containerLocator.cachedPath = found
+                }
+            }
         }
     }
 
