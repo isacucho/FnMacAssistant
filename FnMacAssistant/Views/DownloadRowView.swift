@@ -87,7 +87,7 @@ struct DownloadRowView: View {
     }
 }
 
-// MARK: - Status text (must be outside of body)
+// MARK: - Status text 
 private extension DownloadRowView {
     var statusText: String {
         switch item.state {
