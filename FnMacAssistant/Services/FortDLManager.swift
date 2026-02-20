@@ -164,14 +164,19 @@ final class FortDLManager: ObservableObject {
         logOutput = ""
 
         let process = Process()
-        process.executableURL = fortDLURL()
+        let executableURL = fortDLURL()
+        process.executableURL = executableURL
         clearFortDLCache()
 
-        process.arguments = [
+        let arguments = [
             "--manifest-id", manifestID,
             "--list-tags",
             "-c", fortDLCacheURL.path
         ]
+        process.arguments = arguments
+
+        let commandLine = "Running command: \(formattedCommand(executable: executableURL.path, arguments: arguments))"
+        logOutput = commandLine
 
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -182,7 +187,7 @@ final class FortDLManager: ObservableObject {
             let output = String(decoding: data, as: UTF8.self)
 
             Task { @MainActor in
-                self.logOutput = output
+                self.logOutput = commandLine + "\n" + output
                 self.detectKnownErrors(in: output)
                 self.parseOutput(output)
             }
@@ -213,7 +218,7 @@ final class FortDLManager: ObservableObject {
         args += ["-c", fortDLCacheURL.path]
 
         if downloadAllAssets {
-            // everything
+            args.append("--all")
         } else if !selectedAssets.isEmpty {
             for asset in selectedAssets {
                 args += ["--tag", asset]
@@ -311,8 +316,10 @@ final class FortDLManager: ObservableObject {
     private func runFortDL(arguments: [String]) {
         let process = Process()
         activeProcess = process
-        process.executableURL = fortDLURL()
+        let executableURL = fortDLURL()
+        process.executableURL = executableURL
         process.arguments = arguments
+        log("Running command: \(formattedCommand(executable: executableURL.path, arguments: arguments))")
 
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -344,6 +351,20 @@ final class FortDLManager: ObservableObject {
         }
 
         try? process.run()
+    }
+
+    private func formattedCommand(executable: String, arguments: [String]) -> String {
+        let shortExecutable = "./" + URL(fileURLWithPath: executable).lastPathComponent
+        return ([shortExecutable] + arguments).map(shellQuoted).joined(separator: " ")
+    }
+
+    private func shellQuoted(_ value: String) -> String {
+        guard !value.isEmpty else { return "''" }
+        let safeChars = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._/:")
+        if value.rangeOfCharacter(from: safeChars.inverted) == nil {
+            return value
+        }
+        return "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     private func fortDLURL() -> URL {
