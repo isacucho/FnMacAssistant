@@ -79,13 +79,27 @@ final class PatchManager: ObservableObject {
         switch result {
         case .success:
             if UserDefaults.standard.bool(forKey: "enableInGameDownloadFolder") {
-                updateBackgroundHttpFolder()
+                let canModify = await MainActor.run {
+                    FortniteContainerWriteGuard.confirmCanModifyContainer()
+                }
+                if canModify {
+                    updateBackgroundHttpFolder()
+                } else {
+                    log("Skipped BackgroundHttp update because Fortnite is running.")
+                }
             }
             log("Patch successfully applied. You can now open Fortnite.")
             finish(true)
         case .alreadyApplied:
             if UserDefaults.standard.bool(forKey: "enableInGameDownloadFolder") {
-                updateBackgroundHttpFolder()
+                let canModify = await MainActor.run {
+                    FortniteContainerWriteGuard.confirmCanModifyContainer()
+                }
+                if canModify {
+                    updateBackgroundHttpFolder()
+                } else {
+                    log("Skipped BackgroundHttp update because Fortnite is running.")
+                }
             }
             log("Patch was already applied. No changes were made.")
             finish(false)
@@ -99,11 +113,20 @@ final class PatchManager: ObservableObject {
     // MARK: - In-Game Download Folder
     @MainActor
     func prepareInGameDownloadFolder() {
+        guard FortniteContainerWriteGuard.confirmCanModifyContainer() else {
+            log("Cancelled BackgroundHttp update because Fortnite is running.")
+            return
+        }
         updateBackgroundHttpFolder()
     }
 
     @MainActor
     func removeInGameDownloadFolder() {
+        guard FortniteContainerWriteGuard.confirmCanModifyContainer() else {
+            log("Cancelled BackgroundHttp cleanup because Fortnite is running.")
+            return
+        }
+
         guard let containerPath = FortniteContainerLocator.shared.getContainerPath() else {
             log("Could not locate Fortnite container. BackgroundHttp cleanup skipped.")
             return
@@ -357,9 +380,7 @@ final class PatchManager: ObservableObject {
     
     // MARK: - Terminate Fortnite
     private func terminateFortnite() {
-        for app in NSWorkspace.shared.runningApplications where app.localizedName?.lowercased().contains("fortnite") == true {
-            app.terminate()
-        }
+        FortniteContainerWriteGuard.terminateFortnite()
     }
     
     // MARK: - Prompt for Full Disk Access
@@ -384,9 +405,7 @@ final class PatchManager: ObservableObject {
     
     // MARK: - Process Detection
     private func isFortniteRunning() -> Bool {
-        NSWorkspace.shared.runningApplications.contains {
-            $0.localizedName?.lowercased().contains("fortnite") ?? false
-        }
+        FortniteContainerWriteGuard.isFortniteRunning()
     }
     
     // MARK: - Helpers

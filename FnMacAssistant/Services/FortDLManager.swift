@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import AppKit
 
 @MainActor
 final class FortDLManager: ObservableObject {
@@ -61,6 +62,9 @@ final class FortDLManager: ObservableObject {
     private var stallCheckTimer: Timer?
     private var lastProgressBytes: UInt64 = 0
     private var lastProgressDate: Date?
+    private var didPromptFortniteCloseForCurrentDownload = false
+    private var didNotifyFortniteCloseForCurrentDownload = false
+    private var currentDownloadLogBaseline = 0
 
     private var cancellables: Set<AnyCancellable> = []
 
@@ -77,6 +81,10 @@ final class FortDLManager: ObservableObject {
     @AppStorage("fortdlGameDataDownloadPath") private var gameDataDownloadPath = ""
 
     private var autoManifestID: String?
+    private var fortniteClosePromptMonitorTimer: Timer?
+    private var fortniteClosePromptTerminationObserver: NSObjectProtocol?
+    private var fortniteCloseAlert: NSAlert?
+    private var fortniteCloseAlertSheetPresented = false
 
     private init() {
         manualManifestID = storedManualManifestID
@@ -235,7 +243,11 @@ final class FortDLManager: ObservableObject {
         downloadedBytes = 0
         totalBytes = selectedDownloadSizeBytes
         didNotifyForCurrentDownload = false
+        didPromptFortniteCloseForCurrentDownload = false
+        didNotifyFortniteCloseForCurrentDownload = false
+        currentDownloadLogBaseline = logOutput.count
         wasCancelled = false
+        dismissFortniteClosePrompt(returnCode: .abort)
         
         clearFortDLCache()
         lastDownloadArguments = args
@@ -390,6 +402,7 @@ final class FortDLManager: ObservableObject {
             showFullINIRetryHint = false
             fullINIRetryHintDetails = ""
             stopCacheMonitoring()
+            dismissFortniteClosePrompt(returnCode: .abort)
             stopAutoResume()
             stopStallCheck()
             clearFortDLCache()
@@ -400,6 +413,14 @@ final class FortDLManager: ObservableObject {
     private func detectKnownErrors(in outputChunk: String) {
         let lowerChunk = outputChunk.lowercased()
         let lowerAll = logOutput.lowercased()
+        let lowerCurrentDownloadLogs = String(
+            logOutput.suffix(max(0, logOutput.count - currentDownloadLogBaseline))
+        ).lowercased()
+
+        handleFortniteStillRunningMessageIfNeeded(
+            inChunk: lowerChunk,
+            inCurrentDownloadLogs: lowerCurrentDownloadLogs
+        )
 
         if lowerChunk.contains("failed to read cloudcontent.json") ||
             lowerAll.contains("failed to read cloudcontent.json") {
@@ -429,6 +450,160 @@ final class FortDLManager: ObservableObject {
         if hasFullINI && hasConnectionFailure {
             showFullINIRetryHint = true
             fullINIRetryHintDetails = outputChunk
+        }
+    }
+
+    private func handleFortniteStillRunningMessageIfNeeded(
+        inChunk lowerChunk: String,
+        inCurrentDownloadLogs lowerCurrentDownloadLogs: String
+    ) {
+        let sawRunning = lowerChunk.contains("fortnite is still running")
+            || lowerCurrentDownloadLogs.contains("fortnite is still running")
+
+        let sawClosePrompt = lowerChunk.contains("close fortnite to continue install/download")
+            || lowerCurrentDownloadLogs.contains("close fortnite to continue install/download")
+            || lowerChunk.contains("close fortnite to install assets")
+            || lowerCurrentDownloadLogs.contains("close fortnite to install assets")
+
+        guard sawRunning && sawClosePrompt else { return }
+
+        notifyFortniteCloseNeededIfNeeded()
+        presentFortniteClosePromptIfNeeded()
+    }
+
+    private func notifyFortniteCloseNeededIfNeeded() {
+        guard !didNotifyFortniteCloseForCurrentDownload else { return }
+        didNotifyFortniteCloseForCurrentDownload = true
+
+        let enabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true
+        guard enabled else { return }
+
+        NotificationHelper.shared.post(
+            title: "Close Fortnite to install",
+            body: "fort-dl finished downloading and is waiting for Fortnite to close."
+        )
+    }
+
+    private func presentFortniteClosePromptIfNeeded() {
+        guard !didPromptFortniteCloseForCurrentDownload else { return }
+        guard FortniteContainerWriteGuard.isMainFortniteAppRunning() else { return }
+        didPromptFortniteCloseForCurrentDownload = true
+
+        let alert = NSAlert()
+        alert.messageText = "Fortnite Is Running"
+        alert.informativeText = "fort-dl is waiting for Fortnite to close to install the assets."
+        alert.addButton(withTitle: "Close Fortnite")
+        alert.addButton(withTitle: "Cancel Download")
+        alert.buttons[1].hasDestructiveAction = true
+        fortniteCloseAlert = alert
+        fortniteCloseAlertSheetPresented = false
+
+        startFortniteClosePromptMonitor()
+        beginFortniteClosePromptSheetIfPossible()
+    }
+
+    private func dismissFortniteClosePromptIfSafe() {
+        guard fortniteCloseAlert != nil else { return }
+        guard !FortniteContainerWriteGuard.isMainFortniteAppRunning() else { return }
+        dismissFortniteClosePrompt(returnCode: .abort)
+    }
+
+    private func beginFortniteClosePromptSheetIfPossible() {
+        guard let alert = fortniteCloseAlert else { return }
+        guard !fortniteCloseAlertSheetPresented else { return }
+        guard FortniteContainerWriteGuard.isMainFortniteAppRunning() else {
+            dismissFortniteClosePrompt(returnCode: .abort)
+            return
+        }
+
+        guard let hostWindow = NSApp.keyWindow ?? NSApp.mainWindow else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                Task { @MainActor in
+                    self?.beginFortniteClosePromptSheetIfPossible()
+                }
+            }
+            return
+        }
+
+        fortniteCloseAlertSheetPresented = true
+        NSApp.activate(ignoringOtherApps: true)
+        _ = alert.window.makeFirstResponder(alert.buttons[0])
+        alert.beginSheetModal(for: hostWindow) { [weak self] response in
+            Task { @MainActor in
+                self?.handleFortniteClosePromptResponse(response)
+            }
+        }
+    }
+
+    private func handleFortniteClosePromptResponse(_ response: NSApplication.ModalResponse) {
+        stopFortniteClosePromptMonitor()
+        fortniteCloseAlert = nil
+        fortniteCloseAlertSheetPresented = false
+
+        if response == .abort || !FortniteContainerWriteGuard.isMainFortniteAppRunning() {
+            return
+        }
+
+        if response == .alertFirstButtonReturn {
+            FortniteContainerWriteGuard.terminateFortnite()
+            return
+        }
+
+        if response == .alertSecondButtonReturn {
+            log("Cancelled: User chose not to close Fortnite. Stopping fort-dl.")
+            cancelDownload()
+            didPromptFortniteCloseForCurrentDownload = true
+            didNotifyFortniteCloseForCurrentDownload = true
+        }
+    }
+
+    private func dismissFortniteClosePrompt(returnCode: NSApplication.ModalResponse) {
+        guard let alert = fortniteCloseAlert else {
+            stopFortniteClosePromptMonitor()
+            return
+        }
+
+        if fortniteCloseAlertSheetPresented, let hostWindow = alert.window.sheetParent {
+            hostWindow.endSheet(alert.window, returnCode: returnCode)
+            return
+        }
+
+        alert.window.close()
+        stopFortniteClosePromptMonitor()
+        fortniteCloseAlert = nil
+        fortniteCloseAlertSheetPresented = false
+    }
+
+    private func startFortniteClosePromptMonitor() {
+        stopFortniteClosePromptMonitor()
+
+        fortniteClosePromptTerminationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didTerminateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                self.dismissFortniteClosePromptIfSafe()
+            }
+        }
+
+        fortniteClosePromptMonitorTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let strongSelf = self else { return }
+            Task { @MainActor in
+                strongSelf.dismissFortniteClosePromptIfSafe()
+            }
+        }
+
+        dismissFortniteClosePromptIfSafe()
+    }
+
+    private func stopFortniteClosePromptMonitor() {
+        fortniteClosePromptMonitorTimer?.invalidate()
+        fortniteClosePromptMonitorTimer = nil
+        if let observer = fortniteClosePromptTerminationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            fortniteClosePromptTerminationObserver = nil
         }
     }
     
@@ -574,8 +749,11 @@ final class FortDLManager: ObservableObject {
         isInstalling = false
         isDone = false
         didNotifyForCurrentDownload = false
+        didPromptFortniteCloseForCurrentDownload = false
+        didNotifyFortniteCloseForCurrentDownload = false
         wasCancelled = true
         stopCacheMonitoring()
+        dismissFortniteClosePrompt(returnCode: .abort)
         stopAutoResume()
         stopStallCheck()
 
@@ -594,7 +772,10 @@ final class FortDLManager: ObservableObject {
         totalBytes = 0
         downloadStartDate = nil
         wasCancelled = false
+        didPromptFortniteCloseForCurrentDownload = false
+        didNotifyFortniteCloseForCurrentDownload = false
         stopCacheMonitoring()
+        dismissFortniteClosePrompt(returnCode: .abort)
         stopAutoResume()
         stopStallCheck()
     }
@@ -609,8 +790,11 @@ final class FortDLManager: ObservableObject {
         totalBytes = 0
         downloadStartDate = nil
         didNotifyForCurrentDownload = false
+        didPromptFortniteCloseForCurrentDownload = false
+        didNotifyFortniteCloseForCurrentDownload = false
         wasCancelled = false
         stopCacheMonitoring()
+        dismissFortniteClosePrompt(returnCode: .abort)
         stopAutoResume()
         stopStallCheck()
     }
@@ -790,4 +974,5 @@ final class FortDLManager: ObservableObject {
             manifestID = autoManifestID
         }
     }
+
 }

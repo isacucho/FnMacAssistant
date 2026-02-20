@@ -54,6 +54,10 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private var batchDownloadedPaths: [String] = []
     private var batchTargetDirs: Set<String> = []
     private var didNotifyForCurrentRun = false
+    private var fortniteReopenMonitorTimer: Timer?
+    private var suppressFortniteReopenWarningUntil: Date = .distantPast
+    private var fortniteReopenPromptInFlight = false
+    private var allowFortniteWhileDownloading = false
 
     private struct DownloadState {
         var tempURL: URL
@@ -172,6 +176,10 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             self.logLines.removeAll()
             self.logOutput = ""
         }
+        stopFortniteReopenMonitor()
+        fortniteReopenPromptInFlight = false
+        allowFortniteWhileDownloading = false
+        suppressFortniteReopenWarningUntil = .distantPast
         didNotifyForCurrentRun = false
         batchTargetDirs.removeAll()
         batchDownloadedPaths.removeAll()
@@ -223,7 +231,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         }
 
         var downloadConfig: String?
-        var idleSeconds = 0
+        var lastTaskDetectedAt = Date()
         var didCloseFortnite = false
 
         var pendingTasks: [DownloadTask] = []
@@ -237,17 +245,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             if Task.isCancelled { break }
 
             let newLines = readNewLogLines(logPath: logPath)
-            if newLines.isEmpty {
-                idleSeconds += 1
-                if idleSeconds >= 120 {
-                    replaceLog("No tasks found for \(idleSeconds) seconds. Fortnite must have updated!")
-                    appendLog("If it didn't, restart Fortnite before starting Update Assistant again.")
-                    finalize(success: true)
-                    return
-                }
-            } else {
-                idleSeconds = 0
-            }
 
             for line in newLines {
                 let nsLine = line as NSString
@@ -334,6 +331,15 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                     )
                 }
                 lastLinkDetected = Date()
+                lastTaskDetectedAt = Date()
+            }
+
+            let idleSeconds = Int(Date().timeIntervalSince(lastTaskDetectedAt))
+            if idleSeconds >= 120 && pendingTasks.isEmpty && lastLinkDetected == nil {
+                replaceLog("No tasks found for \(idleSeconds) seconds. Fortnite must have updated!")
+                appendLog("If it didn't, restart Fortnite before starting Update Assistant again.")
+                finalize(success: true)
+                return
             }
 
             if let lastLink = lastLinkDetected {
@@ -358,6 +364,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                         terminateFortnite()
                         terminateUserNSURLSessiond()
                         clearNSURLSessionDownloadsCache(containerPath: containerPath)
+                        suppressFortniteReopenWarningUntil = Date().addingTimeInterval(6)
                         didCloseFortnite = true
                     }
 
@@ -385,7 +392,11 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
                     let totalBytes = filtered.reduce(Int64(0)) { $0 + $1.size }
                     updateProgressForBatch(totalBytes: totalBytes)
-                    DispatchQueue.main.async { self.isDownloading = true }
+                    allowFortniteWhileDownloading = false
+                    DispatchQueue.main.async {
+                        self.isDownloading = true
+                        self.startFortniteReopenMonitor()
+                    }
 
                     var baseDownloaded: Int64 = 0
 
@@ -519,14 +530,30 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
     private func cancelActiveDownload() {
         stateQueue.async {
-            self.downloadTask?.cancel()
-            self.downloadTask = nil
-            if let state = self.downloadState {
-                try? state.fileHandle.close()
-                try? FileManager.default.removeItem(at: state.tempURL)
-            }
-            self.downloadState = nil
+            self.cancelActiveDownloadLocked(resumeError: CancellationError())
+        }
+    }
+
+    private func cancelActiveDownloadLocked(resumeError: Error?) {
+        self.downloadTask?.cancel()
+        self.downloadTask = nil
+
+        if let state = self.downloadState {
+            try? state.fileHandle.close()
+            try? FileManager.default.removeItem(at: state.tempURL)
+        }
+        self.downloadState = nil
+
+        self.downloadSession?.invalidateAndCancel()
+        self.downloadSession = nil
+
+        if let continuation = self.downloadContinuation {
             self.downloadContinuation = nil
+            if let resumeError {
+                continuation.resume(throwing: resumeError)
+            } else {
+                continuation.resume()
+            }
         }
     }
 
@@ -534,6 +561,10 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         assistantTask?.cancel()
         assistantTask = nil
         cancelActiveDownload()
+        stopFortniteReopenMonitor()
+        fortniteReopenPromptInFlight = false
+        allowFortniteWhileDownloading = false
+        suppressFortniteReopenWarningUntil = .distantPast
 
         if deleteDownloaded {
             let paths = batchDownloadedPaths
@@ -561,6 +592,10 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     }
 
     private func finalize(success: Bool) {
+        stopFortniteReopenMonitor()
+        fortniteReopenPromptInFlight = false
+        allowFortniteWhileDownloading = false
+        suppressFortniteReopenWarningUntil = .distantPast
         DispatchQueue.main.async {
             self.isDownloading = false
             self.isTracking = false
@@ -615,11 +650,95 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         try? process.run()
     }
 
-    private func isFortniteRunning() -> Bool {
-        NSWorkspace.shared.runningApplications.contains {
-            ($0.bundleIdentifier?.contains("Fortnite") ?? false)
-            || ($0.localizedName?.lowercased().contains("fortnite") ?? false)
+    @MainActor
+    private func startFortniteReopenMonitor() {
+        stopFortniteReopenMonitor()
+        fortniteReopenMonitorTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            guard self.isDownloading else { return }
+            guard !self.allowFortniteWhileDownloading else { return }
+            guard Date() >= self.suppressFortniteReopenWarningUntil else { return }
+            guard self.isFortniteRunning() else { return }
+            guard !self.fortniteReopenPromptInFlight else { return }
+
+            self.fortniteReopenPromptInFlight = true
+            self.appendLog("Fortnite was opened during download. Closing it to protect the download.")
+            self.terminateFortnite()
+
+            Task {
+                let action = await self.promptFortniteOpenedDuringDownloadAction()
+                switch action {
+                case .cancelDownload:
+                    self.appendLog("Download cancelled because Fortnite was opened during download.")
+                    self.stopInternal(deleteDownloaded: false)
+                case .ignoreAndOpen:
+                    self.appendLog("Continuing after warning. Opening Fortnite may break the download.")
+                    self.openFortnite()
+                    self.allowFortniteWhileDownloading = true
+                case .closeWarning:
+                    self.appendLog("Continuing download with Fortnite closed.")
+                    self.suppressFortniteReopenWarningUntil = Date().addingTimeInterval(2)
+                }
+                self.fortniteReopenPromptInFlight = false
+            }
         }
+    }
+
+    private func stopFortniteReopenMonitor() {
+        fortniteReopenMonitorTimer?.invalidate()
+        fortniteReopenMonitorTimer = nil
+    }
+
+    private enum FortniteOpenedDuringDownloadAction {
+        case cancelDownload
+        case ignoreAndOpen
+        case closeWarning
+    }
+
+    private func promptFortniteOpenedDuringDownloadAction() async -> FortniteOpenedDuringDownloadAction {
+        await MainActor.run {
+            let alert = NSAlert()
+            alert.messageText = "Fortnite Opened During Download"
+            alert.informativeText = """
+            Opening Fortnite while Update Assistant is downloading can break the download.
+            """
+            alert.addButton(withTitle: "Cancel Download")
+            alert.addButton(withTitle: "Ignore and Open Fortnite")
+            alert.addButton(withTitle: "Dismiss")
+            // Keep "Dismiss" as default even though it is the last (bottom) button.
+            alert.buttons[0].keyEquivalent = ""
+            alert.buttons[1].keyEquivalent = ""
+            alert.buttons[2].keyEquivalent = "\r"
+            alert.buttons[2].keyEquivalentModifierMask = []
+
+            var escPressed = false
+            let escMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                let isEscape = event.keyCode == 53 || event.charactersIgnoringModifiers == "\u{1b}"
+                guard isEscape else { return event }
+                escPressed = true
+                NSApp.abortModal()
+                return nil
+            }
+
+            let response = alert.runModal()
+            if let escMonitor {
+                NSEvent.removeMonitor(escMonitor)
+            }
+            if escPressed {
+                return .closeWarning
+            }
+            if response == .alertFirstButtonReturn {
+                return .cancelDownload
+            }
+            if response == .alertSecondButtonReturn {
+                return .ignoreAndOpen
+            }
+            return .closeWarning
+        }
+    }
+
+    private func isFortniteRunning() -> Bool {
+        FortniteContainerWriteGuard.isFortniteRunning()
     }
 
     private func waitForLogReset(logPath: String) async -> Bool {
@@ -716,13 +835,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     }
 
     private func terminateFortnite() {
-        let running = NSWorkspace.shared.runningApplications.filter {
-            ($0.bundleIdentifier?.contains("Fortnite") ?? false)
-            || ($0.localizedName?.lowercased().contains("fortnite") ?? false)
-        }
-        for app in running {
-            _ = app.forceTerminate()
-        }
+        FortniteContainerWriteGuard.terminateFortnite()
     }
 
     private func terminateUserNSURLSessiond() {
