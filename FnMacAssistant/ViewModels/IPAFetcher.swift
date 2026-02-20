@@ -24,7 +24,15 @@ final class IPAFetcher: ObservableObject {
     // MARK: - Published State
 
     @Published var availableIPAs: [IPAInfo] = []
-    @Published var selectedIPA: IPAInfo?
+    @Published var selectedIPA: IPAInfo? {
+        didSet {
+            if let selectedIPA {
+                UserDefaults.standard.set(selectedIPA.id, forKey: selectedIPAIDDefaultsKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: selectedIPAIDDefaultsKey)
+            }
+        }
+    }
     @Published var isLoading: Bool = false
     @Published var latestReleaseTag: String? = nil
 
@@ -32,6 +40,7 @@ final class IPAFetcher: ObservableObject {
 
     private let gistID = "fb6a16acae4e592603540249cbb7e08d"
     private let gistFileName = "list.json"
+    private let selectedIPAIDDefaultsKey = "selectedIPAID"
 
     // MARK: - Init
 
@@ -40,7 +49,8 @@ final class IPAFetcher: ObservableObject {
     // MARK: - Public API
 
     func fetchAvailableIPAs() async {
-        let previousSelection = selectedIPA
+        let preferredSelectionID = selectedIPA?.id
+            ?? UserDefaults.standard.string(forKey: selectedIPAIDDefaultsKey)
         isLoading = true
 
         guard let rawURL = await fetchLatestGistRawURL(),
@@ -50,8 +60,8 @@ final class IPAFetcher: ObservableObject {
         }
 
         availableIPAs = ipaList
-        if let previousSelection,
-           let matched = ipaList.first(where: { $0.id == previousSelection.id }) {
+        if let preferredSelectionID,
+           let matched = ipaList.first(where: { $0.id == preferredSelectionID }) {
             selectedIPA = matched
         } else {
             selectedIPA = ipaList.first
