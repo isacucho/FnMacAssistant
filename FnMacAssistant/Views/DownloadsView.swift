@@ -457,7 +457,7 @@ Plus the following gameplay enhancements by rt2746:
             disclaimer.font = .system(size: 13, weight: .bold)
             disclaimer.foregroundColor = .red
 
-            text += disclaimer
+            text = disclaimer + AttributedString("\n\n") + text
 
         } else if lower.contains("fortnite") {
             text = AttributedString("""

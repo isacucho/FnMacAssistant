@@ -2,7 +2,7 @@
 //  FortniteContainerWriteGuard.swift
 //  FnMacAssistant
 //
-//  Created by Codex on 20/02/26.
+//  Created by Isacucho on 20/02/26.
 //
 
 import Foundation
