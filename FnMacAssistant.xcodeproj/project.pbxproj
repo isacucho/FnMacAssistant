@@ -23,10 +23,10 @@
 		3057B9B72F33E7C800C9B3E1 /* NotificationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3057B9B62F33E7C800C9B3E1 /* NotificationHelper.swift */; };
 		307A824E2EC3CBFC0004CD9B /* PatchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307A824D2EC3CBFC0004CD9B /* PatchManager.swift */; };
 		307BD8BE2F33D7B100FB5A9C /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307BD8BD2F33D7B100FB5A9C /* FAQView.swift */; };
-		308A546C2EC6F1E400D136F6 /* InGameDownloadTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */; };
 		308A54742EC78BFC00D136F6 /* FortniteContainerLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */; };
 		309947AF2EC3ADFE008B1F2A /* PatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309947AE2EC3ADFE008B1F2A /* PatchView.swift */; };
 		309C6DDF2F4519F000AF0302 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 309C6DDE2F4519F000AF0302 /* Sparkle */; };
+		30B103A12F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B103A02F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift */; };
 		30C9CF0C2F3BBF2900A7EE45 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */; };
 		30DCDF532F226EF2000D6758 /* fort-dl in Copy Files */ = {isa = PBXBuildFile; fileRef = 30DCDF512F226E8F000D6758 /* fort-dl */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		31A1B2012F7A000100C0A101 /* UpdateAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */; };
@@ -65,10 +65,10 @@
 		3057B9B62F33E7C800C9B3E1 /* NotificationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHelper.swift; sourceTree = "<group>"; };
 		307A824D2EC3CBFC0004CD9B /* PatchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchManager.swift; sourceTree = "<group>"; };
 		307BD8BD2F33D7B100FB5A9C /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
-		308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameDownloadTracker.swift; sourceTree = "<group>"; };
 		308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortniteContainerLocator.swift; sourceTree = "<group>"; };
 		308F66E52F460C6F00D242D3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		309947AE2EC3ADFE008B1F2A /* PatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchView.swift; sourceTree = "<group>"; };
+		30B103A02F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortniteContainerWriteGuard.swift; sourceTree = "<group>"; };
 		30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 		30DCDF512F226E8F000D6758 /* fort-dl */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "fort-dl"; sourceTree = "<group>"; };
 		31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantView.swift; sourceTree = "<group>"; };
@@ -156,8 +156,8 @@
 				30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */,
 				31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */,
 				300F26D32F1492CF00A997A6 /* FortDLManager.swift */,
+				30B103A02F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift */,
 				308A54732EC78BFC00D136F6 /* FortniteContainerLocator.swift */,
-				308A546B2EC6F1DE00D136F6 /* InGameDownloadTracker.swift */,
 				307A824D2EC3CBFC0004CD9B /* PatchManager.swift */,
 				3057B9B62F33E7C800C9B3E1 /* NotificationHelper.swift */,
 				3008A9202EBD309200647857 /* FileHelper.swift */,
@@ -253,7 +253,6 @@
 				307A824E2EC3CBFC0004CD9B /* PatchManager.swift in Sources */,
 				3008A9232EBD30D600647857 /* ContentView.swift in Sources */,
 				300F26D62F1492EF00A997A6 /* GameAssetsView.swift in Sources */,
-				308A546C2EC6F1E400D136F6 /* InGameDownloadTracker.swift in Sources */,
 				3008A9252EBD825900647857 /* DownloadsView.swift in Sources */,
 				307BD8BE2F33D7B100FB5A9C /* FAQView.swift in Sources */,
 				3008A9112EBD2FCC00647857 /* FnMacAssistantApp.swift in Sources */,
@@ -262,6 +261,7 @@
 				3008A9192EBD302D00647857 /* DownloadItem.swift in Sources */,
 				3008A9212EBD30AE00647857 /* FileHelper.swift in Sources */,
 				300F26D42F1492CF00A997A6 /* FortDLManager.swift in Sources */,
+				30B103A12F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift in Sources */,
 				30C9CF0C2F3BBF2900A7EE45 /* UpdateChecker.swift in Sources */,
 				3008A91B2EBD303A00647857 /* DownloadManager.swift in Sources */,
 			);
