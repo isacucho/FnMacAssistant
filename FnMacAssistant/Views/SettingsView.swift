@@ -229,7 +229,7 @@ You can disable them at any time.
                             .font(.headline)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Current version: \(sparkleUpdater.currentVersion)")
+                            Text("Current version: \(sparkleUpdater.currentVersionWithBuild)")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
                         }

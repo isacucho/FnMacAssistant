@@ -34,19 +34,37 @@ final class SparkleUpdaterService: NSObject, ObservableObject {
     let updaterController: SPUStandardUpdaterController
     private let updaterDelegateProxy: SparkleChannelDelegate
     private let selectedChannelKey = "sparkle.selectedChannel"
+    private let defaultsInitializedKey = "sparkle.defaultsInitialized"
 
     var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0"
     }
 
+    var currentBuildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
+    }
+
+    var currentVersionWithBuild: String {
+        "\(currentVersion) (\(currentBuildNumber))"
+    }
+
     var isPrereleaseBuild: Bool {
-        let version = currentVersion
-        return version.contains("-") || version.rangeOfCharacter(from: .letters) != nil
+        Self.detectPrereleaseBuild()
     }
 
     private override init() {
-        let stored = UserDefaults.standard.string(forKey: selectedChannelKey)
-        let initialChannel = UpdateChannel(rawValue: stored ?? "") ?? .stable
+        let defaults = UserDefaults.standard
+        let isFirstLaunchDefaultsInit = !defaults.bool(forKey: defaultsInitializedKey)
+
+        let initialChannel: UpdateChannel
+        if isFirstLaunchDefaultsInit {
+            initialChannel = Self.detectPrereleaseBuild() ? .beta : .stable
+            defaults.set(initialChannel.rawValue, forKey: selectedChannelKey)
+        } else {
+            let stored = defaults.string(forKey: selectedChannelKey)
+            initialChannel = UpdateChannel(rawValue: stored ?? "") ?? .stable
+        }
+
         selectedChannel = initialChannel
         updaterDelegateProxy = SparkleChannelDelegate(channel: initialChannel)
         updaterController = SPUStandardUpdaterController(
@@ -55,6 +73,12 @@ final class SparkleUpdaterService: NSObject, ObservableObject {
             userDriverDelegate: nil
         )
         super.init()
+
+        if isFirstLaunchDefaultsInit {
+            updaterController.updater.automaticallyDownloadsUpdates = true
+            defaults.set(true, forKey: defaultsInitializedKey)
+        }
+
         bindUpdaterState()
         refreshState()
     }
@@ -94,6 +118,11 @@ final class SparkleUpdaterService: NSObject, ObservableObject {
         canCheckForUpdates = updaterController.updater.canCheckForUpdates
         automaticallyChecksForUpdates = updaterController.updater.automaticallyChecksForUpdates
         automaticallyDownloadsUpdates = updaterController.updater.automaticallyDownloadsUpdates
+    }
+
+    private static func detectPrereleaseBuild() -> Bool {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0"
+        return version.contains("-") || version.rangeOfCharacter(from: .letters) != nil
     }
 
     private var cancellables = Set<AnyCancellable>()
