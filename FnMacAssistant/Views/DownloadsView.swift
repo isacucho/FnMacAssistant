@@ -137,7 +137,7 @@ struct DownloadsView: View {
                     }
                     }
                     .padding(24)
-                    .onChange(of: hasActiveDownload) { active in
+                    .onChange(of: hasActiveDownload) { _, active in
                         guard active else {
                             didAutoScrollToDownload = false
                             return

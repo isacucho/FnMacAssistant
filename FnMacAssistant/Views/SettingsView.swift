@@ -190,7 +190,7 @@ struct SettingsView: View {
                             Button("Show in Finder") {
                                 if let path = containerLocator.cachedPath {
                                     let url = URL(fileURLWithPath: path, isDirectory: true)
-                                    if !NSWorkspace.shared.openFile(path, withApplication: "Finder") {
+                                    if !NSWorkspace.shared.open(url) {
                                         NSWorkspace.shared.activateFileViewerSelecting([url])
                                     }
                                 }

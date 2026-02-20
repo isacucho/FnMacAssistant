@@ -28,7 +28,6 @@ final class PatchManager: ObservableObject {
     // MARK: - Public Entry Point
     @MainActor
     func startPatch() {
-        // Allow re-patching attempts even if already completed in this session
         patchAttempts += 1
         if patchAttempts >= 3 {
             showRepeatedPatchWarning()

@@ -705,7 +705,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             alert.addButton(withTitle: "Cancel Download")
             alert.addButton(withTitle: "Ignore and Open Fortnite")
             alert.addButton(withTitle: "Dismiss")
-            // Keep "Dismiss" as default even though it is the last (bottom) button.
             alert.buttons[0].keyEquivalent = ""
             alert.buttons[1].keyEquivalent = ""
             alert.buttons[2].keyEquivalent = "\r"

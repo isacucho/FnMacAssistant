@@ -48,8 +48,7 @@ enum FortniteContainerWriteGuard {
         }
     }
 
-    // Strict check for the game app itself. This avoids treating helper
-    // processes as blockers for UI prompts that only care about Fortnite.app.
+
     static func isMainFortniteAppRunning() -> Bool {
         NSWorkspace.shared.runningApplications.contains(where: isMainFortniteApplication(_:))
     }
@@ -71,7 +70,7 @@ enum FortniteContainerWriteGuard {
         }
     }
 
-    private static func isMainFortniteApplication(_ app: NSRunningApplication) -> Bool {
+    nonisolated private static func isMainFortniteApplication(_ app: NSRunningApplication) -> Bool {
         if let bundleIdentifier = app.bundleIdentifier?.lowercased() {
             if bundleIdentifier == "com.epicgames.fortnitegame" || bundleIdentifier == "com.epicgames.fortnite" {
                 return true
