@@ -1151,8 +1151,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
         let lowerPath = path.lowercased()
         let shouldRewrite =
-            lowerPath.hasSuffix("tagplaceholder_fnone.txt")
-            || lowerPath.contains("/tagplaceholder_lang.")
+            lowerPath.contains("tagplaceholder")
+            && lowerPath.hasSuffix(".txt")
 
         guard shouldRewrite else {
             return filename
