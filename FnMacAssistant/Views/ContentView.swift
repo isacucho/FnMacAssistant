@@ -48,6 +48,8 @@ struct ContentView: View {
                         PatchView()
                     case .gameAssets:
                         GameAssetsView()
+                    case .dataManagement:
+                        DataManagementView()
                     case .updateAssistant:
                         UpdateAssistantView()
                     case .faq:
@@ -168,6 +170,12 @@ struct SidebarView: View {
                     systemImage: "shippingbox.fill",
                     isSelected: selection == .gameAssets
                 ) { selection = .gameAssets }
+
+                SidebarButton(
+                    label: "Data Management",
+                    systemImage: "externaldrive.fill.badge.minus",
+                    isSelected: selection == .dataManagement
+                ) { selection = .dataManagement }
                 SidebarButton(
                     label: "FAQ",
                     systemImage: "questionmark.circle.fill",
@@ -486,6 +494,7 @@ enum SidebarSection {
     case downloads
     case patch
     case gameAssets
+    case dataManagement
     case updateAssistant
     case faq
     case settings

@@ -39,6 +39,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private let fortniteGameRelative = "Data/Documents/FortniteGame"
     private let logRelativePath = "Data/Documents/FortniteGame/Saved/Logs/FortniteGame.log"
     private let tempFolderName = "update-assistant"
+    private let fortniteDefaultTagsPath =
+        "/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app/cookeddata/fortnitegame/content/defaulttags"
 
     private var assistantTask: Task<Void, Never>?
     private var logLines: [String] = []
@@ -58,6 +60,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private var suppressFortniteReopenWarningUntil: Date = .distantPast
     private var fortniteReopenPromptInFlight = false
     private var allowFortniteWhileDownloading = false
+    private var defaultTagPlaceholderIndex: [String: String]?
 
     private struct DownloadState {
         var tempURL: URL
@@ -1115,21 +1118,71 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
     private func adjustPlaceholderFilenameIfNeeded(_ filename: String, target: String) -> String {
         let path = filename.replacingOccurrences(of: "\\", with: "/")
-        guard path.contains("/defaulttags/") else {
+        let lowerPath = path.lowercased()
+        guard lowerPath.contains("/defaulttags/") else {
             return filename
         }
 
+        let shouldRewrite =
+            lowerPath.contains("tagplaceholder")
+            && lowerPath.hasSuffix(".txt")
+
+        guard shouldRewrite else {
+            return filename
+        }
+
+        let base = (path as NSString).deletingLastPathComponent
+        let candidates = placeholderCandidates(for: target)
+        let index = loadDefaultTagPlaceholderIndex()
+        let newName =
+            candidates.lazy.compactMap { index[$0.lowercased()] }.first
+            ?? candidates.first
+            ?? (path as NSString).lastPathComponent
+        return (base as NSString).appendingPathComponent(newName)
+    }
+
+    private func loadDefaultTagPlaceholderIndex() -> [String: String] {
+        if let defaultTagPlaceholderIndex {
+            return defaultTagPlaceholderIndex
+        }
+
+        let fm = FileManager.default
+        let names = (try? fm.contentsOfDirectory(atPath: fortniteDefaultTagsPath)) ?? []
+        var index: [String: String] = [:]
+        for name in names {
+            let lower = name.lowercased()
+            guard lower.hasPrefix("tagplaceholder"), lower.hasSuffix(".txt") else { continue }
+            index[lower] = name
+        }
+
+        defaultTagPlaceholderIndex = index
+        return index
+    }
+
+    private func placeholderCandidates(for target: String) -> [String] {
         let targetLower = target.lowercased()
-        let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z0-9]{2,3})?)(?:optional)?$"#
+        let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z0-9]{2,3})?)(optional)?$"#
         let languageRegex = try? NSRegularExpression(pattern: languagePattern, options: [])
         let targetRange = NSRange(location: 0, length: targetLower.utf16.count)
-        let languageCode: String? = {
-            guard let languageRegex,
-                  let match = languageRegex.firstMatch(in: targetLower, options: [], range: targetRange),
-                  let codeRange = Range(match.range(at: 1), in: targetLower) else { return nil }
-            return String(targetLower[codeRange])
-        }()
 
+        if let languageRegex,
+           let match = languageRegex.firstMatch(in: targetLower, options: [], range: targetRange),
+           let codeRange = Range(match.range(at: 1), in: targetLower) {
+            let languageCode = String(targetLower[codeRange])
+            let isOptional = match.range(at: 2).location != NSNotFound
+            if isOptional {
+                return [
+                    "tagplaceholder_lang\(languageCode)optional.txt",
+                    "tagplaceholder_lang\(languageCode).txt"
+                ]
+            }
+            return [
+                "tagplaceholder_lang\(languageCode).txt",
+                "tagplaceholder_lang\(languageCode)optional.txt"
+            ]
+        }
+
+        let isOptionalTarget = targetLower.contains("optional")
         var normalized = targetLower
             .replacingOccurrences(of: "optional", with: "")
             .replacingOccurrences(of: ".", with: "_")
@@ -1149,23 +1202,17 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             normalized = "gfp_brcosmeticsondemandiad"
         }
 
-        let lowerPath = path.lowercased()
-        let shouldRewrite =
-            lowerPath.contains("tagplaceholder")
-            && lowerPath.hasSuffix(".txt")
-
-        guard shouldRewrite else {
-            return filename
+        if isOptionalTarget {
+            return [
+                "tagplaceholder_\(normalized)optional.txt",
+                "tagplaceholder_\(normalized).txt"
+            ]
         }
 
-        let base = (path as NSString).deletingLastPathComponent
-        let newName: String
-        if let languageCode {
-            newName = "tagplaceholder_lang\(languageCode).txt"
-        } else {
-            newName = "tagplaceholder_\(normalized).txt"
-        }
-        return (base as NSString).appendingPathComponent(newName)
+        return [
+            "tagplaceholder_\(normalized).txt",
+            "tagplaceholder_\(normalized)optional.txt"
+        ]
     }
 
     private func writeOptionalLanguagePlaceholderCopyIfNeeded(for task: DownloadTask) {

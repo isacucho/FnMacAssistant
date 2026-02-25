@@ -18,6 +18,7 @@
 		3008A9272EBD827800647857 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9262EBD827300647857 /* SettingsView.swift */; };
 		3008A9292EBD8B5400647857 /* IPASource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9282EBD8B4E00647857 /* IPASource.swift */; };
 		3008A92B2EBD8B6500647857 /* IPAFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A92A2EBD8B6100647857 /* IPAFetcher.swift */; };
+		3008B0012F7E100100647857 /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008B0002F7E100100647857 /* DataManagementView.swift */; };
 		300F26D42F1492CF00A997A6 /* FortDLManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300F26D32F1492CF00A997A6 /* FortDLManager.swift */; };
 		300F26D62F1492EF00A997A6 /* GameAssetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300F26D52F1492EB00A997A6 /* GameAssetsView.swift */; };
 		3057B9B72F33E7C800C9B3E1 /* NotificationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3057B9B62F33E7C800C9B3E1 /* NotificationHelper.swift */; };
@@ -29,6 +30,7 @@
 		30B103A12F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B103A02F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift */; };
 		30C9CF0C2F3BBF2900A7EE45 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */; };
 		30DCDF532F226EF2000D6758 /* fort-dl in Copy Files */ = {isa = PBXBuildFile; fileRef = 30DCDF512F226E8F000D6758 /* fort-dl */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		30DCE0012F7E1002000D6758 /* DataManagementManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30DCE0002F7E1002000D6758 /* DataManagementManager.swift */; };
 		31A1B2012F7A000100C0A101 /* UpdateAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */; };
 		31A1B2012F7A000100C0A102 /* UpdateAssistantManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */; };
 /* End PBXBuildFile section */
@@ -60,6 +62,7 @@
 		3008A9262EBD827300647857 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3008A9282EBD8B4E00647857 /* IPASource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPASource.swift; sourceTree = "<group>"; };
 		3008A92A2EBD8B6100647857 /* IPAFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPAFetcher.swift; sourceTree = "<group>"; };
+		3008B0002F7E100100647857 /* DataManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementView.swift; sourceTree = "<group>"; };
 		300F26D32F1492CF00A997A6 /* FortDLManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortDLManager.swift; sourceTree = "<group>"; };
 		300F26D52F1492EB00A997A6 /* GameAssetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameAssetsView.swift; sourceTree = "<group>"; };
 		3057B9B62F33E7C800C9B3E1 /* NotificationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHelper.swift; sourceTree = "<group>"; };
@@ -71,6 +74,7 @@
 		30B103A02F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortniteContainerWriteGuard.swift; sourceTree = "<group>"; };
 		30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 		30DCDF512F226E8F000D6758 /* fort-dl */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "fort-dl"; sourceTree = "<group>"; };
+		30DCE0002F7E1002000D6758 /* DataManagementManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementManager.swift; sourceTree = "<group>"; };
 		31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantView.swift; sourceTree = "<group>"; };
 		31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -138,6 +142,7 @@
 		3008A9162EBD2FE100647857 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3008B0002F7E100100647857 /* DataManagementView.swift */,
 				300F26D52F1492EB00A997A6 /* GameAssetsView.swift */,
 				31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */,
 				309947AE2EC3ADFE008B1F2A /* PatchView.swift */,
@@ -153,6 +158,7 @@
 		3008A9172EBD2FE900647857 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				30DCE0002F7E1002000D6758 /* DataManagementManager.swift */,
 				30C9CF0B2F3BBF2900A7EE45 /* UpdateChecker.swift */,
 				31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */,
 				300F26D32F1492CF00A997A6 /* FortDLManager.swift */,
@@ -246,6 +252,7 @@
 				31A1B2012F7A000100C0A102 /* UpdateAssistantManager.swift in Sources */,
 				31A1B2012F7A000100C0A101 /* UpdateAssistantView.swift in Sources */,
 				3057B9B72F33E7C800C9B3E1 /* NotificationHelper.swift in Sources */,
+				3008B0012F7E100100647857 /* DataManagementView.swift in Sources */,
 				3008A92B2EBD8B6500647857 /* IPAFetcher.swift in Sources */,
 				3008A9292EBD8B5400647857 /* IPASource.swift in Sources */,
 				3008A91F2EBD308A00647857 /* DownloadRowView.swift in Sources */,
@@ -263,6 +270,7 @@
 				300F26D42F1492CF00A997A6 /* FortDLManager.swift in Sources */,
 				30B103A12F7D2A7B00C4A1F1 /* FortniteContainerWriteGuard.swift in Sources */,
 				30C9CF0C2F3BBF2900A7EE45 /* UpdateChecker.swift in Sources */,
+				30DCE0012F7E1002000D6758 /* DataManagementManager.swift in Sources */,
 				3008A91B2EBD303A00647857 /* DownloadManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
