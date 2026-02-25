@@ -25,7 +25,8 @@ struct DataManagementView: View {
     @State private var showArchiveCreatedAlert = false
     @State private var archiveCreatedMessage = ""
     @State private var showDeleteImportedArchiveAlert = false
-    @State private var importedArchiveURLToDelete: URL?
+    @State private var importedSourceURLToDelete: URL?
+    @State private var importedSourceIsDirectory = false
     @State private var showMoveProgressPopup = false
 
     var body: some View {
@@ -90,18 +91,19 @@ struct DataManagementView: View {
         } message: {
             Text(archiveCreatedMessage)
         }
-        .alert("Delete Imported Archive?", isPresented: $showDeleteImportedArchiveAlert) {
+        .alert("Import Completed", isPresented: $showDeleteImportedArchiveAlert) {
             Button("Keep", role: .cancel) {
-                importedArchiveURLToDelete = nil
+                importedSourceURLToDelete = nil
+                importedSourceIsDirectory = false
             }
             Button("Delete", role: .destructive) {
-                deleteImportedArchiveIfNeeded()
+                deleteImportedSourceIfNeeded()
             }
         } message: {
-            if let url = importedArchiveURLToDelete {
-                Text("Do you want to delete this archive?\n\(url.path)")
+            if let url = importedSourceURLToDelete {
+                Text("Would you like to delete the archive?\n\(url.path)")
             } else {
-                Text("Do you want to delete the imported archive?")
+                Text("Would you like to delete the archive?")
             }
         }
         .sheet(isPresented: $showFortniteAccessChecklist) {
@@ -556,9 +558,13 @@ Then return here and continue.
                 let values = try selectedURL.resourceValues(forKeys: [.isDirectoryKey])
                 if values.isDirectory == true {
                     try await manager.importPersistentDownloadDirFolder(from: selectedURL)
+                    importedSourceURLToDelete = selectedURL
+                    importedSourceIsDirectory = true
+                    showDeleteImportedArchiveAlert = true
                 } else {
                     try await manager.importArchive(from: selectedURL)
-                    importedArchiveURLToDelete = selectedURL
+                    importedSourceURLToDelete = selectedURL
+                    importedSourceIsDirectory = false
                     showDeleteImportedArchiveAlert = true
                 }
             } catch {
@@ -567,16 +573,19 @@ Then return here and continue.
         }
     }
 
-    private func deleteImportedArchiveIfNeeded() {
-        guard let archiveURL = importedArchiveURLToDelete else { return }
+    private func deleteImportedSourceIfNeeded() {
+        guard let sourceURL = importedSourceURLToDelete else { return }
         do {
-            if FileManager.default.fileExists(atPath: archiveURL.path) {
-                try FileManager.default.removeItem(at: archiveURL)
-                manager.statusMessage = "Archive imported and deleted: \(archiveURL.path)"
+            if FileManager.default.fileExists(atPath: sourceURL.path) {
+                try FileManager.default.removeItem(at: sourceURL)
+                let noun = importedSourceIsDirectory ? "Folder" : "Archive"
+                manager.statusMessage = "\(noun) imported and deleted: \(sourceURL.path)"
             }
-            importedArchiveURLToDelete = nil
+            importedSourceURLToDelete = nil
+            importedSourceIsDirectory = false
         } catch {
-            importedArchiveURLToDelete = nil
+            importedSourceURLToDelete = nil
+            importedSourceIsDirectory = false
             present(error)
         }
     }
