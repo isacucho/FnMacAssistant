@@ -408,12 +408,12 @@ final class DataManagementManager: ObservableObject {
         try FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
         try await stagePersistentDownloadDirForArchive(from: persistentURL, to: stagedPersistentURL)
 
-        archiveProgress = 0.92
+        archiveProgress = 0.12
         archiveProgressLabel = "Sanitizing archive contents..."
         try sanitizeChunkDownload(in: stagedPersistentURL)
         try filterInstalledBundles(in: stagedPersistentURL)
 
-        archiveProgress = 0.96
+        archiveProgress = 0.13
         archiveProgressLabel = "Compressing archive..."
         if FileManager.default.fileExists(atPath: destinationURL.path) {
             try FileManager.default.removeItem(at: destinationURL)
@@ -942,10 +942,10 @@ final class DataManagementManager: ObservableObject {
                     try Self.copyDirectoryRecursivelyWithProgress(
                         from: source,
                         to: destination,
-                        progress: { written in
-                            localCopiedBytes += written
+                        progress: { copied in
+                            localCopiedBytes = copiedBytes + copied
                             let phaseProgress = min(1, Double(localCopiedBytes) / Double(totalBytes))
-                            let scaledProgress = phaseProgress * 0.9
+                            let scaledProgress = phaseProgress * 0.1
                             let copiedLabel = ByteCountFormatter.string(fromByteCount: Int64(localCopiedBytes), countStyle: .file)
                             let totalLabel = ByteCountFormatter.string(fromByteCount: Int64(totalBytes), countStyle: .file)
                             DispatchQueue.main.async {
@@ -977,7 +977,7 @@ final class DataManagementManager: ObservableObject {
                     let written = try Self.copyFileWithoutChunking(from: source, to: destination)
                     localCopiedBytes += written
                     let phaseProgress = min(1, Double(localCopiedBytes) / Double(totalBytes))
-                    let scaledProgress = phaseProgress * 0.9
+                    let scaledProgress = phaseProgress * 0.1
                     let copiedLabel = ByteCountFormatter.string(fromByteCount: Int64(localCopiedBytes), countStyle: .file)
                     let totalLabel = ByteCountFormatter.string(fromByteCount: Int64(totalBytes), countStyle: .file)
                     DispatchQueue.main.async {
@@ -1001,19 +1001,130 @@ final class DataManagementManager: ObservableObject {
     private func zipDirectoryForArchive(source: URL, destination: URL) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             DispatchQueue.global(qos: .userInitiated).async {
+                let fm = FileManager.default
+                let tempZipURL = destination.deletingLastPathComponent()
+                    .appendingPathComponent(".tmp-\(UUID().uuidString).zip", isDirectory: false)
+                let sourceParent = source.deletingLastPathComponent()
+                let sourceFolderName = source.lastPathComponent
+                let (entrySizes, totalSourceBytesRaw) = Self.zipEntrySizeMap(for: source)
+                let totalSourceBytes = max(totalSourceBytesRaw, 1)
+                let formatter = ByteCountFormatter()
+                formatter.countStyle = .file
+                let zipDotSizeBytes: UInt64 = 4 * 1024 * 1024
+
                 let process = Process()
-                process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-                process.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent", source.path, destination.path]
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+                process.currentDirectoryURL = sourceParent
+                process.arguments = ["-r", "-y", "-dd", "-dg", "-ds", "4m", tempZipURL.path, sourceFolderName]
+
+                let outputPipe = Pipe()
+                process.standardOutput = outputPipe
+                process.standardError = outputPipe
+
+                var dotBasedProcessedBytes: UInt64 = 0
+                var entryBasedProcessedBytes: UInt64 = 0
+                var seenEntries = Set<String>()
+                var bufferedOutput = ""
+
+                outputPipe.fileHandleForReading.readabilityHandler = { handle in
+                    let data = handle.availableData
+                    guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else { return }
+                    let dotCount = UInt64(chunk.reduce(into: 0) { count, character in
+                        if character == "." { count += 1 }
+                    })
+                    if dotCount > 0 {
+                        let increment = dotCount * zipDotSizeBytes
+                        dotBasedProcessedBytes = min(totalSourceBytes, dotBasedProcessedBytes + increment)
+                    }
+                    bufferedOutput.append(chunk)
+
+                    while let newline = bufferedOutput.firstIndex(of: "\n") {
+                        let line = String(bufferedOutput[..<newline])
+                        bufferedOutput.removeSubrange(...newline)
+
+                        guard let entry = Self.parseZipAddedEntry(line) else { continue }
+                        guard seenEntries.insert(entry).inserted else { continue }
+                        if let size = entrySizes[entry] {
+                            entryBasedProcessedBytes += size
+                        }
+                    }
+
+                    let processedSourceBytes = max(dotBasedProcessedBytes, entryBasedProcessedBytes)
+                    if processedSourceBytes > 0 {
+                        let isFinalizingCompression = process.isRunning && processedSourceBytes >= totalSourceBytes
+                        let displayedProcessedBytes: UInt64
+                        if isFinalizingCompression && totalSourceBytes > 1 {
+                            displayedProcessedBytes = totalSourceBytes - 1
+                        } else {
+                            displayedProcessedBytes = min(processedSourceBytes, totalSourceBytes)
+                        }
+                        let phase = min(1, Double(displayedProcessedBytes) / Double(totalSourceBytes))
+                        let overall = 0.13 + (0.855 * phase)
+                        let copiedLabel = formatter.string(fromByteCount: Int64(displayedProcessedBytes))
+                        let totalLabel = formatter.string(fromByteCount: Int64(totalSourceBytes))
+                        DispatchQueue.main.async {
+                            self.archiveProgress = min(1, overall)
+                            if isFinalizingCompression {
+                                self.archiveProgressLabel = "Finalizing compression..."
+                            } else {
+                                self.archiveProgressLabel = "Compressing archive... \(copiedLabel) / \(totalLabel)"
+                            }
+                        }
+                    }
+                }
 
                 do {
                     try process.run()
-                    process.waitUntilExit()
                 } catch {
+                    outputPipe.fileHandleForReading.readabilityHandler = nil
+                    try? fm.removeItem(at: tempZipURL)
                     continuation.resume(throwing: DataManagementError.archiveCreationFailed)
                     return
                 }
 
+                while process.isRunning {
+                    let archiveBytes = Self.fileSizeOnDisk(at: tempZipURL)
+                    let fallbackPhase = min(0.985, Double(archiveBytes) / Double(totalSourceBytes))
+                    let fallbackOverall = 0.13 + (0.855 * fallbackPhase)
+                    DispatchQueue.main.async {
+                        self.archiveProgress = max(self.archiveProgress, fallbackOverall)
+                        if dotBasedProcessedBytes == 0 && entryBasedProcessedBytes == 0 {
+                            self.archiveProgressLabel = "Compressing archive..."
+                        }
+                    }
+                    Thread.sleep(forTimeInterval: 0.12)
+                }
+                process.waitUntilExit()
+
+                outputPipe.fileHandleForReading.readabilityHandler = nil
+
                 guard process.terminationStatus == 0 else {
+                    try? fm.removeItem(at: tempZipURL)
+                    continuation.resume(throwing: DataManagementError.archiveCreationFailed)
+                    return
+                }
+
+                DispatchQueue.main.sync {
+                    self.archiveProgress = max(self.archiveProgress, 0.987)
+                    self.archiveProgressLabel = "Validating archive..."
+                }
+                guard Self.validateZipArchive(at: tempZipURL) else {
+                    try? fm.removeItem(at: tempZipURL)
+                    continuation.resume(throwing: DataManagementError.archiveValidationFailed)
+                    return
+                }
+
+                DispatchQueue.main.sync {
+                    self.archiveProgress = max(self.archiveProgress, 0.995)
+                    self.archiveProgressLabel = "Finalizing archive..."
+                }
+                do {
+                    if fm.fileExists(atPath: destination.path) {
+                        try fm.removeItem(at: destination)
+                    }
+                    try fm.moveItem(at: tempZipURL, to: destination)
+                } catch {
+                    try? fm.removeItem(at: tempZipURL)
                     continuation.resume(throwing: DataManagementError.archiveCreationFailed)
                     return
                 }
@@ -1203,6 +1314,59 @@ final class DataManagementManager: ObservableObject {
         let number = attributes[.size] as? NSNumber
         return number?.uint64Value ?? 0
     }
+
+    nonisolated private static func zipEntrySizeMap(for directory: URL) -> ([String: UInt64], UInt64) {
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
+            options: [.skipsHiddenFiles],
+            errorHandler: nil
+        ) else {
+            return ([:], 0)
+        }
+
+        let rootPath = directory.path
+        let rootName = directory.lastPathComponent
+        var entrySizes: [String: UInt64] = [:]
+        var totalBytes: UInt64 = 0
+
+        for case let itemURL as URL in enumerator {
+            let values = (try? itemURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])) ?? URLResourceValues()
+            guard values.isRegularFile == true else { continue }
+            let relativePath = String(itemURL.path.dropFirst(rootPath.count))
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            guard !relativePath.isEmpty else { continue }
+            let archivePath = "\(rootName)/\(relativePath)"
+            let size = UInt64(max(values.fileSize ?? 0, 0))
+            entrySizes[archivePath] = size
+            totalBytes += size
+        }
+        return (entrySizes, totalBytes)
+    }
+
+    nonisolated private static func parseZipAddedEntry(_ line: String) -> String? {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("adding: ") else { return nil }
+        let payload = String(trimmed.dropFirst("adding: ".count))
+        if let suffixRange = payload.range(of: " (") {
+            return String(payload[..<suffixRange.lowerBound])
+        }
+        return payload.isEmpty ? nil : payload
+    }
+
+    nonisolated private static func validateZipArchive(at archiveURL: URL) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+        process.arguments = ["-tqq", archiveURL.path]
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            return false
+        }
+    }
 }
 
 enum DataManagementError: LocalizedError {
@@ -1217,6 +1381,7 @@ enum DataManagementError: LocalizedError {
     case noBundlesSelected
     case persistentDownloadDirNotFound
     case archiveCreationFailed
+    case archiveValidationFailed
 
     var errorDescription: String? {
         switch self {
@@ -1242,6 +1407,8 @@ enum DataManagementError: LocalizedError {
             return "PersistentDownloadDir was not found in the selected container."
         case .archiveCreationFailed:
             return "Could not create archive."
+        case .archiveValidationFailed:
+            return "Archive was created but failed integrity validation."
         }
     }
 }
