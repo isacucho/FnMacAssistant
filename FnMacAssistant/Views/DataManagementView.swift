@@ -162,7 +162,7 @@ Then return here and continue.
         }
         .sheet(isPresented: $showMoveProgressPopup) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Transferring Files to External Drive")
+                Text(manager.movingToExternalDrive ? "Transferring Files to External Drive" : "Restoring Files to Container")
                     .font(.title3.weight(.semibold))
 
                 ProgressView(value: min(1, max(0, manager.moveProgress)))
@@ -499,10 +499,12 @@ Then return here and continue.
     }
 
     private func resetDataLocation() {
-        do {
-            try manager.resetDataLocationToContainer()
-        } catch {
-            present(error)
+        Task {
+            do {
+                try await manager.resetDataLocationToContainer()
+            } catch {
+                present(error)
+            }
         }
     }
 
@@ -562,7 +564,6 @@ Then return here and continue.
         guard panel.runModal() == .OK, let selectedURL = panel.url else {
             return
         }
-
         Task {
             do {
                 let values = try selectedURL.resourceValues(forKeys: [.isDirectoryKey])
@@ -616,7 +617,7 @@ Then return here and continue.
     }
 
     private func syncMoveProgressPopupVisibility() {
-        let shouldShow = manager.isMovingData && manager.movingToExternalDrive
+        let shouldShow = manager.isMovingData
         if shouldShow != showMoveProgressPopup {
             showMoveProgressPopup = shouldShow
         }

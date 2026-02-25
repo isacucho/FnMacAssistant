@@ -12,8 +12,15 @@ struct ContentView: View {
     @State private var selection: SidebarSection = .downloads
     @State private var isSidebarVisible: Bool = true
     @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
+    @ObservedObject private var dataManager = DataManagementManager.shared
     @AppStorage("suppressPrereleasePopupVersion") private var suppressPrereleasePopupVersion = ""
     @State private var startupSheet: StartupSheet?
+    @State private var showExternalDriveWarning = false
+    @State private var showDataPathResetPrompt = false
+    @State private var startupIssuePath = ""
+    @State private var showStartupOperationError = false
+    @State private var startupOperationErrorMessage = ""
+    @State private var acknowledgedExternalDisconnectPath: String?
 
     var body: some View {
         ZStack {
@@ -80,6 +87,36 @@ struct ContentView: View {
                 )
             }
         }
+        .alert("External Drive Not Connected", isPresented: $showExternalDriveWarning) {
+            Button("Check Again") {
+                performStartupDataPathCheck(forceReopenAlert: true)
+            }
+            Button("Ignore", role: .cancel) {
+                acknowledgedExternalDisconnectPath = startupIssuePath
+            }
+        } message: {
+            Text("Connect the external drive where your game data is located, then reopen FnMacAssistant.\n\nExpected path:\n\(startupIssuePath)")
+        }
+        .alert("Game Data Not Found", isPresented: $showDataPathResetPrompt) {
+            Button("Keep Current Path", role: .cancel) {}
+            Button("Reset to Container", role: .destructive) {
+                Task {
+                    do {
+                        try await dataManager.resetDataLocationToContainer()
+                    } catch {
+                        startupOperationErrorMessage = error.localizedDescription
+                        showStartupOperationError = true
+                    }
+                }
+            }
+        } message: {
+            Text("Game data was not found at the selected path:\n\(startupIssuePath)\n\nDo you want to reset the download path to the original container?")
+        }
+        .alert("Operation Failed", isPresented: $showStartupOperationError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(startupOperationErrorMessage)
+        }
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button(action: {
@@ -96,6 +133,9 @@ struct ContentView: View {
             if sparkleUpdater.isPrereleaseBuild && !isPrereleaseSuppressedForCurrent {
                 startupSheet = .prerelease
             }
+
+            performStartupDataPathCheck()
+            await monitorExternalDriveDisconnects()
         }
     }
 
@@ -123,6 +163,57 @@ struct ContentView: View {
     private func openDiscord() {
         if let url = URL(string: "https://discord.gg/nfEBGJBfHD") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func performStartupDataPathCheck(forceReopenAlert: Bool = false) {
+        dataManager.refreshCurrentDataLocation()
+        guard let issue = dataManager.detectStartupDataPathIssue() else {
+            showExternalDriveWarning = false
+            showDataPathResetPrompt = false
+            acknowledgedExternalDisconnectPath = nil
+            return
+        }
+
+        switch issue {
+        case .externalDriveDisconnected(let path):
+            startupIssuePath = path
+            showDataPathResetPrompt = false
+            acknowledgedExternalDisconnectPath = nil
+            if forceReopenAlert {
+                showExternalDriveWarning = false
+                DispatchQueue.main.async {
+                    showExternalDriveWarning = true
+                }
+            } else {
+                showExternalDriveWarning = true
+            }
+        case .dataNotFound(let path):
+            startupIssuePath = path
+            showExternalDriveWarning = false
+            showDataPathResetPrompt = true
+        }
+    }
+
+    private func monitorExternalDriveDisconnects() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            dataManager.refreshCurrentDataLocation()
+            let issue = dataManager.detectStartupDataPathIssue()
+
+            guard case .externalDriveDisconnected(let path) = issue else {
+                if issue == nil {
+                    acknowledgedExternalDisconnectPath = nil
+                }
+                continue
+            }
+
+            guard acknowledgedExternalDisconnectPath != path else { continue }
+            guard !showExternalDriveWarning else { continue }
+
+            startupIssuePath = path
+            showDataPathResetPrompt = false
+            showExternalDriveWarning = true
         }
     }
 }
