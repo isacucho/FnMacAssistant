@@ -24,6 +24,8 @@ struct DataManagementView: View {
     @State private var pendingMoveTargetURL: URL?
     @State private var showArchiveCreatedAlert = false
     @State private var archiveCreatedMessage = ""
+    @State private var showDeleteImportedArchiveAlert = false
+    @State private var importedArchiveURLToDelete: URL?
     @State private var showMoveProgressPopup = false
 
     var body: some View {
@@ -87,6 +89,20 @@ struct DataManagementView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(archiveCreatedMessage)
+        }
+        .alert("Delete Imported Archive?", isPresented: $showDeleteImportedArchiveAlert) {
+            Button("Keep", role: .cancel) {
+                importedArchiveURLToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                deleteImportedArchiveIfNeeded()
+            }
+        } message: {
+            if let url = importedArchiveURLToDelete {
+                Text("Do you want to delete this archive?\n\(url.path)")
+            } else {
+                Text("Do you want to delete the imported archive?")
+            }
         }
         .sheet(isPresented: $showFortniteAccessChecklist) {
             VStack(alignment: .leading, spacing: 14) {
@@ -294,12 +310,6 @@ Then return here and continue.
                 }
                 .buttonStyle(.bordered)
 
-                Button("Create Archive of Selected") {
-                    createArchiveOfSelected()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!manager.hasSelection || manager.isCreatingArchive)
-
                 Spacer()
 
                 Button(role: .destructive) {
@@ -308,16 +318,35 @@ Then return here and continue.
                     Text("Delete Selected")
                 }
                 .buttonStyle(.bordered)
+                .tint(.red)
                 .disabled(!manager.hasSelection)
             }
 
-            if manager.isCreatingArchive {
+            Divider()
+
+            HStack(spacing: 10) {
+                Button("Import Archive") {
+                    importArchive()
+                }
+                .buttonStyle(.bordered)
+                .disabled(manager.isArchiveOperationInProgress)
+
+                Button("Create Archive of Selected") {
+                    createArchiveOfSelected()
+                }
+                .buttonStyle(.bordered)
+                .disabled(!manager.hasSelection || manager.isArchiveOperationInProgress)
+
+                Spacer()
+            }
+
+            if manager.isArchiveOperationInProgress {
                 VStack(alignment: .leading, spacing: 6) {
                     ProgressView(value: min(1, max(0, manager.archiveProgress)))
                         .progressViewStyle(.linear)
 
                     HStack {
-                        Text(manager.archiveProgressLabel.isEmpty ? "Creating archive..." : manager.archiveProgressLabel)
+                        Text(manager.archiveProgressLabel.isEmpty ? "Working with archive..." : manager.archiveProgressLabel)
                         Spacer()
                         Text(manager.archivePercentageLabel)
                     }
@@ -500,6 +529,55 @@ Then return here and continue.
             } catch {
                 present(error)
             }
+        }
+    }
+
+    private func importArchive() {
+        guard manager.currentContainerPath != nil else {
+            present(DataManagementError.containerNotFound)
+            return
+        }
+
+        let panel = NSOpenPanel()
+        panel.title = "Select Archive to Import"
+        panel.message = "Select a ZIP archive or a folder named PersistentDownloadDir."
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = true
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.zip, .folder]
+        panel.prompt = "Import"
+
+        guard panel.runModal() == .OK, let selectedURL = panel.url else {
+            return
+        }
+
+        Task {
+            do {
+                let values = try selectedURL.resourceValues(forKeys: [.isDirectoryKey])
+                if values.isDirectory == true {
+                    try await manager.importPersistentDownloadDirFolder(from: selectedURL)
+                } else {
+                    try await manager.importArchive(from: selectedURL)
+                    importedArchiveURLToDelete = selectedURL
+                    showDeleteImportedArchiveAlert = true
+                }
+            } catch {
+                present(error)
+            }
+        }
+    }
+
+    private func deleteImportedArchiveIfNeeded() {
+        guard let archiveURL = importedArchiveURLToDelete else { return }
+        do {
+            if FileManager.default.fileExists(atPath: archiveURL.path) {
+                try FileManager.default.removeItem(at: archiveURL)
+                manager.statusMessage = "Archive imported and deleted: \(archiveURL.path)"
+            }
+            importedArchiveURLToDelete = nil
+        } catch {
+            importedArchiveURLToDelete = nil
+            present(error)
         }
     }
 
