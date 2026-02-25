@@ -104,7 +104,7 @@ private struct FAQCard: View {
                     .font(.headline)
                     .foregroundColor(.primary)
                 Spacer()
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                     .foregroundColor(.secondary)
             }
 
