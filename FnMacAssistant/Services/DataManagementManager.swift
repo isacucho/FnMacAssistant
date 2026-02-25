@@ -153,6 +153,12 @@ final class DataManagementManager: ObservableObject {
         selectedBundlePaths.count + selectedCustomMapPaths.count
     }
 
+    var totalStorageUsedBytes: UInt64 {
+        let categoryBytes = categories.reduce(0) { $0 + $1.totalSizeBytes }
+        let customMapBytes = customMaps.reduce(0) { $0 + $1.sizeBytes }
+        return categoryBytes + customMapBytes + fortniteAppBundleSizeBytes()
+    }
+
     var archivePercentageLabel: String {
         let percentage = Int((archiveProgress * 100).rounded())
         return "\(max(0, min(100, percentage)))%"
@@ -874,6 +880,12 @@ final class DataManagementManager: ObservableObject {
         }
 
         return total
+    }
+
+    private func fortniteAppBundleSizeBytes() -> UInt64 {
+        let appURL = URL(fileURLWithPath: "/Applications/Fortnite.app", isDirectory: true)
+        guard FileManager.default.fileExists(atPath: appURL.path) else { return 0 }
+        return directorySize(at: appURL)
     }
 
     private func detectedGameVersionForArchive() -> String {

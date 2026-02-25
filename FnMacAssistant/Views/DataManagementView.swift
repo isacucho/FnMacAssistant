@@ -45,6 +45,16 @@ struct DataManagementView: View {
                         .foregroundColor(.orange)
                 }
 
+                HStack(spacing: 6) {
+                    Text("Total Storage Used:")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                    Text(ByteCountFormatter.string(fromByteCount: Int64(manager.totalStorageUsedBytes), countStyle: .file))
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+
                 subsectionAccordion
 
                 if !manager.statusMessage.isEmpty {
