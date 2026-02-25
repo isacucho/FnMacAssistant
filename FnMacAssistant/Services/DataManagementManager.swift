@@ -32,6 +32,11 @@ final class DataManagementManager: ObservableObject {
         }
     }
 
+    enum StartupDataPathIssue {
+        case externalDriveDisconnected(path: String)
+        case dataNotFound(path: String)
+    }
+
     struct BundleItem: Identifiable, Hashable {
         let id: String
         let name: String
@@ -200,6 +205,35 @@ final class DataManagementManager: ObservableObject {
         }
     }
 
+    func detectStartupDataPathIssue() -> StartupDataPathIssue? {
+        guard let container = currentContainerPath ?? FortniteContainerLocator.shared.getContainerPath() else {
+            return nil
+        }
+
+        let sourceURL = containerFortniteGameURL(container: container)
+        guard isSymlink(at: sourceURL),
+              let targetURL = resolveSymlinkTarget(at: sourceURL) else {
+            return nil
+        }
+
+        let fm = FileManager.default
+        var isDirectory: ObjCBool = false
+        let targetExists = fm.fileExists(atPath: targetURL.path, isDirectory: &isDirectory) && isDirectory.boolValue
+        if !targetExists {
+            if targetURL.path.hasPrefix("/Volumes/") {
+                return .externalDriveDisconnected(path: targetURL.path)
+            }
+            return .dataNotFound(path: targetURL.path)
+        }
+
+        let persistentURL = targetURL.appendingPathComponent("PersistentDownloadDir", isDirectory: true)
+        if !fm.fileExists(atPath: persistentURL.path) {
+            return .dataNotFound(path: targetURL.path)
+        }
+
+        return nil
+    }
+
     func deleteSelected() throws {
         guard FortniteContainerWriteGuard.confirmCanModifyContainer() else {
             throw DataManagementError.fortniteRunning
@@ -328,7 +362,7 @@ final class DataManagementManager: ObservableObject {
         return !isInternal
     }
 
-    func resetDataLocationToContainer() throws {
+    func resetDataLocationToContainer() async throws {
         guard FortniteContainerWriteGuard.confirmCanModifyContainer() else {
             throw DataManagementError.fortniteRunning
         }
@@ -351,7 +385,31 @@ final class DataManagementManager: ObservableObject {
         try fm.removeItem(at: sourceURL)
 
         if fm.fileExists(atPath: linkTarget.path) {
-            try fm.moveItem(at: linkTarget, to: sourceURL)
+            let restoreFromExternal = isExternalVolume(linkTarget)
+            if restoreFromExternal {
+                let cancellationState = MoveCancellationState()
+                moveCancellationState = cancellationState
+                movingToExternalDrive = false
+                isMovingData = true
+                moveProgress = 0
+                moveProgressLabel = ""
+                moveCurrentFilePath = ""
+                isCancellingMove = false
+                defer {
+                    isMovingData = false
+                    moveProgress = 0
+                    moveProgressLabel = ""
+                    moveCurrentFilePath = ""
+                    isCancellingMove = false
+                    movingToExternalDrive = false
+                    moveCancellationState = nil
+                }
+
+                try await transferDirectoryWithProgress(from: linkTarget, to: sourceURL, cancellationState: cancellationState)
+                try fm.removeItem(at: linkTarget)
+            } else {
+                try fm.moveItem(at: linkTarget, to: sourceURL)
+            }
         } else {
             try fm.createDirectory(at: sourceURL, withIntermediateDirectories: true)
         }
