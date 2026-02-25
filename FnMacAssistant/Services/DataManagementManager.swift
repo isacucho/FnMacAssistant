@@ -68,6 +68,7 @@ final class DataManagementManager: ObservableObject {
     @Published var isCancellingMove = false
     @Published var movingToExternalDrive = false
     @Published var isCreatingArchive = false
+    @Published var isImportingArchive = false
     @Published var archiveProgress: Double = 0
     @Published var archiveProgressLabel: String = ""
 
@@ -155,6 +156,10 @@ final class DataManagementManager: ObservableObject {
     var archivePercentageLabel: String {
         let percentage = Int((archiveProgress * 100).rounded())
         return "\(max(0, min(100, percentage)))%"
+    }
+
+    var isArchiveOperationInProgress: Bool {
+        isCreatingArchive || isImportingArchive
     }
 
     func defaultArchiveFilename() -> String {
@@ -422,6 +427,210 @@ final class DataManagementManager: ObservableObject {
         archiveProgress = 1
         archiveProgressLabel = "Archive complete."
         statusMessage = "Created archive at \(destinationURL.path)."
+    }
+
+    func importArchive(from archiveURL: URL) async throws {
+        guard FortniteContainerWriteGuard.confirmCanModifyContainer() else {
+            throw DataManagementError.fortniteRunning
+        }
+
+        guard let container = currentContainerPath ?? FortniteContainerLocator.shared.getContainerPath() else {
+            throw DataManagementError.containerNotFound
+        }
+
+        guard FileManager.default.fileExists(atPath: archiveURL.path) else {
+            throw DataManagementError.archiveImportFailed
+        }
+
+        guard Self.validateZipArchive(at: archiveURL) else {
+            throw DataManagementError.invalidArchiveFile
+        }
+
+        let importRootURL: URL
+        if !currentFortniteGamePath.isEmpty {
+            importRootURL = URL(fileURLWithPath: currentFortniteGamePath, isDirectory: true)
+        } else {
+            importRootURL = containerFortniteGameURL(container: container)
+        }
+
+        let fm = FileManager.default
+        try fm.createDirectory(at: importRootURL, withIntermediateDirectories: true)
+
+        isImportingArchive = true
+        archiveProgress = 0
+        archiveProgressLabel = "Preparing import..."
+        defer {
+            isImportingArchive = false
+            archiveProgress = 0
+            archiveProgressLabel = ""
+        }
+
+        let allEntries = Self.zipArchiveEntryList(at: archiveURL)
+        let fileEntries = allEntries.filter { !$0.hasSuffix("/") }
+        let totalEntries = max(fileEntries.count, 1)
+        var importedEntries = 0
+        var seenEntries = Set<String>()
+        var bufferedOutput = ""
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+                process.arguments = ["-o", archiveURL.path, "-d", importRootURL.path]
+
+                let outputPipe = Pipe()
+                process.standardOutput = outputPipe
+                process.standardError = outputPipe
+
+                outputPipe.fileHandleForReading.readabilityHandler = { handle in
+                    let data = handle.availableData
+                    guard !data.isEmpty, let chunk = String(data: data, encoding: .utf8) else { return }
+                    bufferedOutput.append(chunk)
+
+                    while let newline = bufferedOutput.firstIndex(of: "\n") {
+                        let line = String(bufferedOutput[..<newline])
+                        bufferedOutput.removeSubrange(...newline)
+
+                        guard let entry = Self.parseUnzipProcessedEntry(line) else { continue }
+                        guard !entry.hasSuffix("/") else { continue }
+                        guard seenEntries.insert(entry).inserted else { continue }
+
+                        importedEntries += 1
+                        let phase = min(1, Double(importedEntries) / Double(totalEntries))
+                        let overall = min(0.985, phase)
+                        DispatchQueue.main.async {
+                            self.archiveProgress = overall
+                            self.archiveProgressLabel = "Importing archive... \(importedEntries)/\(totalEntries)"
+                        }
+                    }
+                }
+
+                do {
+                    try process.run()
+                } catch {
+                    outputPipe.fileHandleForReading.readabilityHandler = nil
+                    continuation.resume(throwing: DataManagementError.archiveImportFailed)
+                    return
+                }
+
+                process.waitUntilExit()
+                outputPipe.fileHandleForReading.readabilityHandler = nil
+
+                guard process.terminationStatus == 0 else {
+                    continuation.resume(throwing: DataManagementError.archiveImportFailed)
+                    return
+                }
+
+                continuation.resume()
+            }
+        }
+
+        archiveProgress = 0.99
+        archiveProgressLabel = "Refreshing bundles..."
+        refreshAll()
+        archiveProgress = 1
+        archiveProgressLabel = "Import complete."
+        statusMessage = "Imported archive into \(importRootURL.path)."
+    }
+
+    func importPersistentDownloadDirFolder(from sourceFolderURL: URL) async throws {
+        guard FortniteContainerWriteGuard.confirmCanModifyContainer() else {
+            throw DataManagementError.fortniteRunning
+        }
+
+        guard let container = currentContainerPath ?? FortniteContainerLocator.shared.getContainerPath() else {
+            throw DataManagementError.containerNotFound
+        }
+
+        guard sourceFolderURL.lastPathComponent == "PersistentDownloadDir" else {
+            throw DataManagementError.invalidImportFolder
+        }
+
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: sourceFolderURL.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw DataManagementError.invalidImportFolder
+        }
+
+        let importRootURL: URL
+        if !currentFortniteGamePath.isEmpty {
+            importRootURL = URL(fileURLWithPath: currentFortniteGamePath, isDirectory: true)
+        } else {
+            importRootURL = containerFortniteGameURL(container: container)
+        }
+
+        let destinationPersistentURL = importRootURL.appendingPathComponent("PersistentDownloadDir", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: destinationPersistentURL, withIntermediateDirectories: true)
+
+        let totalFiles = max(Self.regularFileCount(in: sourceFolderURL), 1)
+        var importedFiles = 0
+
+        isImportingArchive = true
+        archiveProgress = 0
+        archiveProgressLabel = "Preparing import..."
+        defer {
+            isImportingArchive = false
+            archiveProgress = 0
+            archiveProgressLabel = ""
+        }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    guard let enumerator = fm.enumerator(
+                        at: sourceFolderURL,
+                        includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey],
+                        options: [.skipsHiddenFiles],
+                        errorHandler: nil
+                    ) else {
+                        continuation.resume()
+                        return
+                    }
+
+                    let sourceRootPath = sourceFolderURL.path
+                    for case let itemURL as URL in enumerator {
+                        let values = try itemURL.resourceValues(forKeys: [.isDirectoryKey, .isRegularFileKey])
+                        let relativePath = String(itemURL.path.dropFirst(sourceRootPath.count))
+                            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                        guard !relativePath.isEmpty else { continue }
+
+                        let destinationURL = destinationPersistentURL.appendingPathComponent(relativePath)
+
+                        if values.isDirectory == true {
+                            try fm.createDirectory(at: destinationURL, withIntermediateDirectories: true)
+                            continue
+                        }
+
+                        guard values.isRegularFile == true else { continue }
+                        try fm.createDirectory(at: destinationURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                        if fm.fileExists(atPath: destinationURL.path) {
+                            try fm.removeItem(at: destinationURL)
+                        }
+                        _ = try Self.copyFileWithoutChunking(from: itemURL, to: destinationURL)
+
+                        importedFiles += 1
+                        let phase = min(1, Double(importedFiles) / Double(totalFiles))
+                        let overall = min(0.985, phase)
+                        DispatchQueue.main.async {
+                            self.archiveProgress = overall
+                            self.archiveProgressLabel = "Importing folder... \(importedFiles)/\(totalFiles)"
+                        }
+                    }
+
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: DataManagementError.archiveImportFailed)
+                }
+            }
+        }
+
+        archiveProgress = 0.99
+        archiveProgressLabel = "Refreshing bundles..."
+        refreshAll()
+        archiveProgress = 1
+        archiveProgressLabel = "Import complete."
+        statusMessage = "Imported PersistentDownloadDir into \(destinationPersistentURL.path)."
     }
 
     func isEntireCategorySelected(_ category: BundleCategory) -> Bool {
@@ -1354,6 +1563,58 @@ final class DataManagementManager: ObservableObject {
         return payload.isEmpty ? nil : payload
     }
 
+    nonisolated private static func parseUnzipProcessedEntry(_ line: String) -> String? {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefixes = ["inflating: ", "extracting: ", "creating: "]
+        for prefix in prefixes where trimmed.hasPrefix(prefix) {
+            return String(trimmed.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return nil
+    }
+
+    nonisolated private static func zipArchiveEntryList(at archiveURL: URL) -> [String] {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
+        process.arguments = ["-Z1", archiveURL.path]
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else { return [] }
+            let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
+            guard let text = String(data: data, encoding: .utf8) else { return [] }
+            return text
+                .split(whereSeparator: \.isNewline)
+                .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        } catch {
+            return []
+        }
+    }
+
+    nonisolated private static func regularFileCount(in directory: URL) -> Int {
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles],
+            errorHandler: nil
+        ) else {
+            return 0
+        }
+
+        var total = 0
+        for case let itemURL as URL in enumerator {
+            let values = try? itemURL.resourceValues(forKeys: [.isRegularFileKey])
+            if values?.isRegularFile == true {
+                total += 1
+            }
+        }
+        return total
+    }
+
     nonisolated private static func validateZipArchive(at archiveURL: URL) -> Bool {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
@@ -1382,6 +1643,9 @@ enum DataManagementError: LocalizedError {
     case persistentDownloadDirNotFound
     case archiveCreationFailed
     case archiveValidationFailed
+    case invalidArchiveFile
+    case archiveImportFailed
+    case invalidImportFolder
 
     var errorDescription: String? {
         switch self {
@@ -1409,6 +1673,12 @@ enum DataManagementError: LocalizedError {
             return "Could not create archive."
         case .archiveValidationFailed:
             return "Archive was created but failed integrity validation."
+        case .invalidArchiveFile:
+            return "Selected archive is invalid or corrupted."
+        case .archiveImportFailed:
+            return "Could not import archive."
+        case .invalidImportFolder:
+            return "Selected folder must be named 'PersistentDownloadDir'."
         }
     }
 }
