@@ -263,7 +263,7 @@ struct SidebarView: View {
                 ) { selection = .gameAssets }
 
                 SidebarButton(
-                    label: "Data Management",
+                    label: "Data Manager",
                     systemImage: "externaldrive.fill.badge.minus",
                     isSelected: selection == .dataManagement
                 ) { selection = .dataManagement }

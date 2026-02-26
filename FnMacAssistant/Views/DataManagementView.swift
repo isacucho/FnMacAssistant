@@ -58,11 +58,11 @@ struct DataManagementView: View {
                     Spacer()
                 }
 
-                fixedSectionCard(title: "Data Manager") {
+                fixedSectionCard(title: "Manage Installed Bundles") {
                     deleteBundlesContent
                 }
 
-                fixedSectionCard(title: "Data Location") {
+                fixedSectionCard(title: "Relocate Game Data") {
                     dataLocationContent
                 }
 
@@ -269,8 +269,6 @@ Then return here and continue.
 
     private var deleteBundlesContent: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Manage Installed Bundles")
-                .font(.headline)
 
             if manager.categories.isEmpty && manager.customMaps.isEmpty {
                 Text("No installed bundles found in InstalledBundles or GameCustom/InstalledBundles.")
@@ -452,7 +450,7 @@ Then return here and continue.
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Data Management")
+                Text("Data Manager")
                     .font(.largeTitle)
                     .bold()
                 Text("Manage installed bundles and storage path")
@@ -687,10 +685,6 @@ Then return here and continue.
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.white.opacity(0.18), lineWidth: 1)
-        )
     }
 
     private func categoryMasonryColumns(
