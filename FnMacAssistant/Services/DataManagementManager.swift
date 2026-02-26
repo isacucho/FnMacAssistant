@@ -443,12 +443,12 @@ final class DataManagementManager: ObservableObject {
         statusMessage = "Deleted Fortnite app bundle and container."
     }
 
-    func createSelectedBundlesArchive(destinationURL: URL) async throws {
+    func createSelectedBundlesArchive(destinationURL: URL, allowEmptySelection: Bool = false) async throws {
         guard let container = currentContainerPath ?? FortniteContainerLocator.shared.getContainerPath() else {
             throw DataManagementError.containerNotFound
         }
 
-        guard hasSelection else {
+        guard hasSelection || allowEmptySelection else {
             throw DataManagementError.noBundlesSelected
         }
 
@@ -1025,7 +1025,7 @@ final class DataManagementManager: ObservableObject {
         components.append(contentsOf: selectedCustomMapNames)
 
         if components.isEmpty {
-            return "selected-bundles"
+            return "no bundles"
         }
 
         let joined = components.joined(separator: ", ")

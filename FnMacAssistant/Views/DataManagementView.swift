@@ -14,16 +14,17 @@ struct DataManagementView: View {
     @StateObject private var manager = DataManagementManager.shared
 
     @State private var showDeleteSelectionAlert = false
-    @State private var showDeleteGameDataAlert = false
+    @State private var showDeleteGameDataConfirmationPopup = false
     @State private var showOperationErrorAlert = false
     @State private var operationErrorMessage = ""
     @State private var showIndividualBundles = false
-    @State private var expandedSubsections: Set<DataManagementSubsection> = []
+    @State private var didConfirmDeleteFortnite = false
     @State private var showFortniteAccessChecklist = false
     @State private var didConfirmFortniteAccess = false
     @State private var pendingMoveTargetURL: URL?
     @State private var showArchiveCreatedAlert = false
     @State private var archiveCreatedMessage = ""
+    @State private var showCreateArchivePrompt = false
     @State private var showDeleteImportedArchiveAlert = false
     @State private var importedSourceURLToDelete: URL?
     @State private var importedSourceIsDirectory = false
@@ -57,13 +58,14 @@ struct DataManagementView: View {
                     Spacer()
                 }
 
-                subsectionAccordion
-
-                if !manager.statusMessage.isEmpty {
-                    Text(manager.statusMessage)
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                fixedSectionCard(title: "Data Manager") {
+                    deleteBundlesContent
                 }
+
+                fixedSectionCard(title: "Data Location") {
+                    dataLocationContent
+                }
+
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,14 +87,6 @@ struct DataManagementView: View {
         } message: {
             Text("This will permanently delete \(manager.selectedCount) selected item(s).")
         }
-        .alert("Delete Fortnite App and Data?", isPresented: $showDeleteGameDataAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete All", role: .destructive) {
-                performDeleteGameAndData()
-            }
-        } message: {
-            Text("This will permanently delete /Applications/Fortnite.app and the selected Fortnite container.")
-        }
         .alert("Operation Failed", isPresented: $showOperationErrorAlert) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -102,6 +96,24 @@ struct DataManagementView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(archiveCreatedMessage)
+        }
+        .alert("Create Archive", isPresented: $showCreateArchivePrompt) {
+            Button("Cancel", role: .cancel) {}
+            if manager.hasSelection {
+                Button("Create Archive") {
+                    createArchive()
+                }
+            } else {
+                Button("Proceed Without Any Bundles", role: .destructive) {
+                    createArchive(allowEmptySelection: true)
+                }
+            }
+        } message: {
+            if manager.hasSelection {
+                Text("This will archive the currently selected bundle(s) only.")
+            } else {
+                Text("No bundles are selected. Select the bundle(s) you want to archive first, or proceed without any bundles.")
+            }
         }
         .alert("Import Completed", isPresented: $showDeleteImportedArchiveAlert) {
             Button("Keep", role: .cancel) {
@@ -220,58 +232,40 @@ Then return here and continue.
             .frame(width: 560)
             .interactiveDismissDisabled(manager.isMovingData)
         }
-    }
+        .sheet(isPresented: $showDeleteGameDataConfirmationPopup) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Delete Fortnite App and Data")
+                    .font(.title3.weight(.semibold))
 
-    private var subsectionAccordion: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(DataManagementSubsection.allCases) { subsection in
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text(subsection.title)
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        Spacer()
-                        Image(systemName: expandedSubsections.contains(subsection) ? "chevron.down" : "chevron.right")
-                            .foregroundColor(.secondary)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        toggleSubsection(subsection)
+                Text("This will permanently delete /Applications/Fortnite.app and the selected Fortnite container.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Toggle("I am sure I want to completely delete Fortnite from my system", isOn: $didConfirmDeleteFortnite)
+                    .toggleStyle(.checkbox)
+
+                HStack {
+                    Button("Cancel") {
+                        didConfirmDeleteFortnite = false
+                        showDeleteGameDataConfirmationPopup = false
                     }
 
-                    if expandedSubsections.contains(subsection) {
-                        Divider()
-                        subsectionContent(for: subsection)
+                    Spacer()
+
+                    Button("Delete All", role: .destructive) {
+                        showDeleteGameDataConfirmationPopup = false
+                        performDeleteGameAndData()
+                        didConfirmDeleteFortnite = false
                     }
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.1))
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 14))
-                .onTapGesture {
-                    guard !expandedSubsections.contains(subsection) else { return }
-                    toggleSubsection(subsection)
+                    .disabled(!didConfirmDeleteFortnite)
                 }
             }
+            .padding(20)
+            .frame(width: 520)
         }
     }
 
-    @ViewBuilder
-    private func subsectionContent(for subsection: DataManagementSubsection) -> some View {
-        switch subsection {
-        case .gamemodeCleanup:
-            deleteBundlesContent
-        case .dataLocation:
-            dataLocationContent
-        case .deleteGameData:
-            deleteEverythingContent
-        }
-    }
 
     private var deleteBundlesContent: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -362,13 +356,23 @@ Then return here and continue.
                 .buttonStyle(.bordered)
                 .disabled(manager.isArchiveOperationInProgress)
 
-                Button("Create Archive of Selected") {
-                    createArchiveOfSelected()
+                Button("Create Archive") {
+                    showCreateArchivePrompt = true
                 }
                 .buttonStyle(.bordered)
-                .disabled(!manager.hasSelection || manager.isArchiveOperationInProgress)
+                .disabled(manager.currentContainerPath == nil || manager.isArchiveOperationInProgress)
 
                 Spacer()
+
+                Button(role: .destructive) {
+                    didConfirmDeleteFortnite = false
+                    showDeleteGameDataConfirmationPopup = true
+                } label: {
+                    Text("Delete Fortnite and all data")
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+                .disabled(manager.currentContainerPath == nil || manager.isMovingData)
             }
 
             if manager.isArchiveOperationInProgress {
@@ -390,9 +394,6 @@ Then return here and continue.
 
     private var dataLocationContent: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Change Game Files Location")
-                .font(.headline)
-
             Text("Current path: \(manager.currentFortniteGamePath.isEmpty ? "Not available" : manager.currentFortniteGamePath)")
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(.secondary)
@@ -414,41 +415,20 @@ Then return here and continue.
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 10) {
-                Button("Select Folder and Move") {
-                    selectCustomDataFolderAndMove()
+                Button(manager.isUsingSymlink ? "Reset to Container" : "Select Folder and Move") {
+                    if manager.isUsingSymlink {
+                        resetDataLocation()
+                    } else {
+                        selectCustomDataFolderAndMove()
+                    }
                 }
                 .prominentActionButton()
-                .disabled(manager.currentContainerPath == nil || manager.isMovingData)
-
-                Button("Reset to Container") {
-                    resetDataLocation()
-                }
-                .buttonStyle(.bordered)
+                .frame(width: 220, alignment: .leading)
                 .disabled(manager.currentContainerPath == nil || manager.isMovingData)
 
                 Spacer()
             }
-
-        }
-    }
-
-    private var deleteEverythingContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Delete Game and Data")
-                .font(.headline)
-
-            Text("Deletes /Applications/Fortnite.app and your selected Fortnite container.")
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
-
-            Button(role: .destructive) {
-                showDeleteGameDataAlert = true
-            } label: {
-                Text("Delete Fortnite and all data")
-                    .foregroundColor(.red)
-            }
-            .buttonStyle(.bordered)
-            .disabled(manager.currentContainerPath == nil)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -535,7 +515,7 @@ Then return here and continue.
         }
     }
 
-    private func createArchiveOfSelected() {
+    private func createArchive(allowEmptySelection: Bool = false) {
         guard manager.currentContainerPath != nil else {
             present(DataManagementError.containerNotFound)
             return
@@ -556,7 +536,10 @@ Then return here and continue.
 
         Task {
             do {
-                try await manager.createSelectedBundlesArchive(destinationURL: destinationURL)
+                try await manager.createSelectedBundlesArchive(
+                    destinationURL: destinationURL,
+                    allowEmptySelection: allowEmptySelection
+                )
                 archiveCreatedMessage = destinationURL.path
                 showArchiveCreatedAlert = true
             } catch {
@@ -625,21 +608,34 @@ Then return here and continue.
         showOperationErrorAlert = true
     }
 
-    private func toggleSubsection(_ subsection: DataManagementSubsection) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            if expandedSubsections.contains(subsection) {
-                expandedSubsections.remove(subsection)
-            } else {
-                expandedSubsections.insert(subsection)
-            }
-        }
-    }
-
     private func syncMoveProgressPopupVisibility() {
         let shouldShow = manager.isMovingData
         if shouldShow != showMoveProgressPopup {
             showMoveProgressPopup = shouldShow
         }
+    }
+
+    private func fixedSectionCard<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.primary)
+
+            Divider()
+
+            content()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.1))
+        )
     }
 
     @ViewBuilder
@@ -709,24 +705,5 @@ Then return here and continue.
         }
 
         return columns
-    }
-}
-
-private enum DataManagementSubsection: String, CaseIterable, Identifiable {
-    case gamemodeCleanup
-    case dataLocation
-    case deleteGameData
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .gamemodeCleanup:
-            return "Data Manager"
-        case .dataLocation:
-            return "Data Location"
-        case .deleteGameData:
-            return "Delete Fortnite"
-        }
     }
 }
