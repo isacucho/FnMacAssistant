@@ -28,6 +28,8 @@ struct DataManagementView: View {
     @State private var importedSourceURLToDelete: URL?
     @State private var importedSourceIsDirectory = false
     @State private var showMoveProgressPopup = false
+    @State private var showExternalDriveTransferWarning = false
+    @State private var pendingExternalDriveWarningTargetURL: URL?
 
     var body: some View {
         ScrollView {
@@ -116,6 +118,18 @@ struct DataManagementView: View {
                 Text("Would you like to delete the archive?")
             }
         }
+        .alert("External Drive Warning", isPresented: $showExternalDriveTransferWarning) {
+            Button("Cancel", role: .cancel) {
+                pendingExternalDriveWarningTargetURL = nil
+            }
+            Button("I've Read, Proceed") {
+                guard let target = pendingExternalDriveWarningTargetURL else { return }
+                pendingExternalDriveWarningTargetURL = nil
+                Task { await performMove(to: target) }
+            }
+        } message: {
+            Text("Transferring Fortnite data to a slow external drive can cause Fortnite to start re-downloading files or even crash. Continue only if your external drive is fast and stable.")
+        }
         .sheet(isPresented: $showFortniteAccessChecklist) {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Grant Fortnite Access First")
@@ -151,7 +165,12 @@ Then return here and continue.
                         showFortniteAccessChecklist = false
                         didConfirmFortniteAccess = false
                         pendingMoveTargetURL = nil
-                        Task { await performMove(to: target) }
+                        if manager.isExternalVolume(target) {
+                            pendingExternalDriveWarningTargetURL = target
+                            showExternalDriveTransferWarning = true
+                        } else {
+                            Task { await performMove(to: target) }
+                        }
                     }
                     .prominentActionButton()
                     .disabled(!didConfirmFortniteAccess)
