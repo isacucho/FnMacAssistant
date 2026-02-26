@@ -296,6 +296,9 @@ struct SidebarView: View {
                             stateLabel: ipaStateLabel(for: active),
                             showClear: active.state == .finished,
                             showCancel: active.state != .finished,
+                            onOpen: {
+                                selection = .downloads
+                            },
                             onClear: {
                                 downloadManager.clearDownloads()
                             },
@@ -316,6 +319,9 @@ struct SidebarView: View {
                             stateLabel: assetsStateLabel,
                             showClear: fortDLManager.isDone,
                             showCancel: fortDLManager.isDownloading,
+                            onOpen: {
+                                selection = .gameAssets
+                            },
                             onClear: {
                                 fortDLManager.clearCompletedDownload()
                             },
@@ -335,6 +341,9 @@ struct SidebarView: View {
                             stateLabel: updateAssistantStateLabel,
                             showClear: updateAssistantManager.isDone,
                             showCancel: updateAssistantManager.isDownloading,
+                            onOpen: {
+                                selection = .updateAssistant
+                            },
                             onClear: {
                                 updateAssistantManager.stop()
                             },
@@ -481,6 +490,7 @@ struct SidebarView: View {
         stateLabel: String,
         showClear: Bool,
         showCancel: Bool,
+        onOpen: @escaping () -> Void,
         onClear: @escaping () -> Void,
         onCancel: @escaping () -> Void
     ) -> some View {
@@ -536,6 +546,10 @@ struct SidebarView: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.white.opacity(0.1))
         )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onOpen()
+        }
     }
 }
 
