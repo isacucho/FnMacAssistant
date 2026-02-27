@@ -194,9 +194,10 @@ class ContainerSelectorWindow:
                         self.window.destroy()
             except Exception as e:
                 messagebox.showerror(
-                    "Error", f"Failed to delete: {
-                        str(e)}", parent=self.window)
-
+                    "Error",
+                    f"Failed to delete: {e}",
+                    parent=self.window
+                )
     def confirm_selection(self):
         selection = self.tree.selection()
         if selection:
