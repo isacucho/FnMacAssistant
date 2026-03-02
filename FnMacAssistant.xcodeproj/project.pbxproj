@@ -33,6 +33,7 @@
 		30DCE0012F7E1002000D6758 /* DataManagementManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30DCE0002F7E1002000D6758 /* DataManagementManager.swift */; };
 		31A1B2012F7A000100C0A101 /* UpdateAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */; };
 		31A1B2012F7A000100C0A102 /* UpdateAssistantManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */; };
+		31B2C3012F90000100C0A002 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31B2C3012F90000100C0A001 /* HomeView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -77,6 +78,7 @@
 		30DCE0002F7E1002000D6758 /* DataManagementManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementManager.swift; sourceTree = "<group>"; };
 		31A1B2012F7A000100C0A001 /* UpdateAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantView.swift; sourceTree = "<group>"; };
 		31A1B2012F7A000100C0A002 /* UpdateAssistantManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateAssistantManager.swift; sourceTree = "<group>"; };
+		31B2C3012F90000100C0A001 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,6 +152,7 @@
 				3008A9242EBD825300647857 /* DownloadsView.swift */,
 				3008A91E2EBD308200647857 /* DownloadRowView.swift */,
 				3008A9222EBD30D600647857 /* ContentView.swift */,
+				31B2C3012F90000100C0A001 /* HomeView.swift */,
 				307BD8BD2F33D7B100FB5A9C /* FAQView.swift */,
 			);
 			path = Views;
@@ -259,6 +262,7 @@
 				3008A9272EBD827800647857 /* SettingsView.swift in Sources */,
 				307A824E2EC3CBFC0004CD9B /* PatchManager.swift in Sources */,
 				3008A9232EBD30D600647857 /* ContentView.swift in Sources */,
+				31B2C3012F90000100C0A002 /* HomeView.swift in Sources */,
 				300F26D62F1492EF00A997A6 /* GameAssetsView.swift in Sources */,
 				3008A9252EBD825900647857 /* DownloadsView.swift in Sources */,
 				307BD8BE2F33D7B100FB5A9C /* FAQView.swift in Sources */,

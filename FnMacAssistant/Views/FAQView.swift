@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct FAQView: View {
+    @State private var expandedQuestionIDs: Set<String> = []
+
     private let items: [FAQItem] = [
         FAQItem(
             question: "I'm getting a connection or storage error when opening Fortnite.",
@@ -77,7 +79,18 @@ You can see what each IPA contains when selecting it in the 'IPA Downloads' tab.
                     .foregroundColor(.secondary)
 
                 ForEach(items) { item in
-                    FAQCard(item: item)
+                    FAQCard(
+                        item: item,
+                        isExpanded: expandedQuestionIDs.contains(item.id)
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            if expandedQuestionIDs.contains(item.id) {
+                                expandedQuestionIDs.remove(item.id)
+                            } else {
+                                expandedQuestionIDs.insert(item.id)
+                            }
+                        }
+                    }
                 }
 
                 Spacer()
@@ -88,14 +101,21 @@ You can see what each IPA contains when selecting it in the 'IPA Downloads' tab.
 }
 
 private struct FAQItem: Identifiable {
-    let id = UUID()
+    let id: String
     let question: String
     let answer: String
+
+    init(question: String, answer: String) {
+        self.id = question
+        self.question = question
+        self.answer = answer
+    }
 }
 
 private struct FAQCard: View {
     let item: FAQItem
-    @State private var isExpanded = false
+    let isExpanded: Bool
+    let onToggle: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -124,11 +144,7 @@ private struct FAQCard: View {
                 .stroke(Color.white.opacity(0.1))
         )
         .contentShape(RoundedRectangle(cornerRadius: 14))
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExpanded.toggle()
-            }
-        }
+        .onTapGesture(perform: onToggle)
         .accessibilityAddTraits(.isButton)
     }
 }
