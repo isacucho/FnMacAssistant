@@ -59,7 +59,7 @@ struct HomeView: View {
                     if let githubURL {
                         socialLinkButton(
                             title: "Open GitHub",
-                            systemImage: "star.fill",
+                            systemImage: "chevron.left.forwardslash.chevron.right",
                             tint: .gray,
                             destination: githubURL
                         )
