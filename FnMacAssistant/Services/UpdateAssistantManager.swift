@@ -55,6 +55,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private var downloadTask: URLSessionDataTask?
     private var batchDownloadedPaths: [String] = []
     private var batchTargetDirs: Set<String> = []
+    private let stagedDownloadsQueue = DispatchQueue(label: "UpdateAssistantManager.stagedDownloads")
+    private var pendingStagedDownloads: [StagedDownload] = []
     private var didNotifyForCurrentRun = false
     private var defaultTagPlaceholderIndex: [String: String]?
 
@@ -183,6 +185,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         didNotifyForCurrentRun = false
         batchTargetDirs.removeAll()
         batchDownloadedPaths.removeAll()
+        clearPendingStagedDownloads()
         if let tempDir = try? ensureTempDirectory() {
             let stagedRoot = tempDir.appendingPathComponent(stagedDownloadsFolderName, isDirectory: true)
             try? FileManager.default.removeItem(at: stagedRoot)
@@ -401,7 +404,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                     }
 
                     var baseDownloaded: Int64 = 0
-                    var stagedDownloads: [StagedDownload] = []
+                    clearPendingStagedDownloads()
 
                     for task in filtered {
                         if Task.isCancelled { break }
@@ -418,7 +421,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                                 )
                                 completed = true
                                 baseDownloaded += task.size
-                                stagedDownloads.append(
+                                addPendingStagedDownload(
                                     StagedDownload(
                                         stagedURL: destURL,
                                         destinationPath: task.fullPath,
@@ -426,9 +429,12 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                                     )
                                 )
                                 if let optionalStaged = writeOptionalLanguagePlaceholderCopyIfNeeded(for: task, stagedURL: destURL) {
-                                    stagedDownloads.append(optionalStaged)
+                                    addPendingStagedDownload(optionalStaged)
                                 }
                             } catch {
+                                if Task.isCancelled || isCancellationError(error) {
+                                    break
+                                }
                                 attempt += 1
                                 let isRetryable = shouldRetryDownload(error)
                                 replaceLog("DOWNLOAD ERROR: \(error.localizedDescription)")
@@ -447,11 +453,10 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                                 }
                             }
                         }
-                        appendLog("\n")
                     }
 
                     if Task.isCancelled {
-                        appendLog("\nAborted")
+                        appendLog("Download cancelled.")
                         finalize(success: false)
                         return
                     }
@@ -470,7 +475,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
                     updateStatus("Applying update…")
                     do {
-                        try applyStagedDownloads(stagedDownloads)
+                        try applyStagedDownloads(consumePendingStagedDownloads())
                     } catch {
                         appendLog("ERROR: Failed to apply staged files: \(error.localizedDescription)")
                         finalize(success: false)
@@ -489,7 +494,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             }
         }
 
-        appendLog("\nAborted")
+        appendLog("Download cancelled.")
         finalize(success: false)
     }
 
@@ -537,6 +542,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                     request.setValue("FnMacAssistant/2.0 (macOS)", forHTTPHeaderField: "User-Agent")
                     let task = session.dataTask(with: request)
                     self.downloadTask = task
+                    self.appendLog("Downloading: \(destURL.path)")
                     task.resume()
                 } catch {
                     continuation.resume(throwing: error)
@@ -586,7 +592,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             try fm.moveItem(at: staged.stagedURL, to: destinationURL)
             batchDownloadedPaths.append(destinationURL.path)
             batchTargetDirs.insert(destinationURL.deletingLastPathComponent().path)
-            appendLog("Saving to: \(staged.relativePath)")
+            appendLog("Moved to final location: \(destinationURL.path)")
         }
 
         if let tempDir = try? ensureTempDirectory() {
@@ -630,6 +636,22 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         cancelActiveDownload()
         stopFortniteReopenMonitor()
 
+        if !deleteDownloaded {
+            let stagedDownloads = consumePendingStagedDownloads()
+            if !stagedDownloads.isEmpty {
+                if FortniteContainerWriteGuard.confirmCanModifyContainer() {
+                    do {
+                        try applyStagedDownloads(stagedDownloads)
+                        appendLog("Stopped. Moved \(stagedDownloads.count) staged file(s) to final location.")
+                    } catch {
+                        appendLog("WARNING: Failed to move staged files on stop: \(error.localizedDescription)")
+                    }
+                } else {
+                    appendLog("Stopped without deleting, but could not move staged files because Fortnite is running.")
+                }
+            }
+        }
+
         if deleteDownloaded {
             let paths = batchDownloadedPaths
             batchDownloadedPaths.removeAll()
@@ -647,6 +669,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                 let stagedRoot = tempDir.appendingPathComponent(stagedDownloadsFolderName, isDirectory: true)
                 try? FileManager.default.removeItem(at: stagedRoot)
             }
+            clearPendingStagedDownloads()
         }
 
         DispatchQueue.main.async {
@@ -983,7 +1006,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                 self.downloadedBytes = state.baseDownloadedBytes + state.downloadedBytes
                 let speed = self.formatSpeed(bytesPerSec: self.elapsedSpeed(bytes: state.downloadedBytes, since: state.startDate))
                 let speedLabel = speed.isEmpty ? "" : " at \(speed)"
-                self.replaceLog("Downloaded \(self.formatSize(bytes: state.downloadedBytes))\(speedLabel). Saved to temp directory.")
+                self.appendLog("Downloaded \(self.formatSize(bytes: state.downloadedBytes))\(speedLabel) to temp: \(state.destURL.path)")
             }
 
             if let continuation = self.downloadContinuation {
@@ -1029,6 +1052,26 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         return formatSize(bytes: downloaded)
     }
 
+    private func clearPendingStagedDownloads() {
+        stagedDownloadsQueue.sync {
+            pendingStagedDownloads.removeAll()
+        }
+    }
+
+    private func addPendingStagedDownload(_ stagedDownload: StagedDownload) {
+        stagedDownloadsQueue.sync {
+            pendingStagedDownloads.append(stagedDownload)
+        }
+    }
+
+    private func consumePendingStagedDownloads() -> [StagedDownload] {
+        stagedDownloadsQueue.sync {
+            let stagedDownloads = pendingStagedDownloads
+            pendingStagedDownloads.removeAll()
+            return stagedDownloads
+        }
+    }
+
     private func shouldRetryDownload(_ error: Error) -> Bool {
         let nsError = error as NSError
         guard nsError.domain == NSURLErrorDomain else { return false }
@@ -1049,6 +1092,15 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         default:
             return false
         }
+    }
+
+    private func isCancellationError(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled
     }
 
     private func isNetworkConnectionLostError(_ error: Error) -> Bool {
