@@ -9,7 +9,8 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @State private var selection: SidebarSection = .downloads
+    @State private var selection: SidebarSection = .home
+    @AppStorage("startupSidebarSection") private var startupSidebarSectionRaw = SidebarSection.home.rawValue
     @State private var isSidebarVisible: Bool = true
     @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
     @ObservedObject private var dataManager = DataManagementManager.shared
@@ -49,6 +50,8 @@ struct ContentView: View {
 
                 ZStack {
                     switch selection {
+                    case .home:
+                        HomeView(selection: $selection)
                     case .downloads:
                         DownloadsView(downloadManager: DownloadManager.shared)
                     case .patch:
@@ -130,6 +133,13 @@ struct ContentView: View {
             }
         }
         .task {
+            if let startupSection = SidebarSection(rawValue: startupSidebarSectionRaw) {
+                selection = startupSection
+            } else {
+                selection = .home
+                startupSidebarSectionRaw = SidebarSection.home.rawValue
+            }
+
             if sparkleUpdater.isPrereleaseBuild && !isPrereleaseSuppressedForCurrent {
                 startupSheet = .prerelease
             }
@@ -238,6 +248,12 @@ struct SidebarView: View {
                 .padding(.top, 20)
 
             VStack(alignment: .leading, spacing: 6) {
+                SidebarButton(
+                    label: "Home",
+                    systemImage: "house.fill",
+                    isSelected: selection == .home
+                ) { selection = .home }
+
                 SidebarButton(
                     label: "IPA Downloads",
                     systemImage: "square.and.arrow.down",
@@ -595,7 +611,8 @@ struct SidebarButton: View {
 }
 
 // MARK: - Sidebar Section Enum
-enum SidebarSection {
+enum SidebarSection: String, CaseIterable, Identifiable {
+    case home
     case downloads
     case patch
     case gameAssets
@@ -603,6 +620,29 @@ enum SidebarSection {
     case updateAssistant
     case faq
     case settings
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .home:
+            return "Home"
+        case .downloads:
+            return "IPA Downloads"
+        case .patch:
+            return "Patch"
+        case .gameAssets:
+            return "Game Assets"
+        case .dataManagement:
+            return "Data Manager"
+        case .updateAssistant:
+            return "Update Assistant"
+        case .faq:
+            return "FAQ"
+        case .settings:
+            return "Settings"
+        }
+    }
 }
 
 private enum StartupSheet: String, Identifiable {

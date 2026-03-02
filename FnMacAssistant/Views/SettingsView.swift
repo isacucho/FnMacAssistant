@@ -21,6 +21,7 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("fortdlUseDownloadOnly") private var fortdlUseDownloadOnly = true
     @AppStorage("fortdlGameDataDownloadPath") private var fortdlGameDataDownloadPath = ""
+    @AppStorage("startupSidebarSection") private var startupSidebarSectionRaw = SidebarSection.home.rawValue
     @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
 
     var body: some View {
@@ -34,100 +35,96 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
 
                 VStack(alignment: .leading, spacing: 16) {
-
                     // MARK: - Download Settings
-                    Text("Download Settings")
-                        .font(.headline)
+                        glassSection {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Download Location")
+                                    .font(.headline)
 
-                    glassSection {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Download Location")
-                                .font(.headline)
-
-                            if let folder = downloadManager.defaultDownloadFolder {
-                                Text(
-                                    "Current folder: " +
-                                    folder.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
-                                )
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                                .textSelection(.enabled)
-                            } else {
-                                Text("No folder selected — using ~/Downloads")
+                                if let folder = downloadManager.defaultDownloadFolder {
+                                    Text(
+                                        "Current folder: " +
+                                        folder.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
+                                    )
                                     .font(.system(size: 13))
                                     .foregroundColor(.secondary)
-                            }
-
-                            HStack(spacing: 12) {
-                                Button("Change Folder…") {
-                                    let panel = NSOpenPanel()
-                                    panel.title = "Select Download Location"
-                                    panel.message = "Choose where you want to save downloaded files."
-                                    panel.canChooseDirectories = true
-                                    panel.canChooseFiles = false
-                                    panel.allowsMultipleSelection = false
-                                    panel.prompt = "Select"
-
-                                    if panel.runModal() == .OK, let url = panel.url {
-                                        downloadManager.setDownloadFolder(url)
-                                    }
-                                }
-
-                                Button("Reset to Default") {
-                                    downloadManager.resetDownloadFolder()
-                                }
-                            }
-                        }
-                    }
-
-                    glassSection {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("fort-dl Settings")
-                                .font(.headline)
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Game Data Download Path")
-                                    .font(.subheadline)
-
-                                Text("Current selected path: \(fortdlCurrentPathLabel)")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
                                     .textSelection(.enabled)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                } else {
+                                    Text("No folder selected — using ~/Downloads")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.secondary)
+                                }
+
+                                HStack(spacing: 12) {
+                                    Button("Change Folder…") {
+                                        let panel = NSOpenPanel()
+                                        panel.title = "Select Download Location"
+                                        panel.message = "Choose where you want to save downloaded files."
+                                        panel.canChooseDirectories = true
+                                        panel.canChooseFiles = false
+                                        panel.allowsMultipleSelection = false
+                                        panel.prompt = "Select"
+
+                                        if panel.runModal() == .OK, let url = panel.url {
+                                            downloadManager.setDownloadFolder(url)
+                                        }
+                                    }
+
+                                    Button("Reset to Default") {
+                                        downloadManager.resetDownloadFolder()
+                                    }
+                                }
                             }
+                        }
 
-                            HStack(spacing: 12) {
-                                Button("Change Path…") {
-                                    let panel = NSOpenPanel()
-                                    panel.title = "Select fort-dl Game Data Download Path"
-                                    panel.message = "Choose where fort-dl should save game data downloads."
-                                    panel.canChooseDirectories = true
-                                    panel.canChooseFiles = false
-                                    panel.allowsMultipleSelection = false
-                                    panel.prompt = "Select"
+                        glassSection {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("fort-dl Settings")
+                                    .font(.headline)
 
-                                    if panel.runModal() == .OK, let url = panel.url {
-                                        fortdlGameDataDownloadPath = url.path
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Game Data Download Path")
+                                        .font(.subheadline)
+
+                                    Text("Current selected path: \(fortdlCurrentPathLabel)")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                        .textSelection(.enabled)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                HStack(spacing: 12) {
+                                    Button("Change Path…") {
+                                        let panel = NSOpenPanel()
+                                        panel.title = "Select fort-dl Game Data Download Path"
+                                        panel.message = "Choose where fort-dl should save game data downloads."
+                                        panel.canChooseDirectories = true
+                                        panel.canChooseFiles = false
+                                        panel.allowsMultipleSelection = false
+                                        panel.prompt = "Select"
+
+                                        if panel.runModal() == .OK, let url = panel.url {
+                                            fortdlGameDataDownloadPath = url.path
+                                        }
+                                    }
+
+                                    Button("Use Default ($CONTAINER)") {
+                                        fortdlGameDataDownloadPath = ""
                                     }
                                 }
 
-                                Button("Use Default ($CONTAINER)") {
-                                    fortdlGameDataDownloadPath = ""
+                                Divider()
+
+                                Toggle("Run fort-dl with --download-only", isOn: $fortdlUseDownloadOnly)
+
+                                if !fortdlUseDownloadOnly {
+                                    Text("Warning: Not using --download-only can temporarily use about double the storage space while downloading and installing.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.orange)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
-
-                            Divider()
-
-                            Toggle("Run fort-dl with --download-only", isOn: $fortdlUseDownloadOnly)
-
-                            if !fortdlUseDownloadOnly {
-                                Text("Warning: Not using --download-only can temporarily use about double the storage space while downloading and installing.")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.orange)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
                         }
-                    }
                 }
 
                 // MARK: - Fortnite Container
@@ -136,67 +133,67 @@ struct SettingsView: View {
                         Text("Fortnite Container")
                             .font(.headline)
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Detected Path:")
-                                .font(.subheadline)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Detected Path:")
+                                    .font(.subheadline)
 
-                            Text(containerLocator.cachedPath ?? "Not set")
-                                .font(.system(size: 13, weight: .regular, design: .monospaced))
-                                .foregroundColor(.secondary)
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Divider()
-
-                        HStack(spacing: 12) {
-
-                            Button("Find Automatically") {
-                                if let result = containerLocator.locateContainerWithDetails() {
-                                    containerLocator.cachedPath = result.selected.path
-                                    autoSelectedContainer = result.selected
-                                    extraContainers = result.additional
-                                    selectedExtraContainerPaths = Set(result.additional.map(\.path))
-                                    showExtraContainersSheet = !result.additional.isEmpty
-                                } else {
-                                    showFullDiskAlert = true
-                                }
+                                Text(containerLocator.cachedPath ?? "Not set")
+                                    .font(.system(size: 13, weight: .regular, design: .monospaced))
+                                    .foregroundColor(.secondary)
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
 
-                            Button("Select Manually…") {
-                                let panel = NSOpenPanel()
-                                panel.title = "Select Fortnite Container Folder"
-                                panel.canChooseDirectories = true
-                                panel.canChooseFiles = false
-                                panel.allowsMultipleSelection = false
-                                panel.directoryURL = FileManager.default
-                                    .homeDirectoryForCurrentUser
-                                    .appendingPathComponent("Library/Containers")
+                            Divider()
 
-                                panel.begin { response in
-                                    if response == .OK, let url = panel.url {
-                                        containerLocator.manuallySetContainer(path: url.path)
+                            HStack(spacing: 12) {
+
+                                Button("Find Automatically") {
+                                    if let result = containerLocator.locateContainerWithDetails() {
+                                        containerLocator.cachedPath = result.selected.path
+                                        autoSelectedContainer = result.selected
+                                        extraContainers = result.additional
+                                        selectedExtraContainerPaths = Set(result.additional.map(\.path))
+                                        showExtraContainersSheet = !result.additional.isEmpty
+                                    } else {
+                                        showFullDiskAlert = true
                                     }
                                 }
-                            }
 
-                            Button(role: .destructive) {
-                                containerLocator.resetContainer()
-                            } label: {
-                                Text("Reset")
-                            }
-                            Spacer()
-                            Button("Show in Finder") {
-                                if let path = containerLocator.cachedPath {
-                                    let url = URL(fileURLWithPath: path, isDirectory: true)
-                                    if !NSWorkspace.shared.open(url) {
-                                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                                Button("Select Manually…") {
+                                    let panel = NSOpenPanel()
+                                    panel.title = "Select Fortnite Container Folder"
+                                    panel.canChooseDirectories = true
+                                    panel.canChooseFiles = false
+                                    panel.allowsMultipleSelection = false
+                                    panel.directoryURL = FileManager.default
+                                        .homeDirectoryForCurrentUser
+                                        .appendingPathComponent("Library/Containers")
+
+                                    panel.begin { response in
+                                        if response == .OK, let url = panel.url {
+                                            containerLocator.manuallySetContainer(path: url.path)
+                                        }
                                     }
                                 }
+
+                                Button(role: .destructive) {
+                                    containerLocator.resetContainer()
+                                } label: {
+                                    Text("Reset")
+                                }
+                                Spacer()
+                                Button("Show in Finder") {
+                                    if let path = containerLocator.cachedPath {
+                                        let url = URL(fileURLWithPath: path, isDirectory: true)
+                                        if !NSWorkspace.shared.open(url) {
+                                            NSWorkspace.shared.activateFileViewerSelecting([url])
+                                        }
+                                    }
+                                }
+                                .disabled(containerLocator.cachedPath == nil)
                             }
-                            .disabled(containerLocator.cachedPath == nil)
-                        }
                     }
                 }
 
@@ -206,18 +203,42 @@ struct SettingsView: View {
                         Text("Notifications")
                             .font(.headline)
 
-                        Text("""
+                            Text("""
 FnMacAssistant uses notifications to let you know when game assets finish installing.
 You can disable them at any time.
 """)
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
 
-                        Toggle("Enable notifications", isOn: $notificationsEnabled)
-                            .onChange(of: notificationsEnabled) { _, enabled in
-                                if enabled {
-                                    NotificationHelper.shared.requestAuthorization()
+                            Toggle("Enable notifications", isOn: $notificationsEnabled)
+                                .onChange(of: notificationsEnabled) { _, enabled in
+                                    if enabled {
+                                        NotificationHelper.shared.requestAuthorization()
+                                    }
                                 }
+                    }
+                }
+
+                // MARK: - App
+                glassSection {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("App Settings")
+                            .font(.headline)
+
+                            HStack(spacing: 10) {
+                                Text("Open on startup")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+
+                                Picker("Open on startup", selection: startupSidebarSectionBinding) {
+                                    ForEach(SidebarSection.allCases) { section in
+                                        Text(section.title).tag(section.rawValue)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .controlSize(.small)
+                                .labelsHidden()
+                                .frame(width: 180)
                             }
                     }
                 }
@@ -228,53 +249,53 @@ You can disable them at any time.
                         Text("Updates")
                             .font(.headline)
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Current version: \(sparkleUpdater.currentVersionWithBuild)")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                        }
-
-                        if sparkleUpdater.isPrereleaseBuild {
-                            Text("You're on a pre-release build.")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.orange)
-                        }
-
-                        HStack(alignment: .top, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Toggle("Automatically check for updates", isOn: autoCheckBinding)
-                                Toggle("Automatically download updates", isOn: autoDownloadBinding)
-                                    .disabled(!sparkleUpdater.automaticallyChecksForUpdates)
-                            }
-
-                            Spacer()
-
-                            HStack(spacing: 8) {
-                                Text("Update Channel")
-                                    .font(.system(size: 12))
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Current version: \(sparkleUpdater.currentVersionWithBuild)")
+                                    .font(.system(size: 13))
                                     .foregroundColor(.secondary)
-                                Picker("Update Channel", selection: channelBinding) {
-                                    ForEach(SparkleUpdaterService.UpdateChannel.allCases) { channel in
-                                        Text(channel.title).tag(channel)
-                                    }
+                            }
+
+                            if sparkleUpdater.isPrereleaseBuild {
+                                Text("You're on a pre-release build.")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.orange)
+                            }
+
+                            HStack(alignment: .top, spacing: 16) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Toggle("Automatically check for updates", isOn: autoCheckBinding)
+                                    Toggle("Automatically download updates", isOn: autoDownloadBinding)
+                                        .disabled(!sparkleUpdater.automaticallyChecksForUpdates)
                                 }
-                                .pickerStyle(.menu)
-                                .controlSize(.small)
-                                .labelsHidden()
-                                .frame(width: 110)
-                            }
-                        }
 
-                        HStack(spacing: 12) {
-                            Button("Check for Updates…") {
-                                sparkleUpdater.checkForUpdates()
-                            }
-                            .disabled(!sparkleUpdater.canCheckForUpdates)
+                                Spacer()
 
-                            Button("Open Releases") {
-                                openReleasesPage()
+                                HStack(spacing: 8) {
+                                    Text("Update Channel")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                    Picker("Update Channel", selection: channelBinding) {
+                                        ForEach(SparkleUpdaterService.UpdateChannel.allCases) { channel in
+                                            Text(channel.title).tag(channel)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .controlSize(.small)
+                                    .labelsHidden()
+                                    .frame(width: 110)
+                                }
                             }
-                        }
+
+                            HStack(spacing: 12) {
+                                Button("Check for Updates…") {
+                                    sparkleUpdater.checkForUpdates()
+                                }
+                                .disabled(!sparkleUpdater.canCheckForUpdates)
+
+                                Button("Open Releases") {
+                                    openReleasesPage()
+                                }
+                            }
                     }
                 }
 
@@ -454,6 +475,7 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         defaults.removeObject(forKey: "fortdlUseDownloadOnly")
         defaults.removeObject(forKey: "fortdlGameDataDownloadPath")
         defaults.removeObject(forKey: "notificationsEnabled")
+        defaults.removeObject(forKey: "startupSidebarSection")
         defaults.removeObject(forKey: "brCosmeticsWarningDisabled")
         defaults.removeObject(forKey: "brCosmeticsWarnedBattleRoyale")
         defaults.removeObject(forKey: "brCosmeticsWarnedRocketRacing")
@@ -540,6 +562,19 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
             set: { newValue in
                 DispatchQueue.main.async {
                     sparkleUpdater.setAutomaticallyDownloadsUpdates(newValue)
+                }
+            }
+        )
+    }
+
+    private var startupSidebarSectionBinding: Binding<String> {
+        Binding(
+            get: { startupSidebarSectionRaw },
+            set: { newValue in
+                if SidebarSection(rawValue: newValue) != nil {
+                    startupSidebarSectionRaw = newValue
+                } else {
+                    startupSidebarSectionRaw = SidebarSection.home.rawValue
                 }
             }
         )
