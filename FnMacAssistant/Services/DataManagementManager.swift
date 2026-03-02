@@ -466,8 +466,7 @@ final class DataManagementManager: ObservableObject {
             archiveProgressLabel = ""
         }
 
-        let tempRoot = FileManager.default.temporaryDirectory
-            .appendingPathComponent("FnMacAssistantArchive-\(UUID().uuidString)", isDirectory: true)
+        let tempRoot = AppTempDirectory.subdirectory("archive-\(UUID().uuidString)")
         let stagedPersistentURL = tempRoot.appendingPathComponent("PersistentDownloadDir", isDirectory: true)
 
         defer {

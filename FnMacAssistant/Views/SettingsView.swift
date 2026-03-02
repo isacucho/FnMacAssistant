@@ -21,6 +21,7 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("fortdlUseDownloadOnly") private var fortdlUseDownloadOnly = true
     @AppStorage("fortdlGameDataDownloadPath") private var fortdlGameDataDownloadPath = ""
+    @AppStorage("appTempFolderPath") private var appTempFolderPath = ""
     @AppStorage("startupSidebarSection") private var startupSidebarSectionRaw = SidebarSection.home.rawValue
     @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
 
@@ -122,6 +123,45 @@ struct SettingsView: View {
                                         .font(.system(size: 12))
                                         .foregroundColor(.orange)
                                         .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+
+                        glassSection {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("App Temp Folder")
+                                    .font(.headline)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Current selected path: \(appTempPathLabel)")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                        .textSelection(.enabled)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                HStack(spacing: 12) {
+                                    Button("Change Folder…") {
+                                        let panel = NSOpenPanel()
+                                        panel.title = "Select App Temp Folder"
+                                        panel.message = "Choose where FnMacAssistant should store temporary files."
+                                        panel.canChooseDirectories = true
+                                        panel.canChooseFiles = false
+                                        panel.allowsMultipleSelection = false
+                                        panel.prompt = "Select"
+
+                                        if panel.runModal() == .OK, let url = panel.url {
+                                            appTempFolderPath = url.path
+                                        }
+                                    }
+
+                                    Button("Use Default") {
+                                        appTempFolderPath = ""
+                                    }
+
+                                    Button("Open in Finder") {
+                                        openAppTempInFinder()
+                                    }
                                 }
                             }
                         }
@@ -474,6 +514,8 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
         defaults.removeObject(forKey: "fortdlManualManifestID")
         defaults.removeObject(forKey: "fortdlUseDownloadOnly")
         defaults.removeObject(forKey: "fortdlGameDataDownloadPath")
+        defaults.removeObject(forKey: "appTempFolderPath")
+        defaults.removeObject(forKey: "updateAssistantTempFolderPath")
         defaults.removeObject(forKey: "notificationsEnabled")
         defaults.removeObject(forKey: "startupSidebarSection")
         defaults.removeObject(forKey: "brCosmeticsWarningDisabled")
@@ -488,6 +530,19 @@ Open System Settings > Privacy & Security > Full Disk Access, then add and enabl
             return "$CONTAINER/Data/Documents/FortniteGame/PersistentDownloadDir"
         }
         return fortdlGameDataDownloadPath
+    }
+
+    private var appTempPathLabel: String {
+        AppTempDirectory.rootURL().path
+            .replacingOccurrences(of: NSHomeDirectory(), with: "~")
+    }
+
+    private func openAppTempInFinder() {
+        let url = AppTempDirectory.rootURL()
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        if !NSWorkspace.shared.open(url) {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        }
     }
 
     private func deleteSelectedExtraContainers() {

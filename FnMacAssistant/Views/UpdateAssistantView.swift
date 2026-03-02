@@ -97,14 +97,17 @@ struct UpdateAssistantView: View {
                     .font(.title2)
                     .bold()
 
-                Text("""
-This will open Fortnite and begin the download assistant.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("This will open Fortnite and begin the download assistant.")
+                    Text("If you are updating the base game, do not touch anything while the process runs.")
+                    Text("If you are installing a game mode, open your desired game mode and click Download. The assistant will continue automatically.")
 
-If you are updating the base game, do not touch anything while the process runs.
-If you are installing a game mode, open your desired game mode and click Download. The assistant will continue automatically.
-Do not open Fortnite again while the assistant is downloading and applying files.
-When the download is finished, you will see a Download button with no update size in Fortnite. Click it to complete installation.
-""")
+                    Label("Do not open Fortnite again while the assistant is downloading and applying files.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.orange)
+
+                    Text("When the download is finished, you will see a Download button with no update size in Fortnite. Click it to complete installation.")
+                }
                 .font(.system(size: 13))
                 .foregroundColor(.secondary)
 
@@ -190,9 +193,9 @@ When the download is finished, you will see a Download button with no update siz
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Important: after Fortnite closes and downloading starts, do not open Fortnite again until Update Assistant says Done.")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
+                    Label("After Fortnite closes and downloading starts, do not open Fortnite again until Update Assistant says Done.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.orange)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
