@@ -102,6 +102,7 @@ This will open Fortnite and begin the download assistant.
 
 If you are updating the base game, do not touch anything while the process runs.
 If you are installing a game mode, open your desired game mode and click Download. The assistant will continue automatically.
+Do not open Fortnite again while the assistant is downloading and applying files.
 When the download is finished, you will see a Download button with no update size in Fortnite. Click it to complete installation.
 """)
                 .font(.system(size: 13))
@@ -189,6 +190,10 @@ When the download is finished, you will see a Download button with no update siz
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    Text("Important: after Fortnite closes and downloading starts, do not open Fortnite again until Update Assistant says Done.")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if manager.isRunning {
@@ -222,7 +227,8 @@ When the download is finished, you will see a Download button with no update siz
 
             stepRow(index: "1", text: "Click Start Update.")
             stepRow(index: "2", text: "Base game update: do not touch anything while it runs.")
-            stepRow(index: "3", text: "Game mode install: open your desired game mode and click Download. When finished, click the Download button with no download size inside Fortnite to complete installation.")
+            stepRow(index: "3", text: "Game mode install: open your desired game mode and click Download. Then do not reopen Fortnite until Update Assistant finishes applying files.")
+            stepRow(index: "4", text: "When finished, click the Download button with no download size inside Fortnite to complete installation.")
 
             Divider()
         }
