@@ -39,6 +39,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private let fortniteGameRelative = "Data/Documents/FortniteGame"
     private let logRelativePath = "Data/Documents/FortniteGame/Saved/Logs/FortniteGame.log"
     private let tempFolderName = "update-assistant"
+    private let stagedDownloadsFolderName = "staged-downloads"
     private let fortniteDefaultTagsPath =
         "/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app/cookeddata/fortnitegame/content/defaulttags"
 
@@ -56,10 +57,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private var batchDownloadedPaths: [String] = []
     private var batchTargetDirs: Set<String> = []
     private var didNotifyForCurrentRun = false
-    private var fortniteReopenMonitorTimer: Timer?
-    private var suppressFortniteReopenWarningUntil: Date = .distantPast
-    private var fortniteReopenPromptInFlight = false
-    private var allowFortniteWhileDownloading = false
     private var defaultTagPlaceholderIndex: [String: String]?
 
     private struct DownloadState {
@@ -180,12 +177,13 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             self.logOutput = ""
         }
         stopFortniteReopenMonitor()
-        fortniteReopenPromptInFlight = false
-        allowFortniteWhileDownloading = false
-        suppressFortniteReopenWarningUntil = .distantPast
         didNotifyForCurrentRun = false
         batchTargetDirs.removeAll()
         batchDownloadedPaths.removeAll()
+        if let tempDir = try? ensureTempDirectory() {
+            let stagedRoot = tempDir.appendingPathComponent(stagedDownloadsFolderName, isDirectory: true)
+            try? FileManager.default.removeItem(at: stagedRoot)
+        }
     }
 
     private func runAssistant(containerPath: String) async {
@@ -220,7 +218,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
         updateStatus("Waiting for download link…")
         appendLog("If you are updating a game mode, click the Download button in Fortnite.\n" +
-                  "Update Assistant will close Fortnite as soon as it detects the download link.\n")
+                  "Update Assistant will close Fortnite as soon as it detects the download link.\n" +
+                  "Do not open Fortnite while download/apply is running.\n")
 
         let requestRegex = try? NSRegularExpression(
             pattern: "LogFortInstallBundleManager: Display: InstallBundleSourceBPS: Requesting Chunk [^\\s]* from CDN for Request (\\S*) \\[(\\d+)/(\\d+)\\]: (\\d+) (https://.*) \\[(ChunkDb|Direct Install)\\]$",
@@ -367,7 +366,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                         terminateFortnite()
                         terminateUserNSURLSessiond()
                         clearNSURLSessionDownloadsCache(containerPath: containerPath)
-                        suppressFortniteReopenWarningUntil = Date().addingTimeInterval(6)
                         didCloseFortnite = true
                     }
 
@@ -395,13 +393,12 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
                     let totalBytes = filtered.reduce(Int64(0)) { $0 + $1.size }
                     updateProgressForBatch(totalBytes: totalBytes)
-                    allowFortniteWhileDownloading = false
                     DispatchQueue.main.async {
                         self.isDownloading = true
-                        self.startFortniteReopenMonitor()
                     }
 
                     var baseDownloaded: Int64 = 0
+                    var stagedDownloads: [StagedDownload] = []
 
                     for task in filtered {
                         if Task.isCancelled { break }
@@ -409,7 +406,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                         var attempt = 0
                         while !Task.isCancelled, !completed {
                             do {
-                                let destURL = URL(fileURLWithPath: task.fullPath)
+                                let destURL = stagedDownloadURL(for: task.relativePath)
                                 try await downloadFile(
                                     from: task.url,
                                     to: destURL,
@@ -418,9 +415,16 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                                 )
                                 completed = true
                                 baseDownloaded += task.size
-                                self.batchDownloadedPaths.append(task.fullPath)
-                                self.batchTargetDirs.insert((task.fullPath as NSString).deletingLastPathComponent)
-                                writeOptionalLanguagePlaceholderCopyIfNeeded(for: task)
+                                stagedDownloads.append(
+                                    StagedDownload(
+                                        stagedURL: destURL,
+                                        destinationPath: task.fullPath,
+                                        relativePath: task.relativePath
+                                    )
+                                )
+                                if let optionalStaged = writeOptionalLanguagePlaceholderCopyIfNeeded(for: task, stagedURL: destURL) {
+                                    stagedDownloads.append(optionalStaged)
+                                }
                                 appendLog("Saving to: \(task.relativePath)")
                             } catch {
                                 attempt += 1
@@ -454,6 +458,22 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                         self.downloadedBytes = baseDownloaded
                     }
                     appendLog("Downloaded a total of \(formatSize(bytes: baseDownloaded)).")
+
+                    updateStatus("Waiting for Fortnite to close…")
+                    if !(await waitForWriteAccessBeforeApplying()) {
+                        appendLog("Update assistant stopped before applying files.")
+                        finalize(success: false)
+                        return
+                    }
+
+                    updateStatus("Applying update…")
+                    do {
+                        try applyStagedDownloads(stagedDownloads)
+                    } catch {
+                        appendLog("ERROR: Failed to apply staged files: \(error.localizedDescription)")
+                        finalize(success: false)
+                        return
+                    }
 
                     finalize(success: true)
                     return
@@ -531,6 +551,50 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         return tempDir
     }
 
+    private func stagedDownloadURL(for relativePath: String) -> URL {
+        let sanitized = relativePath.replacingOccurrences(of: "\\", with: "/")
+        let root = (try? ensureTempDirectory()) ?? FileManager.default.temporaryDirectory
+        return root
+            .appendingPathComponent(stagedDownloadsFolderName, isDirectory: true)
+            .appendingPathComponent(sanitized)
+    }
+
+    private func waitForWriteAccessBeforeApplying() async -> Bool {
+        guard isFortniteRunning() else { return true }
+        appendLog("Fortnite is running. Close it to continue applying files.")
+        return await MainActor.run {
+            FortniteContainerWriteGuard.confirmCanModifyContainer()
+        }
+    }
+
+    private func applyStagedDownloads(_ stagedDownloads: [StagedDownload]) throws {
+        let fm = FileManager.default
+        for staged in stagedDownloads {
+            if Task.isCancelled {
+                throw CancellationError()
+            }
+
+            let destinationURL = URL(fileURLWithPath: staged.destinationPath)
+            try fm.createDirectory(
+                at: destinationURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+            if fm.fileExists(atPath: destinationURL.path) {
+                try fm.removeItem(at: destinationURL)
+            }
+            try fm.moveItem(at: staged.stagedURL, to: destinationURL)
+            batchDownloadedPaths.append(destinationURL.path)
+            batchTargetDirs.insert(destinationURL.deletingLastPathComponent().path)
+            appendLog("Applied: \(staged.relativePath)")
+        }
+
+        if let tempDir = try? ensureTempDirectory() {
+            let stagedRoot = tempDir.appendingPathComponent(stagedDownloadsFolderName, isDirectory: true)
+            try? fm.removeItem(at: stagedRoot)
+        }
+    }
+
     private func cancelActiveDownload() {
         stateQueue.async {
             self.cancelActiveDownloadLocked(resumeError: CancellationError())
@@ -565,9 +629,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         assistantTask = nil
         cancelActiveDownload()
         stopFortniteReopenMonitor()
-        fortniteReopenPromptInFlight = false
-        allowFortniteWhileDownloading = false
-        suppressFortniteReopenWarningUntil = .distantPast
 
         if deleteDownloaded {
             let paths = batchDownloadedPaths
@@ -580,6 +641,11 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             batchTargetDirs.removeAll()
             for dir in dirs {
                 try? FileManager.default.removeItem(atPath: dir)
+            }
+
+            if let tempDir = try? ensureTempDirectory() {
+                let stagedRoot = tempDir.appendingPathComponent(stagedDownloadsFolderName, isDirectory: true)
+                try? FileManager.default.removeItem(at: stagedRoot)
             }
         }
 
@@ -596,9 +662,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
     private func finalize(success: Bool) {
         stopFortniteReopenMonitor()
-        fortniteReopenPromptInFlight = false
-        allowFortniteWhileDownloading = false
-        suppressFortniteReopenWarningUntil = .distantPast
         DispatchQueue.main.async {
             self.isDownloading = false
             self.isTracking = false
@@ -653,90 +716,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         try? process.run()
     }
 
-    @MainActor
-    private func startFortniteReopenMonitor() {
-        stopFortniteReopenMonitor()
-        fortniteReopenMonitorTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            guard self.isDownloading else { return }
-            guard !self.allowFortniteWhileDownloading else { return }
-            guard Date() >= self.suppressFortniteReopenWarningUntil else { return }
-            guard self.isFortniteRunning() else { return }
-            guard !self.fortniteReopenPromptInFlight else { return }
-
-            self.fortniteReopenPromptInFlight = true
-            self.appendLog("Fortnite was opened during download. Closing it to protect the download.")
-            self.terminateFortnite()
-
-            Task {
-                let action = await self.promptFortniteOpenedDuringDownloadAction()
-                switch action {
-                case .cancelDownload:
-                    self.appendLog("Download cancelled because Fortnite was opened during download.")
-                    self.stopInternal(deleteDownloaded: false)
-                case .ignoreAndOpen:
-                    self.appendLog("Continuing after warning. Opening Fortnite may break the download.")
-                    self.openFortnite()
-                    self.allowFortniteWhileDownloading = true
-                case .closeWarning:
-                    self.appendLog("Continuing download with Fortnite closed.")
-                    self.suppressFortniteReopenWarningUntil = Date().addingTimeInterval(2)
-                }
-                self.fortniteReopenPromptInFlight = false
-            }
-        }
-    }
-
     private func stopFortniteReopenMonitor() {
-        fortniteReopenMonitorTimer?.invalidate()
-        fortniteReopenMonitorTimer = nil
-    }
-
-    private enum FortniteOpenedDuringDownloadAction {
-        case cancelDownload
-        case ignoreAndOpen
-        case closeWarning
-    }
-
-    private func promptFortniteOpenedDuringDownloadAction() async -> FortniteOpenedDuringDownloadAction {
-        await MainActor.run {
-            let alert = NSAlert()
-            alert.messageText = "Fortnite Opened During Download"
-            alert.informativeText = """
-            Opening Fortnite while Update Assistant is downloading can break the download.
-            """
-            alert.addButton(withTitle: "Cancel Download")
-            alert.addButton(withTitle: "Ignore and Open Fortnite")
-            alert.addButton(withTitle: "Dismiss")
-            alert.buttons[0].keyEquivalent = ""
-            alert.buttons[1].keyEquivalent = ""
-            alert.buttons[2].keyEquivalent = "\r"
-            alert.buttons[2].keyEquivalentModifierMask = []
-
-            var escPressed = false
-            let escMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                let isEscape = event.keyCode == 53 || event.charactersIgnoringModifiers == "\u{1b}"
-                guard isEscape else { return event }
-                escPressed = true
-                NSApp.abortModal()
-                return nil
-            }
-
-            let response = alert.runModal()
-            if let escMonitor {
-                NSEvent.removeMonitor(escMonitor)
-            }
-            if escPressed {
-                return .closeWarning
-            }
-            if response == .alertFirstButtonReturn {
-                return .cancelDownload
-            }
-            if response == .alertSecondButtonReturn {
-                return .ignoreAndOpen
-            }
-            return .closeWarning
-        }
+        // Reopen monitoring disabled: we now warn once and guard writes right before apply.
     }
 
     private func isFortniteRunning() -> Bool {
@@ -1215,18 +1196,18 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         ]
     }
 
-    private func writeOptionalLanguagePlaceholderCopyIfNeeded(for task: DownloadTask) {
+    private func writeOptionalLanguagePlaceholderCopyIfNeeded(for task: DownloadTask, stagedURL: URL) -> StagedDownload? {
         let targetLower = task.target.lowercased()
         let languagePattern = #"^lang\.([a-z]{2}(?:-[a-z0-9]{2,3})?)optional$"#
-        guard let languageRegex = try? NSRegularExpression(pattern: languagePattern, options: []) else { return }
+        guard let languageRegex = try? NSRegularExpression(pattern: languagePattern, options: []) else { return nil }
         let range = NSRange(location: 0, length: targetLower.utf16.count)
         guard let match = languageRegex.firstMatch(in: targetLower, options: [], range: range),
-              let languageRange = Range(match.range(at: 1), in: targetLower) else { return }
+              let languageRange = Range(match.range(at: 1), in: targetLower) else { return nil }
 
-        let sourcePath = task.fullPath.replacingOccurrences(of: "\\", with: "/")
+        let sourcePath = stagedURL.path.replacingOccurrences(of: "\\", with: "/")
         let sourceLower = sourcePath.lowercased()
         guard sourceLower.contains("/defaulttags/"),
-              sourceLower.hasSuffix(".txt") else { return }
+              sourceLower.hasSuffix(".txt") else { return nil }
 
         let languageCode = String(targetLower[languageRange])
         let optionalName = "tagplaceholder_lang\(languageCode)optional.txt"
@@ -1240,10 +1221,19 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
         do {
             try fm.copyItem(atPath: sourcePath, toPath: optionalPath)
-            batchDownloadedPaths.append(optionalPath)
             appendLog("Saving to: \((task.relativePath as NSString).deletingLastPathComponent)/\(optionalName)")
+            let relativeOptionalPath = ((task.relativePath as NSString).deletingLastPathComponent as NSString)
+                .appendingPathComponent(optionalName)
+            let destinationPath = ((task.fullPath as NSString).deletingLastPathComponent as NSString)
+                .appendingPathComponent(optionalName)
+            return StagedDownload(
+                stagedURL: URL(fileURLWithPath: optionalPath),
+                destinationPath: destinationPath,
+                relativePath: relativeOptionalPath
+            )
         } catch {
             appendLog("WARNING: Failed to duplicate optional language placeholder: \(error.localizedDescription)")
+            return nil
         }
     }
 }
@@ -1255,4 +1245,10 @@ private struct DownloadTask {
     let size: Int64
     let isDirect: Bool
     let target: String
+}
+
+private struct StagedDownload {
+    let stagedURL: URL
+    let destinationPath: String
+    let relativePath: String
 }
