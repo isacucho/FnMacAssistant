@@ -38,7 +38,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private let chunkDownloadDirRelative = "PersistentDownloadDir/ChunkDownload"
     private let fortniteGameRelative = "Data/Documents/FortniteGame"
     private let logRelativePath = "Data/Documents/FortniteGame/Saved/Logs/FortniteGame.log"
-    private let tempFolderName = "update-assistant"
     private let stagedDownloadsFolderName = "staged-downloads"
     private let fortniteDefaultTagsPath =
         "/Applications/Fortnite.app/Wrapper/FortniteClient-IOS-Shipping.app/cookeddata/fortnitegame/content/defaulttags"
@@ -87,6 +86,10 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
     var isRunning: Bool {
         isTracking || isDownloading
+    }
+
+    static func configuredTempDirectoryURL() -> URL {
+        AppTempDirectory.subdirectory("update-assistant")
     }
 
     func start() {
@@ -425,7 +428,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                                 if let optionalStaged = writeOptionalLanguagePlaceholderCopyIfNeeded(for: task, stagedURL: destURL) {
                                     stagedDownloads.append(optionalStaged)
                                 }
-                                appendLog("Saving to: \(task.relativePath)")
                             } catch {
                                 attempt += 1
                                 let isRetryable = shouldRetryDownload(error)
@@ -544,16 +546,14 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     }
 
     private func ensureTempDirectory() throws -> URL {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("FnMacAssistant-cache", isDirectory: true)
-            .appendingPathComponent(tempFolderName, isDirectory: true)
+        let tempDir = Self.configuredTempDirectoryURL()
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true, attributes: nil)
         return tempDir
     }
 
     private func stagedDownloadURL(for relativePath: String) -> URL {
         let sanitized = relativePath.replacingOccurrences(of: "\\", with: "/")
-        let root = (try? ensureTempDirectory()) ?? FileManager.default.temporaryDirectory
+        let root = (try? ensureTempDirectory()) ?? Self.configuredTempDirectoryURL()
         return root
             .appendingPathComponent(stagedDownloadsFolderName, isDirectory: true)
             .appendingPathComponent(sanitized)
@@ -586,7 +586,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             try fm.moveItem(at: staged.stagedURL, to: destinationURL)
             batchDownloadedPaths.append(destinationURL.path)
             batchTargetDirs.insert(destinationURL.deletingLastPathComponent().path)
-            appendLog("Applied: \(staged.relativePath)")
+            appendLog("Saving to: \(staged.relativePath)")
         }
 
         if let tempDir = try? ensureTempDirectory() {
@@ -983,7 +983,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                 self.downloadedBytes = state.baseDownloadedBytes + state.downloadedBytes
                 let speed = self.formatSpeed(bytesPerSec: self.elapsedSpeed(bytes: state.downloadedBytes, since: state.startDate))
                 let speedLabel = speed.isEmpty ? "" : " at \(speed)"
-                self.replaceLog("Downloaded \(self.formatSize(bytes: state.downloadedBytes))\(speedLabel)")
+                self.replaceLog("Downloaded \(self.formatSize(bytes: state.downloadedBytes))\(speedLabel). Saved to temp directory.")
             }
 
             if let continuation = self.downloadContinuation {
@@ -1221,7 +1221,6 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
         do {
             try fm.copyItem(atPath: sourcePath, toPath: optionalPath)
-            appendLog("Saving to: \((task.relativePath as NSString).deletingLastPathComponent)/\(optionalName)")
             let relativeOptionalPath = ((task.relativePath as NSString).deletingLastPathComponent as NSString)
                 .appendingPathComponent(optionalName)
             let destinationPath = ((task.fullPath as NSString).deletingLastPathComponent as NSString)

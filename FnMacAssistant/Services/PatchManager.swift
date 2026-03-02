@@ -214,7 +214,7 @@ final class PatchManager: ObservableObject {
             return .failed
         }
         
-        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("FnMacAssistant-cache", isDirectory: true)
+        let tempDir = AppTempDirectory.rootURL()
         let tempURL = tempDir.appendingPathComponent("embedded.mobileprovision")
         
         do {

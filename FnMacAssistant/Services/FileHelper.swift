@@ -18,3 +18,32 @@ struct FileHelper {
         return folder
     }
 }
+
+enum AppTempDirectory {
+    static let settingsKey = "appTempFolderPath"
+    private static let legacyUpdateAssistantKey = "updateAssistantTempFolderPath"
+
+    static func rootURL() -> URL {
+        let defaults = UserDefaults.standard
+
+        if let customPath = defaults.string(forKey: settingsKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !customPath.isEmpty {
+            return URL(fileURLWithPath: customPath, isDirectory: true)
+        }
+
+        // Backward compatibility: preserve previously configured Update Assistant temp path.
+        if let legacyPath = defaults.string(forKey: legacyUpdateAssistantKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !legacyPath.isEmpty {
+            return URL(fileURLWithPath: legacyPath, isDirectory: true)
+        }
+
+        return FileManager.default.temporaryDirectory
+            .appendingPathComponent("FnMacAssistant-cache", isDirectory: true)
+    }
+
+    static func subdirectory(_ name: String) -> URL {
+        rootURL().appendingPathComponent(name, isDirectory: true)
+    }
+}

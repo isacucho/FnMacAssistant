@@ -702,9 +702,7 @@ final class FortDLManager: ObservableObject {
     // MARK: - fort-dl Cache
 
     private var fortDLCacheURL: URL {
-        FileManager.default.temporaryDirectory
-            .appendingPathComponent("FnMacAssistant-cache", isDirectory: true)
-            .appendingPathComponent("fort-dl", isDirectory: true)
+        AppTempDirectory.subdirectory("fort-dl")
     }
 
     private func clearFortDLCache() {
