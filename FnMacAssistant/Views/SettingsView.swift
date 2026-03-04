@@ -116,10 +116,10 @@ struct SettingsView: View {
 
                                 Divider()
 
-                                Toggle("Run fort-dl with --download-only", isOn: $fortdlUseDownloadOnly)
+                                Toggle("Install assets to ChunkDownload only", isOn: $fortdlUseDownloadOnly)
 
                                 if !fortdlUseDownloadOnly {
-                                    Text("Warning: Not using --download-only can temporarily use about double the storage space while downloading and installing.")
+                                    Text("Warning: Having this disabled can cause the data to temporarily use about double the storage space while downloading and installing.")
                                         .font(.system(size: 12))
                                         .foregroundColor(.orange)
                                         .fixedSize(horizontal: false, vertical: true)
