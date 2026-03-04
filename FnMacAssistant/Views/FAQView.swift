@@ -16,10 +16,13 @@ struct FAQView: View {
             answer: """
 To fix this, you need to download the game data using FnMacAssistant.
 
-1. Open FnMacAssistant and select the "Game Assets" tab.
-2. Select 'base-game' and your preferred game modes (note: you will need to download the 'cosmetics' layer to play most gamemodes). 
-3. Click the "Download Selected Assets" button.
-4. Wait for the download to complete, and once it's done open the game. 
+1. Open FnMacAssistant and select the "Update Assistant" tab.
+2. Click on 'Start Update'.
+3. Don't touch anything. FnMacAssistant will open and close Fortnite, and start the download automatically.
+4. If the update assistant is not working properly, manually close and re-open fortnite. 
+5. Wait for the download to complete, and once it's done open the game. 
+
+You can also install the data using the "Game Assets" tab.
 """
         ),
         FAQItem(
@@ -28,10 +31,10 @@ To fix this, you need to download the game data using FnMacAssistant.
 Follow these steps to update Fortnite:
 
 1. Download the updated IPA.
-2. Install it through Feather or Sideloadly using the same Apple ID you used previously.
+2. Install it through PlumeImpactor or Sideloadly using the same Apple ID you used previously.
 3. On FnMacAssistant, go to the 'Patch' tab and click on 'Apply Patch'.
 4. If prompted, go to 'System Settings > Privacy & Security', scroll down and click on 'Open Anyway'
-5. Download game files through the Game Assets tab, or with the background download method.
+5. Download game files through the Update Assistant or the Game Assets tab.
 """
         ),
         FAQItem(
