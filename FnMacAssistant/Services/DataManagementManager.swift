@@ -1719,7 +1719,7 @@ enum DataManagementError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .containerNotFound:
-            return "Fortnite container not found. Set it first in Settings."
+            return FortniteContainerLocator.containerAccessFailureMessage
         case .fortniteRunning:
             return "Fortnite must be closed before modifying game data."
         case .targetNotFound:
