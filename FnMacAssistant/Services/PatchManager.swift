@@ -39,6 +39,13 @@ final class PatchManager: ObservableObject {
             await self.runPatch()
         }
     }
+
+    @MainActor
+    func showPatchPermissionWarningForTesting() {
+        Task { [weak self] in
+            await self?.promptPatchPermissions()
+        }
+    }
     // MARK: - Patch Steps
     private func runPatch() async {
         log("Starting patch process...")
@@ -103,8 +110,8 @@ final class PatchManager: ObservableObject {
             log("Patch was already applied. No changes were made.")
             finish(false)
         case .failed:
-            log("Failed to apply patch. If this happened due to permissions, grant Full Disk Access to FnMacAssistant and try again.")
-            await promptFullDiskAccess()
+            log("Failed to apply patch. If this happened due to permissions, grant Full Disk Access to FnMacAssistant, or if you prefer not to, grant App Management permission.")
+            await promptPatchPermissions()
             finish(false)
         }
     }
@@ -275,7 +282,7 @@ final class PatchManager: ObservableObject {
         log("Replacing provisioning file...")
         let success = await moveFileWithShell(from: tempURL.path, to: provisionPath)
         if !success {
-            log("Failed to replace provisioning file. Check if FnMacAssistant has Full Disk Access.")
+            log("Failed to replace provisioning file. Grant Full Disk Access to FnMacAssistant, or if you prefer not to, grant App Management permission.")
         }
         return success ? .success : .failed
     }
@@ -382,22 +389,23 @@ final class PatchManager: ObservableObject {
         FortniteContainerWriteGuard.terminateFortnite()
     }
     
-    // MARK: - Prompt for Full Disk Access
+    // MARK: - Prompt for Patch Permissions
     @MainActor
-    private func promptFullDiskAccess() async {
+    private func promptPatchPermissions() async {
         let alert = NSAlert()
-        alert.messageText = "Full Disk Access Required"
+        alert.messageText = "Permission Required"
         alert.informativeText = """
-        FnMacAssistant needs Full Disk Access to modify Fortnite's internal files.
-        To grant access, open System Settings → Privacy & Security → Full Disk Access,
-        and enable FnMacAssistant.
+        FnMacAssistant needs permission to modify Fortnite's internal files.
+        Grant Full Disk Access to FnMacAssistant, or if you prefer not to, grant App Management permission.
         """
-        alert.addButton(withTitle: "Open Settings")
+        alert.addButton(withTitle: "Go to Privacy & Security")
         alert.addButton(withTitle: "Cancel")
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy") {
                 NSWorkspace.shared.open(url)
+            } else if let fallback = URL(string: "x-apple.systempreferences:com.apple.preference.security") {
+                NSWorkspace.shared.open(fallback)
             }
         }
     }
