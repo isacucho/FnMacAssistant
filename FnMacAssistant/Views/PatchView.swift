@@ -85,7 +85,6 @@ FnMacAssistant will open Fortnite, wait a few seconds, then apply the patch.
                         }
                         .prominentActionButton()
                         .disabled(patchManager.isPatching)
-
                         Spacer()
 
                         HStack(spacing: 8) {

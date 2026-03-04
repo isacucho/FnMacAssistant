@@ -200,7 +200,6 @@ struct SettingsView: View {
                                         showFullDiskAlert = true
                                     }
                                 }
-
                                 Button("Select Manually…") {
                                     let panel = NSOpenPanel()
                                     panel.title = "Select Fortnite Container Folder"
@@ -370,9 +369,11 @@ You can disable them at any time.
             Text("This will reset download location, container path, manual manifest settings, and warning preferences.")
         }
         .alert("Full Disk Access Needed", isPresented: $showFullDiskAlert) {
-            Button("Open Settings") {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+            Button("Open Privacy & Security") {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy") {
                     NSWorkspace.shared.open(url)
+                } else if let fallback = URL(string: "x-apple.systempreferences:com.apple.preference.security") {
+                    NSWorkspace.shared.open(fallback)
                 }
             }
             Button("Cancel", role: .cancel) {}
