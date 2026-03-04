@@ -377,18 +377,14 @@ You can disable them at any time.
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("""
-FnMacAssistant needs Full Disk Access to locate Fortnite's container.
-
-Open System Settings > Privacy & Security > Full Disk Access, then add and enable FnMacAssistant.
-""")
+            Text(FortniteContainerLocator.containerAccessFailureMessage)
         }
         .sheet(isPresented: $showExtraContainersSheet) {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Multiple Fortnite Containers Found")
                     .font(.title3.weight(.semibold))
 
-                Text("FnMacAssistant automatically selected the container with the most Fortnite data. Do you want to delete the other detected containers?")
+                Text("FnMacAssistant automatically selected the container with the largest size. Do you want to delete the other detected containers?")
                     .font(.system(size: 13))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

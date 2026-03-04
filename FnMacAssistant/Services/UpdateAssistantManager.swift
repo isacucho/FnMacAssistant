@@ -97,7 +97,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     func start() {
         guard !isTracking else { return }
         guard let container = FortniteContainerLocator.shared.getContainerPath() else {
-            appendLog("ERROR: Fortnite container not found. Set it in Settings first.")
+            appendLog("ERROR: \(FortniteContainerLocator.containerAccessFailureMessage)")
             return
         }
 

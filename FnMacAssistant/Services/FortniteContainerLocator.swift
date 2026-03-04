@@ -10,6 +10,17 @@ import AppKit
 import Combine   
 
 final class FortniteContainerLocator: ObservableObject {
+    static let containerAccessGuidance = """
+Grant Full Disk Access to FnMacAssistant.
+
+If you prefer not to, go to Settings > Fortnite Container and select it manually.
+"""
+
+    static let containerAccessFailureMessage = """
+FnMacAssistant couldn't access Fortnite's container.
+\(containerAccessGuidance)
+"""
+
     struct ContainerCandidate: Identifiable, Hashable {
         let path: String
         let dataSize: UInt64

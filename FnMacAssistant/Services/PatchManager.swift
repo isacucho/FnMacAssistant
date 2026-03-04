@@ -127,7 +127,7 @@ final class PatchManager: ObservableObject {
         }
 
         guard let containerPath = FortniteContainerLocator.shared.getContainerPath() else {
-            log("Could not locate Fortnite container. BackgroundHttp cleanup skipped.")
+            log("Could not locate Fortnite container. \(FortniteContainerLocator.containerAccessGuidance) BackgroundHttp cleanup skipped.")
             return
         }
 
@@ -283,7 +283,7 @@ final class PatchManager: ObservableObject {
     // MARK: - BackgroundHttp Folder Update
     private func updateBackgroundHttpFolder() {
         guard let containerPath = FortniteContainerLocator.shared.getContainerPath() else {
-            log("Could not locate Fortnite container. BackgroundHttp update skipped.")
+            log("Could not locate Fortnite container. \(FortniteContainerLocator.containerAccessGuidance) BackgroundHttp update skipped.")
             return
         }
 
