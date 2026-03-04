@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import AppKit
 
 @main
 struct FnMacAssistantApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var downloadManager = DownloadManager()
     @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
     private let windowSize = CGSize(width: 900, height: 510)
@@ -30,6 +32,12 @@ struct FnMacAssistantApp: App {
                 .disabled(!sparkleUpdater.canCheckForUpdates)
             }
         }
+    }
+}
+
+private final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        true
     }
 }
 
