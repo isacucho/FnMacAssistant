@@ -7,5 +7,9 @@ build
 pull-req
 Fortnite Mac Banner.jpeg
 entitlements.plist
-Icon.png
+Icon.icns
+icons
 .DS_Store
+.DerivedData
+sparkle-updates
+AGENTS.md
