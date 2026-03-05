@@ -78,3 +78,4 @@ If you do not have Fortnite downloaded game data yet, you can import an archive:
 ## Notes
 - If you change the data folder again, macOS may ask for permission once more.
 - An external SSD is recommended for best performance.
+- If Fortnite doesn't have permission or the external drive is not plugged in, a connection error might appear.
