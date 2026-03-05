@@ -226,11 +226,15 @@ struct HomeView: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.secondary)
 
-            HStack(spacing: 10) {
-                discreteCreditCell(name: "isacucho", role: "Main Developer")
-                discreteCreditCell(name: "rt2746 & Inventor", role: "FnMacTweak")
-                discreteCreditCell(name: "Sneakyf1shy", role: "fort-dl")
-                discreteCreditCell(name: "altermine", role: "Update Assistant")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    discreteCreditCell(name: "isacucho", role: "Main Developer")
+                    discreteCreditCell(name: "rt2746 & Inventor", role: "FnMacTweak")
+                    discreteCreditCell(name: "Sneakyf1shy", role: "fort-dl")
+                    discreteCreditCell(name: "altermine", role: "Update Assistant")
+                    discreteCreditCell(name: "VictorWads", role: "External drive support")
+                    discreteCreditCell(name: "Jasonsika", role: "App icon")
+                }
             }
         }
         .padding(.top, 4)
