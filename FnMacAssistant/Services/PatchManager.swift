@@ -21,6 +21,7 @@ final class PatchManager: ObservableObject {
     private let altFortniteAppPath = "/Applications/Fortnite-1.app"
     private let legacyFortniteAppPath = "/Applications/FortniteClient-IOS-Shipping.app"
     private let iOSFolderPath = "/Applications/iOS"
+    private let iOSFortniteAppPath = "/Applications/iOS/Fortnite.app"
     private let iOSLegacyFortniteAppPath = "/Applications/iOS/FortniteClient-IOS-Shipping.app"
     
     private init() {}
@@ -159,6 +160,26 @@ final class PatchManager: ObservableObject {
     // MARK: - Normalize App Name
     private func normalizeFortniteAppName() {
         let fm = FileManager.default
+        if fm.fileExists(atPath: iOSFortniteAppPath) {
+            if fm.fileExists(atPath: fortniteAppPath) {
+                do {
+                    try fm.removeItem(atPath: fortniteAppPath)
+                    log("Removed existing Fortnite.app to replace it with /Applications/iOS/Fortnite.app.")
+                } catch {
+                    log("Failed to remove existing Fortnite.app. \(error.localizedDescription)")
+                    return
+                }
+            }
+
+            do {
+                try fm.moveItem(atPath: iOSFortniteAppPath, toPath: fortniteAppPath)
+                log("Moved Fortnite.app from /Applications/iOS to /Applications.")
+            } catch {
+                log("Failed to move Fortnite.app from iOS folder. \(error.localizedDescription)")
+                return
+            }
+        }
+
         if fm.fileExists(atPath: iOSFolderPath) && fm.fileExists(atPath: iOSLegacyFortniteAppPath) {
             if fm.fileExists(atPath: legacyFortniteAppPath) {
                 log("Found iOS Fortnite bundle, but one already exists in Applications root.")
