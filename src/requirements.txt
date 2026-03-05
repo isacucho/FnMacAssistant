@@ -1,7 +1,0 @@
-requests
-Pillow
-watchfiles
-flake8
-vulture
-autoflake
-autopep8
