@@ -221,9 +221,7 @@ class AppContainerManager:
                                         f"Found Fortnite container through metadata search: {container_path}")
                                     fortnite_containers.append(container_path)
                     except Exception as e:
-                        print(
-                            f"Error reading metadata for {container_path}: {
-                                str(e)}")
+                        print(f"Error reading metadata for {container_path}: {e}")
                         continue
 
                 fortnite_game_path = os.path.join(
