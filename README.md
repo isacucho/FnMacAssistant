@@ -98,27 +98,30 @@ This usually means that you're MacOS version is not supported. Please update you
 
 <h3>What is the difference between the various IPAs?</h3>
 
-**Clean IPA** <br>
+**Clean IPA** <br />
 The clean IPA (Fortnite-XX.XX_Clean.ipa) is the decrypted IPA as-is, no modifications whatsoever. Useful when trying to debug, but it may cause some issues like black bars.
-<br><br>
-**Regular IPA** <br>
+<br /><br />
+**Regular IPA** <br />
 The regular IPA (Fortnite-XX.XX.ipa) contains the following tweaks:
 - MacOS Fullscreen Patch
 - Removed device restriction
 - Allows editing files from the Files app
 - Lowered minimum iOS version to iOS 10
-<br>
+<br />
 
 **Tweak IPA**
-<br>
+<br />
 The tweak IPA (Fortnite-XX.XX+Tweak.ipa) comes bundled with the FnMacTweak made by rt2746. In addition to the tweaks mentioned on the regular IPA, this one also contains:
 - Toggle pointer locking with Left Option key (unlocked by default on game load)
 - Unlocks 120 FPS option (requires 120Hz display for full effect)
 - Unlocks graphic preset selection (Low, Medium, High, Epic; 120 FPS sets to Medium)
 - Custom options menu (press P) for mouse sensitivity adjustments
-- Mouse interaction with mobile UI<br>
-You can download the standalone tweak or build it yourself on the project's [Github page](https://github.com/rt-someone/FnMacTweak).
-<br><br>
+- Mouse interaction with mobile UI
+- Use external storage for game data [See The Guide](./USE_EXTERNAL_DRIVE.md) (requires FnMacAssistant v1.5.0+ and FnMacTweak v1.0.3+)
+<br />
+
+You can download the standalone tweak or build it yourself on the project's [Github page](https://github.com/victorwads/FnMacTweak) .
+<br /><br />
 
 If you have any questions that are not in here, join the [Fortnite Mac discord server](https://discord.gg/nfEBGJBfHD) and I'll be happy to answer your questions over there!
 
