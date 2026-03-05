@@ -21,6 +21,7 @@
 		3008B0012F7E100100647857 /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008B0002F7E100100647857 /* DataManagementView.swift */; };
 		300F26D42F1492CF00A997A6 /* FortDLManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300F26D32F1492CF00A997A6 /* FortDLManager.swift */; };
 		300F26D62F1492EF00A997A6 /* GameAssetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300F26D52F1492EB00A997A6 /* GameAssetsView.swift */; };
+		3050F8D52F58FBF4003AD138 /* FnMac.icon in Resources */ = {isa = PBXBuildFile; fileRef = 3050F8D42F58FBF4003AD138 /* FnMac.icon */; };
 		3057B9B72F33E7C800C9B3E1 /* NotificationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3057B9B62F33E7C800C9B3E1 /* NotificationHelper.swift */; };
 		307A824E2EC3CBFC0004CD9B /* PatchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307A824D2EC3CBFC0004CD9B /* PatchManager.swift */; };
 		307BD8BE2F33D7B100FB5A9C /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307BD8BD2F33D7B100FB5A9C /* FAQView.swift */; };
@@ -51,7 +52,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		3008A8EE2EBD2D8800647857 /* FnMacAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FnMacAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3008A90B2EBD2FCC00647857 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FnMacAssistantApp.swift; sourceTree = "<group>"; };
 		3008A9182EBD302400647857 /* DownloadItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadItem.swift; sourceTree = "<group>"; };
@@ -66,6 +66,8 @@
 		3008B0002F7E100100647857 /* DataManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementView.swift; sourceTree = "<group>"; };
 		300F26D32F1492CF00A997A6 /* FortDLManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortDLManager.swift; sourceTree = "<group>"; };
 		300F26D52F1492EB00A997A6 /* GameAssetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameAssetsView.swift; sourceTree = "<group>"; };
+		3050F8D42F58FBF4003AD138 /* FnMac.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = FnMac.icon; sourceTree = "<group>"; };
+		3050F8D62F58FBFA003AD138 /* FnMacAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FnMacAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3057B9B62F33E7C800C9B3E1 /* NotificationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHelper.swift; sourceTree = "<group>"; };
 		307A824D2EC3CBFC0004CD9B /* PatchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchManager.swift; sourceTree = "<group>"; };
 		307BD8BD2F33D7B100FB5A9C /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
@@ -97,16 +99,8 @@
 			isa = PBXGroup;
 			children = (
 				3008A90F2EBD2FCC00647857 /* FnMacAssistant */,
-				3008A8EF2EBD2D8800647857 /* Products */,
+				3050F8D62F58FBFA003AD138 /* FnMacAssistant.app */,
 			);
-			sourceTree = "<group>";
-		};
-		3008A8EF2EBD2D8800647857 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				3008A8EE2EBD2D8800647857 /* FnMacAssistant.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		3008A90F2EBD2FCC00647857 /* FnMacAssistant */ = {
@@ -120,6 +114,7 @@
 				3008A90B2EBD2FCC00647857 /* Assets.xcassets */,
 				3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */,
 				30DCDF512F226E8F000D6758 /* fort-dl */,
+				3050F8D42F58FBF4003AD138 /* FnMac.icon */,
 			);
 			path = FnMacAssistant;
 			sourceTree = "<group>";
@@ -196,7 +191,7 @@
 				309C6DDE2F4519F000AF0302 /* Sparkle */,
 			);
 			productName = FnMacAssistant;
-			productReference = 3008A8EE2EBD2D8800647857 /* FnMacAssistant.app */;
+			productReference = 3050F8D62F58FBFA003AD138 /* FnMacAssistant.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -227,7 +222,7 @@
 				309C6DDD2F4519F000AF0302 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 3008A8EF2EBD2D8800647857 /* Products */;
+			productRefGroup = 3008A8E52EBD2D8800647857;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -241,6 +236,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3050F8D52F58FBF4003AD138 /* FnMac.icon in Resources */,
 				3008A9122EBD2FCC00647857 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -411,7 +407,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = arm64;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = FnMac;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				AUTOMATION_APPLE_EVENTS = NO;
@@ -464,7 +460,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = arm64;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = FnMac;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				AUTOMATION_APPLE_EVENTS = NO;
