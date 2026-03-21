@@ -318,13 +318,32 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                         target: target,
                         urlPath: urlPath
                     ) {
-                        filename = adjustPlaceholderFilenameIfNeeded(
+                        let placeholderResolution = resolvePlaceholderFilename(
                             directInfo.filename,
                             target: target
                         )
+                        filename = placeholderResolution.filename
                         fileSize = directInfo.size
                         relativePath = (targetPath as NSString).appendingPathComponent(filename)
                         fullPath = (fortniteGamePath as NSString).appendingPathComponent(relativePath)
+                        let installedPlaceholderSourcePath = placeholderResolution.installedSourcePath
+                        let task = DownloadTask(
+                            url: url,
+                            relativePath: relativePath,
+                            fullPath: fullPath,
+                            size: fileSize,
+                            isDirect: isDirect,
+                            target: target,
+                            installedPlaceholderSourcePath: installedPlaceholderSourcePath
+                        )
+                        let key = "\(urlStr)|\(relativePath)"
+                        if !pendingKeySet.contains(key) {
+                            pendingKeySet.insert(key)
+                            pendingTasks.append(task)
+                        }
+                        lastLinkDetected = Date()
+                        lastTaskDetectedAt = Date()
+                        continue
                     } else {
                         replaceLog("ERROR: Can't find the URL '\(urlPath)' in download config.")
                         appendLog("Skipping the task.")
@@ -342,7 +361,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                             fullPath: fullPath,
                             size: fileSize,
                             isDirect: isDirect,
-                            target: target
+                            target: target,
+                            installedPlaceholderSourcePath: nil
                         )
                     )
                 }
@@ -436,6 +456,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                                         relativePath: task.relativePath
                                     )
                                 )
+                                restoreInstalledPlaceholderIfNeeded(for: task, stagedURL: destURL)
                                 if let optionalStaged = writeOptionalLanguagePlaceholderCopyIfNeeded(for: task, stagedURL: destURL) {
                                     addPendingStagedDownload(optionalStaged)
                                 }
@@ -1184,11 +1205,14 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         return nil
     }
 
-    private func adjustPlaceholderFilenameIfNeeded(_ filename: String, target: String) -> String {
+    private func resolvePlaceholderFilename(
+        _ filename: String,
+        target: String
+    ) -> (filename: String, installedSourcePath: String?) {
         let path = filename.replacingOccurrences(of: "\\", with: "/")
         let lowerPath = path.lowercased()
         guard lowerPath.contains("/defaulttags/") else {
-            return filename
+            return (filename, nil)
         }
 
         let shouldRewrite =
@@ -1196,7 +1220,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             && lowerPath.hasSuffix(".txt")
 
         guard shouldRewrite else {
-            return filename
+            return (filename, nil)
         }
 
         let base = (path as NSString).deletingLastPathComponent
@@ -1206,7 +1230,17 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             candidates.lazy.compactMap { index[$0.lowercased()] }.first
             ?? candidates.first
             ?? (path as NSString).lastPathComponent
-        return (base as NSString).appendingPathComponent(newName)
+        let resolvedFilename = (base as NSString).appendingPathComponent(newName)
+
+        let originalName = (path as NSString).lastPathComponent
+        if newName.caseInsensitiveCompare(originalName) != .orderedSame {
+            let installedSourcePath = (fortniteDefaultTagsPath as NSString).appendingPathComponent(newName)
+            if FileManager.default.fileExists(atPath: installedSourcePath) {
+                return (resolvedFilename, installedSourcePath)
+            }
+        }
+
+        return (resolvedFilename, nil)
     }
 
     private func loadDefaultTagPlaceholderIndex() -> [String: String] {
@@ -1300,6 +1334,11 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         let optionalName = "tagplaceholder_lang\(languageCode)optional.txt"
         let optionalPath = ((sourcePath as NSString).deletingLastPathComponent as NSString)
             .appendingPathComponent(optionalName)
+        let sourceName = (sourcePath as NSString).lastPathComponent
+
+        if sourceName.caseInsensitiveCompare(optionalName) == .orderedSame {
+            return nil
+        }
 
         let fm = FileManager.default
         if fm.fileExists(atPath: optionalPath) {
@@ -1307,7 +1346,15 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         }
 
         do {
-            try fm.copyItem(atPath: sourcePath, toPath: optionalPath)
+            let installedOptionalPath = (fortniteDefaultTagsPath as NSString).appendingPathComponent(optionalName)
+            let copySourcePath: String
+            if fm.fileExists(atPath: installedOptionalPath) {
+                copySourcePath = installedOptionalPath
+            } else {
+                copySourcePath = sourcePath
+            }
+
+            try fm.copyItem(atPath: copySourcePath, toPath: optionalPath)
             let relativeOptionalPath = ((task.relativePath as NSString).deletingLastPathComponent as NSString)
                 .appendingPathComponent(optionalName)
             let destinationPath = ((task.fullPath as NSString).deletingLastPathComponent as NSString)
@@ -1322,6 +1369,21 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             return nil
         }
     }
+
+    private func restoreInstalledPlaceholderIfNeeded(for task: DownloadTask, stagedURL: URL) {
+        guard let installedSourcePath = task.installedPlaceholderSourcePath else { return }
+
+        let fm = FileManager.default
+        do {
+            if fm.fileExists(atPath: stagedURL.path) {
+                try fm.removeItem(at: stagedURL)
+            }
+            try fm.copyItem(atPath: installedSourcePath, toPath: stagedURL.path)
+            appendLog("Using installed default tag placeholder: \(URL(fileURLWithPath: installedSourcePath).lastPathComponent)")
+        } catch {
+            appendLog("WARNING: Failed to restore installed placeholder: \(error.localizedDescription)")
+        }
+    }
 }
 
 private struct DownloadTask {
@@ -1331,6 +1393,7 @@ private struct DownloadTask {
     let size: Int64
     let isDirect: Bool
     let target: String
+    let installedPlaceholderSourcePath: String?
 }
 
 private struct StagedDownload {
