@@ -14,6 +14,7 @@ struct UpdateAssistantView: View {
     @State private var dontShowStartPrompt = false
     @AppStorage("updateAssistantSuppressStartPrompt") private var suppressStartPrompt = false
     @State private var showHowItWorks = false
+    @State private var showCompletionErrors = false
 
     private let bottomSpacerID = "UPDATE_BOTTOM_SPACER"
 
@@ -90,6 +91,9 @@ struct UpdateAssistantView: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showCompletionErrors) {
+            completionErrorsSheet
         }
         .sheet(isPresented: $showStartPrompt) {
             VStack(alignment: .leading, spacing: 16) {
@@ -295,34 +299,41 @@ struct UpdateAssistantView: View {
                 if manager.isDownloading {
                     Text("Downloading (\(manager.downloadProgressLabel))")
                 } else if manager.isDone {
-                    Text("Done")
+                    Text(manager.statusMessage)
                 }
 
                 Spacer()
 
-                    if manager.isDownloading {
-                        HStack(spacing: 8) {
-                            Text(manager.downloadPercentageLabel)
+                if manager.isDownloading {
+                    HStack(spacing: 8) {
+                        Text(manager.downloadPercentageLabel)
 
-                            if manager.isPaused {
-                                Button("Resume") {
-                                    manager.resume()
-                                }
-                                .buttonStyle(.bordered)
-                            } else {
-                                Button("Pause") {
-                                    manager.pause()
-                                }
-                                .buttonStyle(.bordered)
+                        if manager.isPaused {
+                            Button("Resume") {
+                                manager.resume()
                             }
-
-                            Button("Cancel") {
-                                manager.requestCancelDownload()
+                            .buttonStyle(.bordered)
+                        } else {
+                            Button("Pause") {
+                                manager.pause()
                             }
                             .buttonStyle(.bordered)
                         }
-                    } else if manager.isDone {
+
+                        Button("Cancel") {
+                            manager.requestCancelDownload()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                } else if manager.isDone {
                     HStack(spacing: 8) {
+                        if !manager.completionErrors.isEmpty {
+                            Button("View Errors") {
+                                showCompletionErrors = true
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
                         Button {
                             openFortnite()
                         } label: {
@@ -356,6 +367,37 @@ struct UpdateAssistantView: View {
 
     private var progressBarHeight: CGFloat {
         80
+    }
+
+    private var completionErrorsSheet: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(manager.completionErrors.count == 1 ? "1 Download Error" : "\(manager.completionErrors.count) Download Errors")
+                .font(.title3.bold())
+
+            ScrollView {
+                Text(manager.completionErrors.joined(separator: "\n\n"))
+                    .font(.system(size: 12, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .textSelection(.enabled)
+                    .padding(10)
+            }
+            .background(Color(NSColor.textBackgroundColor).opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.secondary.opacity(0.3))
+            )
+
+            HStack {
+                Spacer()
+                Button("Close") {
+                    showCompletionErrors = false
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(24)
+        .frame(width: 520, height: 320)
     }
 
     private func openFortnite() {

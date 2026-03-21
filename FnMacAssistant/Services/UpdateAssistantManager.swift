@@ -19,6 +19,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     @Published var isPaused = false
     @Published var statusMessage: String = "Ready"
     @Published var logOutput: String = ""
+    @Published var completionErrors: [String] = []
     @Published var showConsole: Bool = {
         let defaults = UserDefaults.standard
         let key = "updateAssistantShowConsole"
@@ -69,6 +70,11 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         var startDate: Date
         var lastLogUpdate: Date
         var baseDownloadedBytes: Int64
+    }
+
+    private struct ApplyResult {
+        let movedCount: Int
+        let errors: [String]
     }
 
     var downloadProgress: Double {
@@ -164,6 +170,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             self.isDone = false
             self.isPaused = false
             self.statusMessage = "Idle"
+            self.completionErrors = []
             self.downloadedBytes = 0
             self.totalBytes = 0
         }
@@ -176,6 +183,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             self.isDone = false
             self.isPaused = false
             self.statusMessage = "Launching Fortnite…"
+            self.completionErrors = []
             self.downloadedBytes = 0
             self.totalBytes = 0
             self.logLines.removeAll()
@@ -474,15 +482,26 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                     }
 
                     updateStatus("Applying update…")
-                    do {
-                        try applyStagedDownloads(consumePendingStagedDownloads())
-                    } catch {
-                        appendLog("ERROR: Failed to apply staged files: \(error.localizedDescription)")
-                        finalize(success: false)
-                        return
+                    let applyResult = applyStagedDownloads(consumePendingStagedDownloads())
+                    if !applyResult.errors.isEmpty {
+                        appendLog("Completed with \(applyResult.errors.count) apply error(s).")
+                        applyResult.errors.forEach { appendLog("ERROR: \($0)") }
                     }
 
-                    finalize(success: true)
+                    let completionMessage: String
+                    if applyResult.errors.isEmpty {
+                        completionMessage = "Download completed"
+                    } else if applyResult.errors.count == 1 {
+                        completionMessage = "Download completed with 1 error"
+                    } else {
+                        completionMessage = "Download completed with \(applyResult.errors.count) errors"
+                    }
+
+                    finalize(
+                        success: true,
+                        statusMessage: completionMessage,
+                        completionErrors: applyResult.errors
+                    )
                     return
                 } else {
                     replaceLog("No tasks found, waiting... \(idleSeconds)")
@@ -573,32 +592,47 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         }
     }
 
-    private func applyStagedDownloads(_ stagedDownloads: [StagedDownload]) throws {
+    private func applyStagedDownloads(_ stagedDownloads: [StagedDownload]) -> ApplyResult {
         let fm = FileManager.default
+        var movedCount = 0
+        var errors: [String] = []
+
         for staged in stagedDownloads {
             if Task.isCancelled {
-                throw CancellationError()
+                break
+            }
+
+            if !fm.fileExists(atPath: staged.stagedURL.path) {
+                errors.append("\(staged.stagedURL.lastPathComponent) could not be moved because the staged file does not exist.")
+                continue
             }
 
             let destinationURL = URL(fileURLWithPath: staged.destinationPath)
-            try fm.createDirectory(
-                at: destinationURL.deletingLastPathComponent(),
-                withIntermediateDirectories: true,
-                attributes: nil
-            )
-            if fm.fileExists(atPath: destinationURL.path) {
-                try fm.removeItem(at: destinationURL)
+            do {
+                try fm.createDirectory(
+                    at: destinationURL.deletingLastPathComponent(),
+                    withIntermediateDirectories: true,
+                    attributes: nil
+                )
+                if fm.fileExists(atPath: destinationURL.path) {
+                    try fm.removeItem(at: destinationURL)
+                }
+                try fm.moveItem(at: staged.stagedURL, to: destinationURL)
+                movedCount += 1
+                batchDownloadedPaths.append(destinationURL.path)
+                batchTargetDirs.insert(destinationURL.deletingLastPathComponent().path)
+                appendLog("Moved to final location: \(destinationURL.path)")
+            } catch {
+                errors.append("\(destinationURL.lastPathComponent) couldn’t be moved to \(destinationURL.deletingLastPathComponent().lastPathComponent): \(error.localizedDescription)")
             }
-            try fm.moveItem(at: staged.stagedURL, to: destinationURL)
-            batchDownloadedPaths.append(destinationURL.path)
-            batchTargetDirs.insert(destinationURL.deletingLastPathComponent().path)
-            appendLog("Moved to final location: \(destinationURL.path)")
         }
 
         if let tempDir = try? ensureTempDirectory() {
             let stagedRoot = tempDir.appendingPathComponent(stagedDownloadsFolderName, isDirectory: true)
             try? fm.removeItem(at: stagedRoot)
         }
+
+        return ApplyResult(movedCount: movedCount, errors: errors)
     }
 
     private func cancelActiveDownload() {
@@ -640,11 +674,10 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             let stagedDownloads = consumePendingStagedDownloads()
             if !stagedDownloads.isEmpty {
                 if FortniteContainerWriteGuard.confirmCanModifyContainer() {
-                    do {
-                        try applyStagedDownloads(stagedDownloads)
-                        appendLog("Stopped. Moved \(stagedDownloads.count) staged file(s) to final location.")
-                    } catch {
-                        appendLog("WARNING: Failed to move staged files on stop: \(error.localizedDescription)")
+                    let applyResult = applyStagedDownloads(stagedDownloads)
+                    appendLog("Stopped. Moved \(applyResult.movedCount) staged file(s) to final location.")
+                    if !applyResult.errors.isEmpty {
+                        applyResult.errors.forEach { appendLog("WARNING: \($0)") }
                     }
                 } else {
                     appendLog("Stopped without deleting, but could not move staged files because Fortnite is running.")
@@ -678,19 +711,21 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             self.isDone = false
             self.isPaused = false
             self.statusMessage = "Stopped"
+            self.completionErrors = []
             self.downloadedBytes = 0
             self.totalBytes = 0
         }
     }
 
-    private func finalize(success: Bool) {
+    private func finalize(success: Bool, statusMessage: String? = nil, completionErrors: [String] = []) {
         stopFortniteReopenMonitor()
         DispatchQueue.main.async {
             self.isDownloading = false
             self.isTracking = false
             self.isDone = success
             self.isPaused = false
-            self.statusMessage = success ? "Done" : "Stopped"
+            self.statusMessage = statusMessage ?? (success ? "Done" : "Stopped")
+            self.completionErrors = completionErrors
         }
         if success {
             notifyIfNeeded()
