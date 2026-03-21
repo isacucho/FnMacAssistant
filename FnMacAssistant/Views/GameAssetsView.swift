@@ -148,20 +148,31 @@ struct GameAssetsView: View {
 
                                 Divider()
 
-                                Toggle(
-                                    "Download all assets (\(manager.totalDownloadSize ?? "—"))",
-                                    isOn: $manager.downloadAllAssets
-                                )
-                                .onChange(of: manager.downloadAllAssets) { _, enabled in
-                                    if enabled {
-                                        manager.selectedLayers = Set(manager.layers.map(\.name))
-                                        manager.selectedAssets = Set(
-                                            manager.layers.flatMap { $0.assets.map(\.name) }
-                                        )
-                                    } else {
-                                        manager.selectedLayers.removeAll()
-                                        manager.selectedAssets.removeAll()
+                                HStack {
+                                    Toggle(
+                                        "Download all assets (\(manager.totalDownloadSize ?? "—"))",
+                                        isOn: $manager.downloadAllAssets
+                                    )
+                                    .onChange(of: manager.downloadAllAssets) { _, enabled in
+                                        if enabled {
+                                            manager.selectedLayers = Set(manager.layers.map(\.name))
+                                            manager.selectedAssets = Set(
+                                                manager.layers.flatMap { $0.assets.map(\.name) }
+                                            )
+                                        } else {
+                                            manager.selectedLayers.removeAll()
+                                            manager.selectedAssets.removeAll()
+                                        }
                                     }
+
+                                    Spacer()
+
+                                    Button {
+                                        manager.refreshForGameAssetsSelection()
+                                    } label: {
+                                        Label("Refresh", systemImage: "arrow.clockwise")
+                                    }
+                                    .buttonStyle(.bordered)
                                 }
 
                         Toggle("Show individual tags", isOn: $manager.showAssets)
@@ -257,6 +268,9 @@ struct GameAssetsView: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            manager.refreshForGameAssetsSelection()
         }
         .sheet(isPresented: $showBRCosmeticsWarning, onDismiss: {
             finalizeBRCosmeticsWarning()

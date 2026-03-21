@@ -97,9 +97,6 @@ final class FortDLManager: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-
-        loadManifest()
-        fetchAvailableLayers()
     }
     
     var downloadProgress: Double {
@@ -958,6 +955,11 @@ final class FortDLManager: ObservableObject {
             loadManifest()
             fetchAvailableLayers()
         }
+    }
+
+    func refreshForGameAssetsSelection() {
+        guard !isDownloading, !isInstalling else { return }
+        refreshManifest()
     }
 
     func retryFullINIRequest() {
