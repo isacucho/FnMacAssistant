@@ -97,7 +97,15 @@ final class DataManagementManager: ObservableObject {
                 "DefaultGameplayChunkOptional",
                 "FNOneOptional",
                 "EncryptedOptional",
-                "CosmeticPreInstallOptional"
+                "CosmeticPreInstallOptional",
+                "Lang.deOptional",
+                "Lang.es-419Optional",
+                "Lang.es-ESOptional",
+                "Lang.frOptional",
+                "Lang.itOptional",
+                "Lang.plOptional",
+                "Lang.zh-CNOptional",
+                "Lang.ruOptional",
             ]
         ),
         ("cosmetics", ["GFP_BRCosmetics"]),
