@@ -60,6 +60,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private var pendingStagedDownloads: [StagedDownload] = []
     private var didNotifyForCurrentRun = false
     private var defaultTagPlaceholderIndex: [String: String]?
+    private var cancellables: Set<AnyCancellable> = []
 
     private struct DownloadState {
         var tempURL: URL
@@ -100,10 +101,27 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         AppTempDirectory.subdirectory("update-assistant")
     }
 
+    private override init() {
+        super.init()
+
+        NotificationCenter.default.publisher(for: FortniteContainerLocator.resumeUpdateAssistantNotification)
+            .sink { [weak self] _ in
+                self?.start()
+            }
+            .store(in: &cancellables)
+    }
+
     func start() {
         guard !isTracking else { return }
         guard let container = FortniteContainerLocator.shared.getContainerPath() else {
-            appendLog("ERROR: \(FortniteContainerLocator.containerAccessFailureMessage)")
+            NotificationCenter.default.post(
+                name: FortniteContainerLocator.requestAutoDetectionNotification,
+                object: nil,
+                userInfo: [
+                    FortniteContainerLocator.requestAutoDetectionWorkflowKey: "updateAssistantStart"
+                ]
+            )
+            appendLog("Container not selected. Prompting automatic detection.")
             return
         }
 

@@ -272,6 +272,9 @@ struct GameAssetsView: View {
         .onAppear {
             manager.refreshForGameAssetsSelection()
         }
+        .onReceive(NotificationCenter.default.publisher(for: FortniteContainerLocator.resumeGameAssetsDownloadNotification)) { _ in
+            Task { await handleAssetsDownloadRequest() }
+        }
         .sheet(isPresented: $showBRCosmeticsWarning, onDismiss: {
             finalizeBRCosmeticsWarning()
         }) {
@@ -408,6 +411,7 @@ struct GameAssetsView: View {
     }
 
     private func handleAssetsDownloadRequest() async {
+        guard ensureContainerSelected() else { return }
         guard await hasEnoughStorageForAssets() else { return }
 
         if manager.isDownloading || manager.isInstalling {
@@ -419,10 +423,26 @@ struct GameAssetsView: View {
     }
 
     private func confirmReplaceAssetsDownload() async {
+        guard ensureContainerSelected() else { return }
         guard await hasEnoughStorageForAssets() else { return }
         manager.cancelDownload()
         manager.download()
         didAutoScrollToProgress = false
+    }
+
+    private func ensureContainerSelected() -> Bool {
+        if FortniteContainerLocator.shared.getContainerPath() != nil {
+            return true
+        }
+
+        NotificationCenter.default.post(
+            name: FortniteContainerLocator.requestAutoDetectionNotification,
+            object: nil,
+            userInfo: [
+                FortniteContainerLocator.requestAutoDetectionWorkflowKey: "gameAssetsDownload"
+            ]
+        )
+        return false
     }
 
     private func hasEnoughStorageForAssets() async -> Bool {
