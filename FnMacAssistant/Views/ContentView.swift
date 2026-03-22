@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var isSidebarVisible: Bool = true
     @ObservedObject private var sparkleUpdater = SparkleUpdaterService.shared
     @ObservedObject private var dataManager = DataManagementManager.shared
+    @ObservedObject private var patchManager = PatchManager.shared
+    @ObservedObject private var containerLocator = FortniteContainerLocator.shared
     @AppStorage("suppressPrereleasePopupVersion") private var suppressPrereleasePopupVersion = ""
     @State private var startupSheet: StartupSheet?
     @State private var showExternalDriveWarning = false
@@ -22,6 +24,26 @@ struct ContentView: View {
     @State private var showStartupOperationError = false
     @State private var startupOperationErrorMessage = ""
     @State private var acknowledgedExternalDisconnectPath: String?
+    @State private var showStartupFullDiskAlert = false
+    @State private var showStartupDuplicateContainersSheet = false
+    @State private var startupSelectedContainer: FortniteContainerLocator.ContainerCandidate?
+    @State private var startupExtraContainers: [FortniteContainerLocator.ContainerCandidate] = []
+    @State private var startupSelectedExtraContainerPaths: Set<String> = []
+    @State private var startupContainerWasVerified = false
+    @State private var showStartupPatchFortniteAlert = false
+    @State private var showStartupAmbiguousContainerSheet = false
+    @State private var startupAmbiguousCandidates: [FortniteContainerLocator.ContainerCandidate] = []
+    @State private var startupSuggestedContainer: FortniteContainerLocator.ContainerCandidate?
+    @State private var startupAmbiguousAllTiny = false
+    @State private var startupContainerActionInProgress = false
+    @State private var startupContainerActionMessage = ""
+    @State private var startupContainerDeleteErrorMessage: String?
+    @State private var pendingContainerWorkflow: PendingContainerWorkflow?
+
+    private enum PendingContainerWorkflow: String {
+        case updateAssistantStart
+        case gameAssetsDownload
+    }
 
     var body: some View {
         ZStack {
@@ -120,6 +142,46 @@ struct ContentView: View {
         } message: {
             Text(startupOperationErrorMessage)
         }
+        .alert("Full Disk Access Needed", isPresented: $showStartupFullDiskAlert) {
+            Button("Open Privacy & Security") {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy") {
+                    NSWorkspace.shared.open(url)
+                } else if let fallback = URL(string: "x-apple.systempreferences:com.apple.preference.security") {
+                    NSWorkspace.shared.open(fallback)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(FortniteContainerLocator.containerAccessFailureMessage)
+        }
+        .alert("Patch Fortnite First", isPresented: $showStartupPatchFortniteAlert) {
+            Button("Retry Search") {
+                Task {
+                    await performStartupContainerDetectionIfNeeded(force: true)
+                }
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Fortnite containers were found, but none contained enough data to identify the correct one. Patch Fortnite, then retry the container search.")
+        }
+        .alert("Container Action Failed", isPresented: Binding(
+            get: { startupContainerDeleteErrorMessage != nil },
+            set: { newValue in
+                if !newValue {
+                    startupContainerDeleteErrorMessage = nil
+                }
+            }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(startupContainerDeleteErrorMessage ?? "Container action failed.")
+        }
+        .sheet(isPresented: $showStartupDuplicateContainersSheet) {
+            duplicateContainersSheet
+        }
+        .sheet(isPresented: $showStartupAmbiguousContainerSheet) {
+            ambiguousContainersSheet
+        }
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button(action: {
@@ -130,6 +192,28 @@ struct ContentView: View {
                     Image(systemName: "sidebar.left")
                 }
                 .help(isSidebarVisible ? "Hide Sidebar" : "Show Sidebar")
+            }
+        }
+        .onChange(of: containerLocator.cachedPath) { _, newValue in
+            if newValue != nil {
+                showStartupDuplicateContainersSheet = false
+                showStartupAmbiguousContainerSheet = false
+                showStartupPatchFortniteAlert = false
+            }
+        }
+        .onChange(of: patchManager.patchCompleted) { _, completed in
+            guard completed, containerLocator.cachedPath == nil else { return }
+            Task {
+                await performStartupContainerDetectionIfNeeded(force: true)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: FortniteContainerLocator.requestAutoDetectionNotification)) { notification in
+            if let workflowRaw = notification.userInfo?[FortniteContainerLocator.requestAutoDetectionWorkflowKey] as? String,
+               let workflow = PendingContainerWorkflow(rawValue: workflowRaw) {
+                pendingContainerWorkflow = workflow
+            }
+            Task {
+                await performStartupContainerDetectionIfNeeded(force: true)
             }
         }
         .task {
@@ -144,6 +228,7 @@ struct ContentView: View {
                 startupSheet = .prerelease
             }
 
+            await performStartupContainerDetectionIfNeeded()
             performStartupDataPathCheck()
             await monitorExternalDriveDisconnects()
         }
@@ -225,6 +310,338 @@ struct ContentView: View {
             showDataPathResetPrompt = false
             showExternalDriveWarning = true
         }
+    }
+
+    @MainActor
+    private func performStartupContainerDetectionIfNeeded(force: Bool = false) async {
+        guard force || containerLocator.cachedPath == nil else { return }
+
+        let outcome = containerLocator.detectContainerOutcome()
+        handleStartupContainerOutcome(outcome)
+    }
+
+    @MainActor
+    private func handleStartupContainerOutcome(
+        _ outcome: FortniteContainerLocator.DetectionOutcome,
+        verifiedSelection: Bool = false
+    ) {
+        showStartupPatchFortniteAlert = false
+        showStartupFullDiskAlert = false
+
+        if outcome.accessDenied {
+            startupContainerWasVerified = false
+            showStartupFullDiskAlert = true
+            return
+        }
+
+        if let selected = outcome.selected {
+            showStartupAmbiguousContainerSheet = false
+            containerLocator.cachedPath = selected.path
+            resumePendingContainerWorkflowIfNeeded()
+            if !outcome.additional.isEmpty {
+                presentStartupDuplicateContainers(
+                    selected: selected,
+                    extras: outcome.additional,
+                    verifiedSelection: verifiedSelection
+                )
+            } else {
+                startupContainerWasVerified = false
+            }
+            return
+        }
+
+        if !outcome.ambiguousCandidates.isEmpty {
+            startupContainerWasVerified = false
+            showStartupDuplicateContainersSheet = false
+            startupAmbiguousCandidates = outcome.ambiguousCandidates
+            startupSuggestedContainer = outcome.allTiny ? nil : outcome.suggestedCandidate
+            startupAmbiguousAllTiny = outcome.allTiny
+            showStartupAmbiguousContainerSheet = true
+            return
+        }
+
+        if outcome.needsPatchPrompt {
+            startupContainerWasVerified = false
+            showStartupAmbiguousContainerSheet = false
+            showStartupDuplicateContainersSheet = false
+            showStartupPatchFortniteAlert = true
+        }
+    }
+
+    @MainActor
+    private func useSuggestedStartupContainer() {
+        guard let suggested = startupSuggestedContainer else { return }
+        containerLocator.cachedPath = suggested.path
+        resumePendingContainerWorkflowIfNeeded()
+        let extras = startupAmbiguousCandidates.filter { $0.path != suggested.path }
+        showStartupAmbiguousContainerSheet = false
+        if !extras.isEmpty {
+            presentStartupDuplicateContainers(
+                selected: suggested,
+                extras: extras,
+                verifiedSelection: false
+            )
+        } else {
+            startupContainerWasVerified = false
+        }
+    }
+
+    @MainActor
+    private func presentStartupDuplicateContainers(
+        selected: FortniteContainerLocator.ContainerCandidate,
+        extras: [FortniteContainerLocator.ContainerCandidate],
+        verifiedSelection: Bool
+    ) {
+        startupContainerWasVerified = verifiedSelection
+        startupSelectedContainer = selected
+        startupExtraContainers = extras
+        startupSelectedExtraContainerPaths = Set(extras.map(\.path))
+        DispatchQueue.main.async {
+            showStartupDuplicateContainersSheet = true
+        }
+    }
+
+    @MainActor
+    private func resumePendingContainerWorkflowIfNeeded() {
+        guard let workflow = pendingContainerWorkflow else { return }
+        pendingContainerWorkflow = nil
+
+        switch workflow {
+        case .updateAssistantStart:
+            NotificationCenter.default.post(
+                name: FortniteContainerLocator.resumeUpdateAssistantNotification,
+                object: nil
+            )
+        case .gameAssetsDownload:
+            NotificationCenter.default.post(
+                name: FortniteContainerLocator.resumeGameAssetsDownloadNotification,
+                object: nil
+            )
+        }
+    }
+
+    @MainActor
+    private func deleteStartupDuplicateContainers() {
+        do {
+            try containerLocator.deleteContainers(paths: Array(startupSelectedExtraContainerPaths))
+            startupExtraContainers.removeAll { startupSelectedExtraContainerPaths.contains($0.path) }
+            startupSelectedExtraContainerPaths.removeAll()
+            showStartupDuplicateContainersSheet = false
+        } catch {
+            startupContainerDeleteErrorMessage = error.localizedDescription
+        }
+    }
+
+    private var duplicateContainersSheet: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Multiple Fortnite Containers Found")
+                .font(.title3.weight(.semibold))
+
+            Text(startupContainerWasVerified
+                 ? "Container verified. Would you like to delete the other detected containers?"
+                 : "FnMacAssistant selected a container automatically. Do you want to delete the other detected containers?")
+                .font(.system(size: 13))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let selected = startupSelectedContainer {
+                containerCard(
+                    title: "Selected container (kept):",
+                    candidate: selected
+                )
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(startupExtraContainers) { candidate in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Toggle(isOn: Binding(
+                                get: { startupSelectedExtraContainerPaths.contains(candidate.path) },
+                                set: { isOn in
+                                    if isOn {
+                                        startupSelectedExtraContainerPaths.insert(candidate.path)
+                                    } else {
+                                        startupSelectedExtraContainerPaths.remove(candidate.path)
+                                    }
+                                }
+                            )) {
+                                Text(candidate.path)
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .textSelection(.enabled)
+                            }
+
+                            HStack(spacing: 14) {
+                                Text("Logs modified: \(formatLogsDate(candidate: candidate))")
+                                Text("Size: \(formatBytes(candidate.dataSize))")
+                            }
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        }
+                        .padding(10)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+            }
+            .frame(maxHeight: 280)
+
+            HStack {
+                Button("Keep All") {
+                    showStartupDuplicateContainersSheet = false
+                }
+
+                Spacer()
+
+                Button("Delete Selected", role: .destructive) {
+                    deleteStartupDuplicateContainers()
+                }
+                .disabled(startupSelectedExtraContainerPaths.isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 640)
+    }
+
+    private var ambiguousContainersSheet: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Multiple Fortnite Containers Found")
+                .font(.title3.weight(.semibold))
+
+            Text("Multiple Fortnite containers were found. FnMacAssistant automatically determined the selected container to be the correct one. Would you like to verify the container, restore your Fortnite containers, or continue with selected?")
+                .font(.system(size: 13))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Verify Container will automatically open and then close Fortnite to see which container was modified.")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if startupContainerActionInProgress {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.small)
+
+                    Text(startupContainerActionMessage.isEmpty ? "Checking containers..." : startupContainerActionMessage)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 2)
+            }
+
+            if let suggested = startupSuggestedContainer {
+                containerCard(
+                    title: "Automatically determined container:",
+                    candidate: suggested
+                )
+            }
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    if startupSuggestedContainer != nil {
+                        Text("Other detected containers:")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.secondary)
+                    }
+
+                    ForEach(startupAmbiguousCandidates.filter { candidate in
+                        candidate.path != startupSuggestedContainer?.path
+                    }) { candidate in
+                        containerCard(title: nil, candidate: candidate)
+                    }
+                }
+            }
+            .frame(maxHeight: 260)
+
+            HStack {
+                Button("Restore Containers", role: .destructive) {
+                    Task {
+                        startupContainerActionInProgress = true
+                        startupContainerActionMessage = "Restoring containers. Fortnite will regenerate a fresh one."
+                        let outcome = await containerLocator.restoreContainersAndRegenerate()
+                        startupContainerActionInProgress = false
+                        startupContainerActionMessage = ""
+                        showStartupAmbiguousContainerSheet = false
+                        handleStartupContainerOutcome(outcome)
+                    }
+                }
+                .disabled(startupContainerActionInProgress)
+                .foregroundColor(.red)
+
+                Spacer()
+
+                if !startupAmbiguousAllTiny, startupSuggestedContainer != nil {
+                    Button("Continue with Selected") {
+                        useSuggestedStartupContainer()
+                    }
+                    .disabled(startupContainerActionInProgress)
+                }
+
+                Button("Verify Container") {
+                    Task {
+                        startupContainerActionInProgress = true
+                        startupContainerActionMessage = "Verifying container. Fortnite will open and close automatically."
+                        let outcome = await containerLocator.performVerifyContainerCheck()
+                        startupContainerActionInProgress = false
+                        startupContainerActionMessage = ""
+                        handleStartupContainerOutcome(outcome, verifiedSelection: true)
+                    }
+                }
+                .disabled(startupContainerActionInProgress)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 680)
+    }
+
+    @ViewBuilder
+    private func containerCard(
+        title: String?,
+        candidate: FortniteContainerLocator.ContainerCandidate
+    ) -> some View {
+            VStack(alignment: .leading, spacing: 6) {
+                if let title {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.secondary)
+                }
+
+                Text(candidate.path)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(.secondary.opacity(0.75))
+                    .textSelection(.enabled)
+
+                HStack(spacing: 14) {
+                    Text("Logs modified: \(formatLogsDate(candidate: candidate))")
+                    Text("Size: \(formatBytes(candidate.dataSize))")
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+        .padding(10)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        if date == .distantPast {
+            return "Unknown"
+        }
+        return date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private func formatBytes(_ bytes: UInt64) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+
+    private func formatLogsDate(candidate: FortniteContainerLocator.ContainerCandidate) -> String {
+        if let date = containerLocator.logsDirectoryModifiedDate(forPath: candidate.path) {
+            return formatDate(date)
+        }
+        return formatDate(candidate.modified)
     }
 }
 

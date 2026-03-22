@@ -190,14 +190,21 @@ struct SettingsView: View {
                             HStack(spacing: 12) {
 
                                 Button("Find Automatically") {
-                                    if let result = containerLocator.locateContainerWithDetails() {
+                                    let outcome = containerLocator.detectContainerOutcome()
+
+                                    if outcome.accessDenied {
+                                        showFullDiskAlert = true
+                                    } else if let result = containerLocator.locateContainerWithDetails() {
                                         containerLocator.cachedPath = result.selected.path
                                         autoSelectedContainer = result.selected
                                         extraContainers = result.additional
                                         selectedExtraContainerPaths = Set(result.additional.map(\.path))
                                         showExtraContainersSheet = !result.additional.isEmpty
                                     } else {
-                                        showFullDiskAlert = true
+                                        NotificationCenter.default.post(
+                                            name: FortniteContainerLocator.requestAutoDetectionNotification,
+                                            object: nil
+                                        )
                                     }
                                 }
                                 Button("Select Manually…") {
@@ -226,9 +233,7 @@ struct SettingsView: View {
                                 Button("Show in Finder") {
                                     if let path = containerLocator.cachedPath {
                                         let url = URL(fileURLWithPath: path, isDirectory: true)
-                                        if !NSWorkspace.shared.open(url) {
-                                            NSWorkspace.shared.activateFileViewerSelecting([url])
-                                        }
+                                        NSWorkspace.shared.activateFileViewerSelecting([url])
                                     }
                                 }
                                 .disabled(containerLocator.cachedPath == nil)
