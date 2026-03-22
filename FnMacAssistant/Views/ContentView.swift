@@ -16,8 +16,10 @@ struct ContentView: View {
     @ObservedObject private var dataManager = DataManagementManager.shared
     @ObservedObject private var patchManager = PatchManager.shared
     @ObservedObject private var containerLocator = FortniteContainerLocator.shared
+    @ObservedObject private var ipaFetcher = IPAFetcher.shared
     @AppStorage("suppressPrereleasePopupVersion") private var suppressPrereleasePopupVersion = ""
     @State private var startupSheet: StartupSheet?
+    @State private var didPresentUnsupportedMacOSSheet = false
     @State private var showExternalDriveWarning = false
     @State private var showDataPathResetPrompt = false
     @State private var startupIssuePath = ""
@@ -109,6 +111,16 @@ struct ContentView: View {
                     primaryAction: openDiscord,
                     secondaryTitle: "Close",
                     onDismiss: { startupSheet = nil }
+                )
+            case .unsupportedMacOS:
+                StartupNoticeSheet(
+                    title: ipaFetcher.macOSSupportStatus?.title ?? "Unsupported macOS Version",
+                    message: ipaFetcher.macOSSupportStatus?.message ?? "This macOS version is not currently supported.",
+                    primaryTitle: "Close",
+                    onDismiss: {
+                        didPresentUnsupportedMacOSSheet = true
+                        startupSheet = nil
+                    }
                 )
             }
         }
@@ -224,13 +236,20 @@ struct ContentView: View {
                 startupSidebarSectionRaw = SidebarSection.home.rawValue
             }
 
+            await ipaFetcher.fetchAvailableIPAs()
             if sparkleUpdater.isPrereleaseBuild && !isPrereleaseSuppressedForCurrent {
                 startupSheet = .prerelease
             }
+            queueUnsupportedMacOSSheetIfNeeded()
 
             await performStartupContainerDetectionIfNeeded()
             performStartupDataPathCheck()
             await monitorExternalDriveDisconnects()
+        }
+        .onChange(of: startupSheet) { _, newValue in
+            if newValue == nil {
+                queueUnsupportedMacOSSheetIfNeeded()
+            }
         }
     }
 
@@ -253,6 +272,17 @@ struct ContentView: View {
                 }
             }
         )
+    }
+
+    private func queueUnsupportedMacOSSheetIfNeeded() {
+        guard ipaFetcher.macOSSupportStatus != nil else {
+            return
+        }
+        guard !didPresentUnsupportedMacOSSheet else { return }
+
+        if startupSheet == nil {
+            startupSheet = .unsupportedMacOS
+        }
     }
 
     private func openDiscord() {
@@ -1064,6 +1094,7 @@ enum SidebarSection: String, CaseIterable, Identifiable {
 
 private enum StartupSheet: String, Identifiable {
     case prerelease
+    case unsupportedMacOS
 
     var id: String { rawValue }
 }
@@ -1105,5 +1136,34 @@ private struct UpdatePromptSheet: View {
         }
         .padding(24)
         .frame(width: 420)
+    }
+}
+
+private struct StartupNoticeSheet: View {
+    let title: String
+    let message: String
+    let primaryTitle: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.title2)
+                .bold()
+
+            Text(message)
+                .font(.system(size: 13))
+                .foregroundColor(.secondary)
+
+            HStack {
+                Spacer()
+                Button(primaryTitle) {
+                    onDismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(24)
+        .frame(width: 430)
     }
 }
