@@ -61,6 +61,8 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
     private var didNotifyForCurrentRun = false
     private var defaultTagPlaceholderIndex: [String: String]?
     private var cancellables: Set<AnyCancellable> = []
+    private var nsurlsessiondMonitorTask: Task<Void, Never>?
+    private let nsurlsessiondMonitorIntervalNanos: UInt64 = 2_000_000_000
 
     private struct DownloadState {
         var tempURL: URL
@@ -208,6 +210,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             self.logOutput = ""
         }
         stopFortniteReopenMonitor()
+        stopNSURLSessiondMonitor()
         didNotifyForCurrentRun = false
         batchTargetDirs.removeAll()
         batchDownloadedPaths.removeAll()
@@ -418,6 +421,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
                         terminateFortnite()
                         terminateUserNSURLSessiond()
                         clearNSURLSessionDownloadsCache(containerPath: containerPath)
+                        startNSURLSessiondMonitor()
                         didCloseFortnite = true
                     }
 
@@ -708,6 +712,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         assistantTask = nil
         cancelActiveDownload()
         stopFortniteReopenMonitor()
+        stopNSURLSessiondMonitor()
 
         if !deleteDownloaded {
             let stagedDownloads = consumePendingStagedDownloads()
@@ -758,6 +763,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
     private func finalize(success: Bool, statusMessage: String? = nil, completionErrors: [String] = []) {
         stopFortniteReopenMonitor()
+        stopNSURLSessiondMonitor()
         DispatchQueue.main.async {
             self.isDownloading = false
             self.isTracking = false
@@ -815,6 +821,37 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
 
     private func stopFortniteReopenMonitor() {
         // Reopen monitoring disabled: we now warn once and guard writes right before apply.
+    }
+
+    private struct RunningProcess {
+        let pid: Int32
+        let command: String
+    }
+
+    private func startNSURLSessiondMonitor() {
+        stopNSURLSessiondMonitor()
+        nsurlsessiondMonitorTask = Task.detached { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: self.nsurlsessiondMonitorIntervalNanos)
+                if Task.isCancelled { break }
+                self.handleNSURLSessiondMonitorTick()
+            }
+        }
+    }
+
+    private func stopNSURLSessiondMonitor() {
+        nsurlsessiondMonitorTask?.cancel()
+        nsurlsessiondMonitorTask = nil
+    }
+
+    private func handleNSURLSessiondMonitorTick() {
+        guard isTracking || isDownloading else { return }
+        let runningProcesses = runningUserNSURLSessiondProcesses()
+        guard !runningProcesses.isEmpty else { return }
+
+        appendLog("Detected nsurlsessiond running again. Stopping it before the update continues.")
+        terminateUserNSURLSessiond(processes: runningProcesses)
     }
 
     private func isFortniteRunning() -> Bool {
@@ -918,7 +955,7 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
         FortniteContainerWriteGuard.terminateFortnite()
     }
 
-    private func terminateUserNSURLSessiond() {
+    private func runningUserNSURLSessiondProcesses() -> [RunningProcess] {
         let uid = getuid()
 
         let process = Process()
@@ -933,11 +970,12 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             try process.run()
         } catch {
             appendLog("WARNING: Failed to query running processes: \(error.localizedDescription)")
-            return
+            return []
         }
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         let output = String(decoding: data, as: UTF8.self)
+        var matches: [RunningProcess] = []
 
         for line in output.split(separator: "\n").dropFirst() {
             let parts = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -949,11 +987,35 @@ final class UpdateAssistantManager: NSObject, ObservableObject, URLSessionDataDe
             let command = String(parts[2])
             guard procUID == uid else { continue }
             guard command.contains("nsurlsessiond") else { continue }
+            matches.append(RunningProcess(pid: pid, command: command))
+        }
 
-            if kill(pid, SIGTERM) == 0 {
-                appendLog("Stopped downloader process: \(command) (pid \(pid))")
+        return matches
+    }
+
+    private func terminateUserNSURLSessiond() {
+        terminateUserNSURLSessiond(processes: runningUserNSURLSessiondProcesses())
+    }
+
+    private func terminateUserNSURLSessiond(processes: [RunningProcess]) {
+        for process in processes {
+            if kill(process.pid, SIGTERM) == 0 {
+                appendLog("Sent SIGTERM to downloader process: \(process.command) (pid \(process.pid))")
             } else {
-                appendLog("WARNING: Failed to stop downloader process \(pid).")
+                appendLog("WARNING: Failed to stop downloader process \(process.pid).")
+            }
+        }
+
+        if !processes.isEmpty {
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+
+        let stillRunningPIDs = Set(runningUserNSURLSessiondProcesses().map(\.pid))
+        for process in processes where stillRunningPIDs.contains(process.pid) {
+            if kill(process.pid, SIGKILL) == 0 {
+                appendLog("Sent SIGKILL to downloader process after SIGTERM did not stop it: \(process.command) (pid \(process.pid))")
+            } else {
+                appendLog("WARNING: Failed to force stop downloader process \(process.pid).")
             }
         }
     }
