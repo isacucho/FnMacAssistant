@@ -14,6 +14,15 @@ struct HomeView: View {
     private let githubURL = URL(string: "https://github.com/isacucho/FnMacAssistant")
     private let discordURL = URL(string: "https://discord.gg/nfEBGJBfHD")
     private let readmeURL = URL(string: "https://github.com/isacucho/FnMacAssistant#readme")
+    private let creditColumns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
+    private let credits: [(name: String, role: String)] = [
+        ("isacucho", "Main Developer"),
+        ("rt2746 & Inventor", "FnMacTweak"),
+        ("Sneakyf1shy", "fort-dl"),
+        ("altermine", "Update Assistant"),
+        ("VictorWads", "External drive support"),
+        ("Jasonsika", "App icon")
+    ]
 
     var body: some View {
         ScrollView {
@@ -226,14 +235,9 @@ struct HomeView: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.secondary)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    discreteCreditCell(name: "isacucho", role: "Main Developer")
-                    discreteCreditCell(name: "rt2746 & Inventor", role: "FnMacTweak")
-                    discreteCreditCell(name: "Sneakyf1shy", role: "fort-dl")
-                    discreteCreditCell(name: "altermine", role: "Update Assistant")
-                    discreteCreditCell(name: "VictorWads", role: "External drive support")
-                    discreteCreditCell(name: "Jasonsika", role: "App icon")
+            LazyVGrid(columns: creditColumns, alignment: .leading, spacing: 10) {
+                ForEach(Array(credits.enumerated()), id: \.offset) { _, credit in
+                    discreteCreditCell(name: credit.name, role: credit.role)
                 }
             }
         }
@@ -245,10 +249,14 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(name)
                 .font(.system(size: 13, weight: .semibold))
+                .lineLimit(1)
             Text(role)
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
