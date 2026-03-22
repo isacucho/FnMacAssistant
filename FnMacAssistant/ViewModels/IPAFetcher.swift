@@ -12,6 +12,7 @@ import SwiftUI
 @MainActor
 final class IPAFetcher: ObservableObject {
     static let shared = IPAFetcher()
+    private static let minimumSupportedMacOSVersion = MacOSVersion("15.1")!
 
     // MARK: - Models
 
@@ -19,6 +20,41 @@ final class IPAFetcher: ObservableObject {
         let name: String
         let download_url: String
         var id: String { download_url }
+    }
+
+    struct MacOSSupportStatus: Equatable {
+        enum Reason: Equatable {
+            case belowMinimum
+            case aboveMaximum
+        }
+
+        let currentVersion: String
+        let minimumVersion: String
+        let maximumVersion: String?
+        let reason: Reason
+
+        var title: String {
+            "Unsupported macOS Version"
+        }
+
+        var message: String {
+            switch reason {
+            case .belowMinimum:
+                return "FnMacAssistant requires macOS \(minimumVersion) or later. You are currently on macOS \(currentVersion). Some features may not work correctly."
+            case .aboveMaximum:
+                if let maximumVersion {
+                    return "FnMacAssistant currently supports macOS versions up to \(maximumVersion). You are currently on macOS \(currentVersion), which is newer than the latest supported version. Some features may not work correctly."
+                }
+                return "You are currently on macOS \(currentVersion). Some features may not work correctly."
+            }
+        }
+    }
+
+    private struct RemoteListEntry: Decodable {
+        let name: String?
+        let download_url: String?
+        let max_version: String?
+        let max_supported_macos: String?
     }
 
     // MARK: - Published State
@@ -35,6 +71,8 @@ final class IPAFetcher: ObservableObject {
     }
     @Published var isLoading: Bool = false
     @Published var latestReleaseTag: String? = nil
+    @Published private(set) var maximumSupportedMacOSVersion: String? = nil
+    @Published private(set) var macOSSupportStatus: MacOSSupportStatus? = nil
 
     // MARK: - Gist Configuration
 
@@ -52,14 +90,19 @@ final class IPAFetcher: ObservableObject {
         let preferredSelectionID = selectedIPA?.id
             ?? UserDefaults.standard.string(forKey: selectedIPAIDDefaultsKey)
         isLoading = true
+        updateMacOSSupportStatus()
 
         guard let rawURL = await fetchLatestGistRawURL(),
-              let ipaList = await fetchFromJSONSource(rawURL) else {
+              let payload = await fetchFromJSONSource(rawURL) else {
             isLoading = false
             return
         }
 
+        let ipaList = payload.ipas
         availableIPAs = ipaList
+        maximumSupportedMacOSVersion = payload.maximumSupportedMacOSVersion
+        updateMacOSSupportStatus()
+
         if let preferredSelectionID,
            let matched = ipaList.first(where: { $0.id == preferredSelectionID }) {
             selectedIPA = matched
@@ -119,7 +162,7 @@ final class IPAFetcher: ObservableObject {
 
     // MARK: - JSON Fetch (cache disabled)
 
-    private func fetchFromJSONSource(_ urlString: String) async -> [IPAInfo]? {
+    private func fetchFromJSONSource(_ urlString: String) async -> (ipas: [IPAInfo], maximumSupportedMacOSVersion: String?)? {
         guard let url = URL(string: urlString) else { return nil }
 
         do {
@@ -146,14 +189,60 @@ final class IPAFetcher: ObservableObject {
 
             print("Raw JSON:", String(data: data, encoding: .utf8) ?? "Invalid JSON")
 
-            let decoded = try JSONDecoder().decode([IPAInfo].self, from: data)
-            print("\(decoded.count) IPAs found")
-            return decoded
+            let decoded = try JSONDecoder().decode([RemoteListEntry].self, from: data)
+            let ipas = decoded.compactMap { entry -> IPAInfo? in
+                guard let name = entry.name,
+                      let downloadURL = entry.download_url else {
+                    return nil
+                }
+                return IPAInfo(name: name, download_url: downloadURL)
+            }
+            let maximumSupportedMacOSVersion = decoded
+                .compactMap { $0.max_supported_macos ?? $0.max_version }
+                .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+
+            print("\(ipas.count) IPAs found")
+            if let maximumSupportedMacOSVersion {
+                print("Max supported macOS from gist:", maximumSupportedMacOSVersion)
+            }
+            return (ipas: ipas, maximumSupportedMacOSVersion: maximumSupportedMacOSVersion)
 
         } catch {
             print("IPA JSON error:", error)
             return nil
         }
+    }
+
+    func refreshMacOSSupportStatus() {
+        updateMacOSSupportStatus()
+    }
+
+    private func updateMacOSSupportStatus() {
+        let currentVersion = MacOSVersion.current
+        let minimumVersion = Self.minimumSupportedMacOSVersion
+        let maximumVersion = maximumSupportedMacOSVersion.flatMap(MacOSVersion.init(_:))
+
+        if currentVersion < minimumVersion {
+            macOSSupportStatus = MacOSSupportStatus(
+                currentVersion: currentVersion.displayString,
+                minimumVersion: minimumVersion.displayString,
+                maximumVersion: maximumVersion?.displayString,
+                reason: .belowMinimum
+            )
+            return
+        }
+
+        if let maximumVersion, currentVersion > maximumVersion {
+            macOSSupportStatus = MacOSSupportStatus(
+                currentVersion: currentVersion.displayString,
+                minimumVersion: minimumVersion.displayString,
+                maximumVersion: maximumVersion.displayString,
+                reason: .aboveMaximum
+            )
+            return
+        }
+
+        macOSSupportStatus = nil
     }
 }
 
@@ -170,4 +259,131 @@ private func extractVersion(from ipaName: String) -> String? {
     }
 
     return String(ipaName[swiftRange])
+}
+
+private struct MacOSVersion: Comparable {
+    enum PreReleaseKind: Int, Comparable {
+        case beta
+        case rc
+
+        static func < (lhs: PreReleaseKind, rhs: PreReleaseKind) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+    }
+
+    struct PreRelease: Comparable {
+        let kind: PreReleaseKind
+        let number: Int
+
+        static func < (lhs: PreRelease, rhs: PreRelease) -> Bool {
+            if lhs.kind != rhs.kind {
+                return lhs.kind < rhs.kind
+            }
+            return lhs.number < rhs.number
+        }
+    }
+
+    let major: Int
+    let minor: Int
+    let patch: Int
+    let preRelease: PreRelease?
+
+    init?(_ rawValue: String) {
+        let source = rawValue
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: "beta", with: "b")
+            .replacingOccurrences(of: " ", with: "")
+
+        let pattern = #"^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:(b|rc)(\d*))?$"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let range = NSRange(source.startIndex..<source.endIndex, in: source)
+        guard let match = regex.firstMatch(in: source, options: [], range: range) else { return nil }
+
+        func capture(_ index: Int) -> String? {
+            let captureRange = match.range(at: index)
+            guard captureRange.location != NSNotFound,
+                  let swiftRange = Range(captureRange, in: source) else {
+                return nil
+            }
+            return String(source[swiftRange])
+        }
+
+        guard let majorString = capture(1),
+              let major = Int(majorString) else {
+            return nil
+        }
+
+        self.major = major
+        self.minor = Int(capture(2) ?? "") ?? 0
+        self.patch = Int(capture(3) ?? "") ?? 0
+
+        if let preReleaseKindString = capture(4) {
+            let kind: PreReleaseKind
+            switch preReleaseKindString {
+            case "b":
+                kind = .beta
+            case "rc":
+                kind = .rc
+            default:
+                return nil
+            }
+            let number = Int(capture(5) ?? "") ?? 0
+            self.preRelease = PreRelease(kind: kind, number: number)
+        } else {
+            self.preRelease = nil
+        }
+    }
+
+    static var current: MacOSVersion {
+        let processVersion = ProcessInfo.processInfo.operatingSystemVersion
+        let baseVersion = "\(processVersion.majorVersion).\(processVersion.minorVersion).\(processVersion.patchVersion)"
+        let extraVersion = currentVersionExtra()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return MacOSVersion(baseVersion + extraVersion) ?? MacOSVersion(baseVersion) ?? MacOSVersion("0")!
+    }
+
+    var displayString: String {
+        var value = "\(major).\(minor)"
+        if patch != 0 || preRelease != nil {
+            value += ".\(patch)"
+        }
+        if let preRelease {
+            switch preRelease.kind {
+            case .beta:
+                value += "b"
+            case .rc:
+                value += "rc"
+            }
+            if preRelease.number > 0 {
+                value += "\(preRelease.number)"
+            }
+        }
+        return value
+    }
+
+    static func < (lhs: MacOSVersion, rhs: MacOSVersion) -> Bool {
+        if lhs.major != rhs.major { return lhs.major < rhs.major }
+        if lhs.minor != rhs.minor { return lhs.minor < rhs.minor }
+        if lhs.patch != rhs.patch { return lhs.patch < rhs.patch }
+
+        switch (lhs.preRelease, rhs.preRelease) {
+        case let (lhs?, rhs?):
+            return lhs < rhs
+        case (.some, .none):
+            return true
+        case (.none, .some):
+            return false
+        case (.none, .none):
+            return false
+        }
+    }
+
+    private static func currentVersionExtra() -> String? {
+        guard let dictionary = NSDictionary(contentsOfFile: "/System/Library/CoreServices/SystemVersion.plist"),
+              let value = dictionary["ProductVersionExtra"] as? String,
+              !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return value
+    }
 }
