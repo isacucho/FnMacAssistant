@@ -213,10 +213,6 @@ final class IPAFetcher: ObservableObject {
         }
     }
 
-    func refreshMacOSSupportStatus() {
-        updateMacOSSupportStatus()
-    }
-
     private func updateMacOSSupportStatus() {
         let currentVersion = MacOSVersion.current
         let minimumVersion = Self.minimumSupportedMacOSVersion

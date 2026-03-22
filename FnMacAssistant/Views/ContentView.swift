@@ -683,9 +683,6 @@ struct SidebarView: View {
     @ObservedObject private var fortDLManager = FortDLManager.shared
     @ObservedObject private var updateAssistantManager = UpdateAssistantManager.shared
 
-    @State private var lastIpaFinishedID: UUID?
-    @State private var lastAssetsFinished: Bool = false
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("FnMacAssistant")
@@ -929,19 +926,6 @@ struct SidebarView: View {
             return "Done"
         }
         return updateAssistantManager.downloadPercentageLabel
-    }
-
-    private func scheduleIpaAutoClear() {
-        guard let active = downloadManager.downloads.first else { return }
-        if lastIpaFinishedID == active.id { return }
-        lastIpaFinishedID = active.id
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            if downloadManager.downloads.first?.id == active.id,
-               downloadManager.downloads.first?.state == .finished {
-                downloadManager.clearDownloads()
-            }
-        }
     }
 
     @ViewBuilder
