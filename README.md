@@ -120,7 +120,7 @@ The tweak IPA (Fortnite-XX.XX+Tweak.ipa) comes bundled with the FnMacTweak made 
 - Use external storage for game data [See The Guide](./USE_EXTERNAL_DRIVE.md) (requires FnMacAssistant v1.5.0+ and FnMacTweak v1.0.3+)
 
 
-You can download the standalone tweak or build it yourself on the project's [Github page](https://github.com/victorwads/FnMacTweak) .
+You can download the standalone tweak or build it yourself on the project's [Github page](https://github.com/KohlerVG/FnMacTweak) .
 
 
 If you have any questions that are not in here, join the [Fortnite Mac discord server](https://discord.gg/nfEBGJBfHD) and I'll be happy to answer your questions over there!
