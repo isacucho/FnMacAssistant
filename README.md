@@ -16,10 +16,12 @@ You can also support me through buy me a coffee!
 <a href="https://www.buymeacoffee.com/Isacucho" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
 
-<h2>Requirments</h2> 
-- A valid Apple ID<br/>
-- MacOS 15.1 or later <br/>
+## Requirments
+- A valid Apple ID
+- MacOS 15.1 or later 
 -  Mac must have an M series chip. (Fortnite mobile will never work on an Intel Mac)
+> [!WARNING]
+> Fortnite does not support MacOS 26.4 at the moment. Join the discord for updates.
 
 <h2>Guide</h2>
 
@@ -28,9 +30,9 @@ You can also support me through buy me a coffee!
 2. Download [FnMacAssistant](https://github.com/isacucho/FnMacAssistant/releases/latest) and drag it to your applications folder.
 
 > [!NOTE]
-> To get full app functionality, you need to give your terminal Full Disk Access. 
+> To get full app functionality, you need to give FnMacAssistant Full Disk Access. 
 >
->Go to `System Settings > Privacy & Security > Full Disk Access` and toggle 'Terminal.app' on, or add it if it isn't listed.
+>Go to `System Settings > Privacy & Security > Full Disk Access` and toggle 'FnMacAssistant.app' on, or add it if it isn't listed.
 <br>
 3. Open FnMacAssistant. Navigate to the `IPA Downloads` tab, select your desired IPA and click `Download`.
 <br>
