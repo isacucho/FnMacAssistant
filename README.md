@@ -18,8 +18,8 @@ You can also support me through buy me a coffee!
 
 ## Requirments
 - A valid Apple ID
-- MacOS 15.1 or later 
 -  Mac must have an M series chip. (Fortnite mobile will never work on an Intel Mac)
+- MacOS 15.1 or later 
 > [!NOTE]
 > Fortnite on MacOS 26.4+ will not work on the clean IPA. Use regular or tweaked instead
 
@@ -135,3 +135,4 @@ If you have any questions that are not in here, join the [Fortnite Mac discord s
 - [f1shy-dev](https://github.com/f1shy-dev) for [fort-dl](https://github.com/f1shy-dev/fort-dl)
 - [Altermine](https://github.com/altermine) for [Update Assistant](https://github.com/altermine/FnMacAssistant/tree/update-assistant)
 - [Jasonsika](https://jasonsika.com/) for the app icon
+- [xnetcat](https://github.com/xnetcat) for MacOS 26.4 support
