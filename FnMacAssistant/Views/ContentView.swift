@@ -320,9 +320,11 @@ struct ContentView: View {
         }
     }
 
+    @MainActor
     private func monitorExternalDriveDisconnects() async {
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 2_500_000_000)
+            guard !Task.isCancelled else { return }
             dataManager.refreshCurrentDataLocation()
             let issue = dataManager.detectStartupDataPathIssue()
 

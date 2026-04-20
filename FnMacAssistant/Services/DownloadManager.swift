@@ -83,14 +83,14 @@ final class DownloadManager: NSObject, ObservableObject {
     // MARK: - Pause / Resume / Cancel
     func pause(_ item: DownloadItem) {
         guard item.state == .downloading, let id = item.taskIdentifier else { return }
-        session.getAllTasks { tasks in
+        session.getAllTasks { [weak self] tasks in
             guard let task = tasks.first(where: { $0.taskIdentifier == id }) as? URLSessionDownloadTask else { return }
             task.cancel { resumeDataOrNil in
-                DispatchQueue.main.async {
+                DispatchQueue.main.async { [weak self] in
                     item.resumeData = resumeDataOrNil
                     item.state = .paused
                     item.taskIdentifier = nil
-                    self.objectWillChange.send()
+                    self?.objectWillChange.send()
                 }
             }
         }
@@ -165,8 +165,16 @@ extension DownloadManager: URLSessionDownloadDelegate {
 
         guard let item = taskToItem[downloadTask.taskIdentifier] else { return }
 
-        let targetFolder = self.defaultDownloadFolder ??
-            FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+        guard let targetFolder = self.defaultDownloadFolder ??
+                FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first else {
+            DispatchQueue.main.async {
+                item.errorMessage = "No valid folder available for download"
+                item.state = .failed
+                item.taskIdentifier = nil
+                self.objectWillChange.send()
+            }
+            return
+        }
 
         let dest = targetFolder.appendingPathComponent(item.fileName)
 

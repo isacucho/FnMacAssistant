@@ -292,7 +292,10 @@ final class PatchManager: ObservableObject {
                 return .failed
             }
             
-            let newXML = xml.data(using: .utf8)!
+            guard let newXML = xml.data(using: .utf8) else {
+                log("Failed to encode modified entitlements XML.")
+                return .failed
+            }
             data.replaceSubrange(xmlStart..<xmlEnd, with: newXML)
             try data.write(to: tempURL, options: .atomic)
         } catch {

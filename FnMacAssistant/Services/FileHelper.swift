@@ -10,7 +10,7 @@ import Foundation
 struct FileHelper {
     static func fnMacAssistantDownloadFolder() -> URL {
         let fm = FileManager.default
-        let downloads = fm.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+        let downloads = fm.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? fm.temporaryDirectory
         let folder = downloads.appendingPathComponent("FnMacAssistant")
         if !fm.fileExists(atPath: folder.path) {
             try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
