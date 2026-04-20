@@ -284,6 +284,13 @@ private struct MacOSVersion: Comparable {
     let patch: Int
     let preRelease: PreRelease?
 
+    init(major: Int, minor: Int, patch: Int, preRelease: PreRelease? = nil) {
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+        self.preRelease = preRelease
+    }
+
     init?(_ rawValue: String) {
         let source = rawValue
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -335,7 +342,9 @@ private struct MacOSVersion: Comparable {
         let processVersion = ProcessInfo.processInfo.operatingSystemVersion
         let baseVersion = "\(processVersion.majorVersion).\(processVersion.minorVersion).\(processVersion.patchVersion)"
         let extraVersion = currentVersionExtra()?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return MacOSVersion(baseVersion + extraVersion) ?? MacOSVersion(baseVersion) ?? MacOSVersion("0")!
+        return MacOSVersion(baseVersion + extraVersion)
+            ?? MacOSVersion(baseVersion)
+            ?? MacOSVersion(major: processVersion.majorVersion, minor: processVersion.minorVersion, patch: processVersion.patchVersion)
     }
 
     var displayString: String {
