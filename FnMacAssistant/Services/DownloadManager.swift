@@ -14,8 +14,10 @@ final class DownloadManager: NSObject, ObservableObject {
 
     @Published private(set) var downloads: [DownloadItem] = []
     @Published var defaultDownloadFolder: URL? = nil
+    @Published private(set) var requiresDownloadFolderReauthorization = false
 
     @AppStorage("defaultDownloadFolderPath") var defaultDownloadFolderPath: String?
+    @AppStorage("defaultDownloadFolderBookmark") private var defaultDownloadFolderBookmark: String?
 
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.default
@@ -31,30 +33,58 @@ final class DownloadManager: NSObject, ObservableObject {
 
     // MARK: - Folder persistence
     private func restoreSavedFolder() {
+        if restoreFolderFromBookmark() {
+            requiresDownloadFolderReauthorization = false
+            return
+        }
+
         if let path = defaultDownloadFolderPath {
             let url = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: url.path) {
                 defaultDownloadFolder = url
+                requiresDownloadFolderReauthorization = requiresSecurityScopedAccess(for: url)
                 return
             }
         }
+
+        requiresDownloadFolderReauthorization = false
         defaultDownloadFolder = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
     }
 
     func setDownloadFolder(_ url: URL) {
         defaultDownloadFolder = url
         defaultDownloadFolderPath = url.path
+        requiresDownloadFolderReauthorization = false
+
+        do {
+            let bookmarkData = try url.bookmarkData(
+                options: [.withSecurityScope],
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+            defaultDownloadFolderBookmark = bookmarkData.base64EncodedString()
+        } catch {
+            defaultDownloadFolderBookmark = nil
+            requiresDownloadFolderReauthorization = requiresSecurityScopedAccess(for: url)
+            print("Failed to create download folder bookmark: \(error)")
+        }
     }
 
     func resetDownloadFolder() {
         defaultDownloadFolder = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
         defaultDownloadFolderPath = nil
+        defaultDownloadFolderBookmark = nil
+        requiresDownloadFolderReauthorization = false
     }
 
     // MARK: - Start Download
     func startDownload(from url: URL) {
-        guard let folder = defaultDownloadFolder ??
-                FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first else {
+        guard !requiresDownloadFolderReauthorization else {
+            print("Download folder requires reauthorization before starting download")
+            return
+        }
+
+        guard let folder = resolvedDownloadFolder() else {
             print("No valid folder available for download")
             return
         }
@@ -78,6 +108,37 @@ final class DownloadManager: NSObject, ObservableObject {
         }
 
         task.resume()
+    }
+
+    func availableDiskSpaceBytes() -> Int64? {
+        guard !requiresDownloadFolderReauthorization else { return nil }
+
+        return withDownloadFolderAccess { folder in
+            if let attributes = try? FileManager.default.attributesOfFileSystem(forPath: folder.path),
+               let freeSize = attributes[.systemFreeSize] as? NSNumber {
+                let bytes = freeSize.int64Value
+                if bytes > 0 {
+                    return bytes
+                }
+            }
+
+            if let values = try? folder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
+               let capacity = values.volumeAvailableCapacityForImportantUsage {
+                if capacity > 0 {
+                    return capacity
+                }
+            }
+
+            if let values = try? folder.resourceValues(forKeys: [.volumeAvailableCapacityKey]),
+               let capacity = values.volumeAvailableCapacity {
+                let bytes = Int64(capacity)
+                if bytes > 0 {
+                    return bytes
+                }
+            }
+
+            return nil
+        }
     }
 
     // MARK: - Pause / Resume / Cancel
@@ -155,6 +216,69 @@ final class DownloadManager: NSObject, ObservableObject {
     var isDownloading: Bool {
         downloads.contains(where: { $0.state == .downloading })
     }
+
+    private func restoreFolderFromBookmark() -> Bool {
+        guard
+            let bookmarkString = defaultDownloadFolderBookmark,
+            let bookmarkData = Data(base64Encoded: bookmarkString)
+        else {
+            return false
+        }
+
+        var isStale = false
+
+        do {
+            let url = try URL(
+                resolvingBookmarkData: bookmarkData,
+                options: [.withSecurityScope],
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                defaultDownloadFolderBookmark = nil
+                return false
+            }
+
+            defaultDownloadFolder = url
+            defaultDownloadFolderPath = url.path
+            requiresDownloadFolderReauthorization = false
+
+            if isStale {
+                setDownloadFolder(url)
+            }
+
+            return true
+        } catch {
+            print("Failed to restore download folder bookmark: \(error)")
+            defaultDownloadFolderBookmark = nil
+            return false
+        }
+    }
+
+    private func resolvedDownloadFolder() -> URL? {
+        defaultDownloadFolder ??
+            FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+    }
+
+    private func requiresSecurityScopedAccess(for url: URL) -> Bool {
+        let homePath = NSHomeDirectory()
+        return !url.path.hasPrefix(homePath)
+    }
+
+    private func withDownloadFolderAccess<T>(_ body: (URL) throws -> T?) rethrows -> T? {
+        guard let folder = resolvedDownloadFolder() else { return nil }
+
+        let needsSecurityScope = defaultDownloadFolderBookmark != nil && requiresSecurityScopedAccess(for: folder)
+        let hasAccess = needsSecurityScope ? folder.startAccessingSecurityScopedResource() : false
+        defer {
+            if hasAccess {
+                folder.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        return try body(folder)
+    }
 }
 
 // MARK: - URLSessionDownloadDelegate
@@ -165,23 +289,26 @@ extension DownloadManager: URLSessionDownloadDelegate {
 
         guard let item = taskToItem[downloadTask.taskIdentifier] else { return }
 
-        let targetFolder = self.defaultDownloadFolder ??
-            FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
-
-        let dest = targetFolder.appendingPathComponent(item.fileName)
-
         do {
-            let fm = FileManager.default
+            let dest = try self.withDownloadFolderAccess { targetFolder throws -> URL in
+                let fm = FileManager.default
+                let dest = targetFolder.appendingPathComponent(item.fileName)
 
-            if !fm.fileExists(atPath: targetFolder.path) {
-                try fm.createDirectory(at: targetFolder, withIntermediateDirectories: true)
+                if !fm.fileExists(atPath: targetFolder.path) {
+                    try fm.createDirectory(at: targetFolder, withIntermediateDirectories: true)
+                }
+
+                if fm.fileExists(atPath: dest.path) {
+                    try fm.removeItem(at: dest)
+                }
+
+                try fm.moveItem(at: location, to: dest)
+                return dest
             }
 
-            if fm.fileExists(atPath: dest.path) {
-                try fm.removeItem(at: dest)
+            guard let dest else {
+                throw CocoaError(.fileNoSuchFile)
             }
-
-            try fm.moveItem(at: location, to: dest)
 
             DispatchQueue.main.async {
                 item.localFileURL = dest
@@ -193,7 +320,6 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 self.objectWillChange.send()
                 print("✅ Download finished and moved to: \(dest.path)")
             }
-
         } catch {
             DispatchQueue.main.async {
                 item.errorMessage = "Failed to save file: \(error.localizedDescription)"
