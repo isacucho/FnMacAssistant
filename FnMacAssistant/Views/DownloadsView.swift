@@ -17,6 +17,7 @@ struct DownloadsView: View {
     private let ipaPickerWidth: CGFloat = 340
     @State private var showStorageAlert = false
     @State private var storageAlertMessage = ""
+    @State private var showDownloadFolderAccessAlert = false
     @State private var didAutoScrollToDownload = false
     private let downloadSpacerID = "DOWNLOAD_SPACER"
 
@@ -176,6 +177,11 @@ struct DownloadsView: View {
         } message: {
             Text(storageAlertMessage)
         }
+        .alert("Re-select Download Folder", isPresented: $showDownloadFolderAccessAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This download folder needs to be selected again so FnMacAssistant can access it. Open Settings, choose the folder again, then retry the download.")
+        }
     }
 
     private var headerSection: some View {
@@ -211,16 +217,22 @@ struct DownloadsView: View {
     private func handleDownloadRequest(for ipa: IPAFetcher.IPAInfo) async {
         guard let url = URL(string: ipa.download_url) else { return }
 
+        if downloadManager.requiresDownloadFolderReauthorization {
+            showDownloadFolderAccessAlert = true
+            return
+        }
+
         if let requiredBytes = await remoteFileSizeBytes(for: url),
-           let availableBytes = availableDiskSpaceBytes(for: downloadFolderURL) {
+           requiredBytes > 0,
+           let availableBytes = downloadManager.availableDiskSpaceBytes() {
             let requiredWithBuffer = applyStorageBuffer(to: Int64(requiredBytes))
             if requiredWithBuffer > availableBytes {
-            storageAlertMessage = storageMessage(
-                required: requiredWithBuffer,
-                available: availableBytes
-            )
-            showStorageAlert = true
-            return
+                storageAlertMessage = storageMessage(
+                    required: requiredWithBuffer,
+                    available: availableBytes
+                )
+                showStorageAlert = true
+                return
             }
         }
 
@@ -242,19 +254,6 @@ struct DownloadsView: View {
     private var downloadFolderURL: URL? {
         downloadManager.defaultDownloadFolder ??
             FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
-    }
-
-    private func availableDiskSpaceBytes(for url: URL?) -> Int64? {
-        guard let url else { return nil }
-        if let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
-           let capacity = values.volumeAvailableCapacityForImportantUsage {
-            return capacity
-        }
-        if let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityKey]),
-           let capacity = values.volumeAvailableCapacity {
-            return Int64(capacity)
-        }
-        return nil
     }
 
     private func remoteFileSizeBytes(for url: URL) async -> Int64? {
