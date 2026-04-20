@@ -1,6 +1,6 @@
 # FnMacAssistant
 
-> [!ERROR]
+> [!NOTE]
 > *Epic added sideload checks to Fortnite with v40.20, which makes it impossible for us to natively play on Mac. While you might reach the lobby, the server will kick you after a few seconds. We're actively looking for a fix, but consider using Cloud Gaming (GeForce Now, Xbox Cloud, Amazon Luna...) or playing on another device in the meantime.*
 
 
