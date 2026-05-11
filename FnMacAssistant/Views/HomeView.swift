@@ -11,9 +11,9 @@ import AppKit
 struct HomeView: View {
     @Binding var selection: SidebarSection
     @AppStorage("homeGetStartedCollapsed") private var isGetStartedCollapsed = false
-    private let githubURL = URL(string: "https://github.com/isacucho/FnMacAssistant")
+    private let gitlabURL = URL(string: "https://gitlab.com/Isacucho/fnmacassistant")
     private let discordURL = URL(string: "https://discord.gg/nfEBGJBfHD")
-    private let readmeURL = URL(string: "https://github.com/isacucho/FnMacAssistant#readme")
+    private let readmeURL = URL(string: "https://gitlab.com/Isacucho/fnmacassistant")
     private let creditColumns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
     private let credits: [(name: String, role: String)] = [
         ("isacucho", "Main Developer"),
@@ -65,12 +65,12 @@ struct HomeView: View {
                         )
                     }
 
-                    if let githubURL {
+                    if let gitlabURL {
                         socialLinkButton(
-                            title: "Open GitHub",
+                            title: "Open GitLab",
                             systemImage: "chevron.left.forwardslash.chevron.right",
                             tint: .gray,
-                            destination: githubURL
+                            destination: gitlabURL
                         )
                     }
                 }
@@ -117,7 +117,7 @@ struct HomeView: View {
                                 detail: "",
                                 links: [
                                     LinkItem(
-                                        markdownText: "Sideload the IPA with [Sideloadly](https://sideloadly.io) or [PlumeImpactor](https://github.com/khcrysalis/PlumeImpactor)."
+                                        markdownText: "Sideload the IPA with [Sideloadly](https://sideloadly.io) or [PlumeImpactor](https://gitlab.com/Isacucho/fnmacassistant)."
                                     )
                                 ],
                                 actionTitle: "Install With Sideload Tool",
@@ -145,7 +145,7 @@ struct HomeView: View {
                     }
 
                     if let readmeURL {
-                        Text(.init("Full guide on the [Github page](\(readmeURL.absoluteString))."))
+                        Text(.init("Full guide on the [GitLab page](\(readmeURL.absoluteString))."))
                             .font(.system(size: 12, weight: .medium))
                     }
 

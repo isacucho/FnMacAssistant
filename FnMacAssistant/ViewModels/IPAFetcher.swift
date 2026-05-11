@@ -19,6 +19,7 @@ final class IPAFetcher: ObservableObject {
     struct IPAInfo: Identifiable, Decodable, Hashable {
         let name: String
         let download_url: String
+        let description: String?
         var id: String { download_url }
     }
 
@@ -53,6 +54,13 @@ final class IPAFetcher: ObservableObject {
     private struct RemoteListEntry: Decodable {
         let name: String?
         let download_url: String?
+        let description: String?
+        let max_version: String?
+        let max_supported_macos: String?
+    }
+
+    private struct RemotePayload: Decodable {
+        let ipas: [RemoteListEntry]
         let max_version: String?
         let max_supported_macos: String?
     }
@@ -74,11 +82,11 @@ final class IPAFetcher: ObservableObject {
     @Published private(set) var maximumSupportedMacOSVersion: String? = nil
     @Published private(set) var macOSSupportStatus: MacOSSupportStatus? = nil
 
-    // MARK: - Gist Configuration
+    // MARK: - Remote Source Configuration
 
-    private let gistID = "fb6a16acae4e592603540249cbb7e08d"
-    private let gistFileName = "list.json"
+    private let ipaListURL = "https://gitlab.com/-/snippets/5991232/raw/main/fortnite.json"
     private let selectedIPAIDDefaultsKey = "selectedIPAID"
+    private let cachedIPAListDataDefaultsKey = "cachedIPAListData"
 
     // MARK: - Init
 
@@ -92,8 +100,7 @@ final class IPAFetcher: ObservableObject {
         isLoading = true
         updateMacOSSupportStatus()
 
-        guard let rawURL = await fetchLatestGistRawURL(),
-              let payload = await fetchFromJSONSource(rawURL) else {
+        guard let payload = await fetchFromJSONSource(ipaListURL) ?? fetchCachedJSONSource() else {
             isLoading = false
             return
         }
@@ -120,50 +127,11 @@ final class IPAFetcher: ObservableObject {
         isLoading = false
     }
 
-    // MARK: - GitHub Gist API
-
-    private func fetchLatestGistRawURL() async -> String? {
-        let apiURL = URL(string: "https://api.github.com/gists/\(gistID)")!
-
-        do {
-            var request = URLRequest(url: apiURL)
-            request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
-            request.setValue("FnMacAssistant/2.0 (macOS)", forHTTPHeaderField: "User-Agent")
-            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-
-            let config = URLSessionConfiguration.ephemeral
-            config.urlCache = nil
-
-            let session = URLSession(configuration: config)
-            let (data, _) = try await session.data(for: request)
-
-            struct GistResponse: Decodable {
-                struct File: Decodable {
-                    let raw_url: String
-                }
-                let files: [String: File]
-            }
-
-            let gist = try JSONDecoder().decode(GistResponse.self, from: data)
-
-            guard let rawURL = gist.files[gistFileName]?.raw_url else {
-                print("list.json not found in gist")
-                return nil
-            }
-
-            print("Latest Gist raw URL:", rawURL)
-            return rawURL
-
-        } catch {
-            print("Failed to fetch Gist metadata:", error)
-            return nil
-        }
-    }
-
     // MARK: - JSON Fetch (cache disabled)
 
     private func fetchFromJSONSource(_ urlString: String) async -> (ipas: [IPAInfo], maximumSupportedMacOSVersion: String?)? {
-        guard let url = URL(string: urlString) else { return nil }
+        guard let baseURL = URL(string: urlString),
+              let url = cacheBustedURL(from: baseURL) else { return nil }
 
         do {
             var request = URLRequest(url: url)
@@ -188,29 +156,92 @@ final class IPAFetcher: ObservableObject {
             }
 
             print("Raw JSON:", String(data: data, encoding: .utf8) ?? "Invalid JSON")
-
-            let decoded = try JSONDecoder().decode([RemoteListEntry].self, from: data)
-            let ipas = decoded.compactMap { entry -> IPAInfo? in
-                guard let name = entry.name,
-                      let downloadURL = entry.download_url else {
-                    return nil
-                }
-                return IPAInfo(name: name, download_url: downloadURL)
-            }
-            let maximumSupportedMacOSVersion = decoded
-                .compactMap { $0.max_supported_macos ?? $0.max_version }
-                .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
-
-            print("\(ipas.count) IPAs found")
-            if let maximumSupportedMacOSVersion {
-                print("Max supported macOS from gist:", maximumSupportedMacOSVersion)
-            }
-            return (ipas: ipas, maximumSupportedMacOSVersion: maximumSupportedMacOSVersion)
+            let payload = try decodePayload(from: data)
+            UserDefaults.standard.set(data, forKey: cachedIPAListDataDefaultsKey)
+            return payload
 
         } catch {
             print("IPA JSON error:", error)
             return nil
         }
+    }
+
+    private func cacheBustedURL(from baseURL: URL) -> URL? {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            return baseURL
+        }
+
+        var queryItems = components.queryItems ?? []
+        queryItems.removeAll { $0.name == "_fnmac_ts" }
+        queryItems.append(URLQueryItem(name: "_fnmac_ts", value: String(Int(Date().timeIntervalSince1970))))
+        components.queryItems = queryItems
+        return components.url
+    }
+
+    private func fetchCachedJSONSource() -> (ipas: [IPAInfo], maximumSupportedMacOSVersion: String?)? {
+        guard let data = UserDefaults.standard.data(forKey: cachedIPAListDataDefaultsKey) else {
+            return nil
+        }
+
+        do {
+            let payload = try decodePayload(from: data)
+            print("Using cached IPA JSON")
+            return payload
+        } catch {
+            print("Cached IPA JSON error:", error)
+            return nil
+        }
+    }
+
+    private func decodePayload(from data: Data) throws -> (ipas: [IPAInfo], maximumSupportedMacOSVersion: String?) {
+        let decoder = JSONDecoder()
+
+        if let wrappedPayload = try? decoder.decode(RemotePayload.self, from: data) {
+            let ipas = wrappedPayload.ipas.compactMap { entry -> IPAInfo? in
+                guard let name = entry.name,
+                      let downloadURL = entry.download_url else {
+                    return nil
+                }
+                return IPAInfo(name: name, download_url: downloadURL, description: entry.description)
+            }
+            let maximumSupportedMacOSVersion = firstNonEmptyVersion(
+                wrappedPayload.max_supported_macos,
+                wrappedPayload.max_version
+            )
+
+            print("\(ipas.count) IPAs found")
+            if let maximumSupportedMacOSVersion {
+                print("Max supported macOS from remote source:", maximumSupportedMacOSVersion)
+            }
+
+            return (ipas: ipas, maximumSupportedMacOSVersion: maximumSupportedMacOSVersion)
+        }
+
+        let decoded = try decoder.decode([RemoteListEntry].self, from: data)
+        let ipas = decoded.compactMap { entry -> IPAInfo? in
+            guard let name = entry.name,
+                  let downloadURL = entry.download_url else {
+                return nil
+            }
+            return IPAInfo(name: name, download_url: downloadURL, description: entry.description)
+        }
+        let maximumSupportedMacOSVersion = decoded
+            .compactMap { $0.max_supported_macos ?? $0.max_version }
+            .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+
+        print("\(ipas.count) IPAs found")
+        if let maximumSupportedMacOSVersion {
+            print("Max supported macOS from remote source:", maximumSupportedMacOSVersion)
+        }
+
+        return (ipas: ipas, maximumSupportedMacOSVersion: maximumSupportedMacOSVersion)
+    }
+
+    private func firstNonEmptyVersion(_ candidates: String?...) -> String? {
+        candidates.first(where: {
+            guard let value = $0 else { return false }
+            return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) ?? nil
     }
 
     private func updateMacOSSupportStatus() {
