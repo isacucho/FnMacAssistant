@@ -11,5 +11,7 @@ Icon.icns
 icons
 .DS_Store
 .DerivedData
-sparkle-updates
+sparkle-updates/sparkle-tools
+sparkle-updates/release.txt
+Sparkle-updates/beta.txt
 AGENTS.md
