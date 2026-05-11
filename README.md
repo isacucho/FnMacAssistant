@@ -32,7 +32,7 @@ You can also support me through buy me a coffee!
 
 1. Download and install [Sideloadly](https://sideloadly.io/) or [PlumeImpactor](https://github.com/claration/Impactor/releases/latest)
 
-2. Download [FnMacAssistant](https://github.com/isacucho/FnMacAssistant/releases/latest) and drag it to your applications folder.
+2. Download [FnMacAssistant](https://gitlab.com/Isacucho/fnmacassistant/-/releases) and drag it to your applications folder.
 
 > [!NOTE]
 > To get full app functionality, you need to give FnMacAssistant Full Disk Access. 
