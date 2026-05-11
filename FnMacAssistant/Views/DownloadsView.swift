@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Foundation
 
 struct DownloadsView: View {
     @ObservedObject var downloadManager = DownloadManager.shared
@@ -100,7 +101,7 @@ struct DownloadsView: View {
                                         .font(.title3)
                                         .bold()
 
-                                    Text(ipaInfo(for: ipa.name))
+                                    Text(ipaDescription(for: ipa))
                                         .font(.system(size: 15))
                                         .foregroundColor(.primary)
                                         .lineSpacing(4)
@@ -421,63 +422,34 @@ struct DownloadsView: View {
 
     // MARK: - IPA Descriptions
 
-    private func ipaInfo(for ipaName: String) -> AttributedString {
-        let lower = ipaName.lowercased()
-        var text = AttributedString()
-
-        if lower.contains("clean") {
-            text = AttributedString("""
-Clean Build
-
-Unmodified IPA file, straight from source.
-""")
-        } else if lower.contains("tweak") {
-            text = AttributedString("""
-Tweak Build
-
-Includes the following regular tweaks:
-• Removed device restriction
-• Allows editing files from the Files app
-• macOS Fullscreen Patch
-
-Plus the following gameplay enhancements by rt2746:
-• Toggle pointer locking with Left Option key
-• Unlocks 120 FPS option
-• Unlocks graphic preset selection
-• Custom options menu (press P)
-• Mouse interaction with mobile UI
-• Directory access support (made by VictorWads)
-
-""")
-
-            var disclaimer = AttributedString(
-                "Disclaimer: Use FnMacTweak at your own risk. We are not responsible for any damages or incidents caused by this tweak, including bans."
-            )
-            disclaimer.font = .system(size: 13, weight: .bold)
-            disclaimer.foregroundColor = .red
-
-            text = disclaimer + AttributedString("\n\n") + text
-
-        } else if lower.contains("fortnite") {
-            text = AttributedString("""
-Regular Build
-
-Includes the following tweaks:
-• Removed device restriction
-• Allows editing files from the Files app
-• macOS Fullscreen Patch
-""")
-        } else {
-            text = AttributedString("""
-Unknown Build
-
-This IPA isn't recognized by FnMacAssistant.
-For more info, visit:
-https://discord.gg/nfEBGJBfHD
-""")
+    private func ipaDescription(for ipa: IPAFetcher.IPAInfo) -> AttributedString {
+        if let description = ipa.description?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !description.isEmpty {
+            return attributedDescription(from: description)
         }
 
-        return text
+        return AttributedString("No description provided for this IPA.")
+    }
+
+    private func attributedDescription(from text: String) -> AttributedString {
+        if let markdown = try? AttributedString(
+            markdown: text,
+            options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        ) {
+            return markdown
+        }
+
+        let mutable = NSMutableAttributedString(string: text)
+        let range = NSRange(location: 0, length: mutable.string.utf16.count)
+
+        if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) {
+            detector.enumerateMatches(in: mutable.string, options: [], range: range) { match, _, _ in
+                guard let match, let url = match.url else { return }
+                mutable.addAttribute(.link, value: url, range: match.range)
+            }
+        }
+
+        return (try? AttributedString(mutable, including: \.foundation)) ?? AttributedString(text)
     }
 
     @ViewBuilder
