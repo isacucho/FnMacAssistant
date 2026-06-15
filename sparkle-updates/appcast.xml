@@ -20,12 +20,12 @@
 - The IPA's description now comes from the json.<br>
 
 <h4>Automatic updater</h4>
-- The automatic updater now fetches updates from GitLab.
+- The automatic updater now fetches updates from GitHub Pages.
 
 <br><br>
 Thanks for using FnMacAssistant!<br>
 If you'd like to support future development, maintenance, and updates like this one, consider using code ISACUCHO in the item shop or in the epic games store.]]></description>
-            <enclosure url="https://gitlab.com/Isacucho/fnmacassistant/-/raw/main/sparkle-updates/files/FnMacAssistant%20v2.1.zip" length="4660247" type="application/octet-stream" sparkle:edSignature="qKDXS7mX3AcfV29DdGKokzk+8zR5NiSGIwISRThcgmWD5ujHBzo1pdW7RzzJ9RmEabGLIXzeTXfDClLS/JPoAg=="/>
+            <enclosure url="https://isacucho.github.io/FnMacAssistant/files/FnMacAssistant%20v2.1.zip" length="4660247" type="application/octet-stream" sparkle:edSignature="qKDXS7mX3AcfV29DdGKokzk+8zR5NiSGIwISRThcgmWD5ujHBzo1pdW7RzzJ9RmEabGLIXzeTXfDClLS/JPoAg=="/>
         </item>
     </channel>
 </rss>

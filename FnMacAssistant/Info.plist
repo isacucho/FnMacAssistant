@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>SUFeedURL</key>
-	<string>https://gitlab.com/Isacucho/fnmacassistant/-/raw/main/sparkle-updates/appcast.xml</string>
+	<string>https://isacucho.github.io/FnMacAssistant/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>4Dbxm6pTXFRQY+atXjW2kTqKHIiyMlvvnhaZfaYF3r0=</string>
 </dict>
