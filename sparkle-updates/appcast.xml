@@ -3,17 +3,29 @@
     <channel>
         <title>FnMacAssistant</title>
         <item>
-            <title>2.1</title>
-            <pubDate>Sun, 10 May 2026 21:41:34 -0600</pubDate>
-            <sparkle:version>10</sparkle:version>
-            <sparkle:shortVersionString>2.1</sparkle:shortVersionString>
+            <title>2.1.1</title>
+            <pubDate>Mon, 15 Jun 2026 12:30:32 -0600</pubDate>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>2.1.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.1</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <description><![CDATA[<h1>FnMacAssistant v2.1</h1>
+            <description><![CDATA[<h1>FnMacAssistant v2.1.1</h1>
 
-<h2>This update mostly fixes issues caused by GitHub's flag on my account. It also contains some improvements. Additionally, this update should now work with the latest version of Fortnite!</h2>
+<h2>This update restores GitHub as the main source for app updates, repository links, and IPA list fetching now that the GitHub account and Gist are available again.</h2>
 
 <h3>Changelog</h3>
+
+<h4>GitHub services restored</h4>
+- The IPA downloader now checks the GitHub Gist first again.<br>
+- The GitLab snippet is still kept as a backup source if the Gist is unavailable.<br>
+- The automatic updater now fetches updates from GitHub Pages again.<br>
+- App links and release links now point back to GitHub.<br>
+
+<h3>Also included from v2.1</h3>
+
+<h4>Compatibility and reliability</h4>
+- Fixed issues caused by GitHub's previous account flag.<br>
+- Added improvements for the latest version of Fortnite.<br>
 
 <h4>IPA Downloader</h4>
 - Changed IPA downloads tab to fetch the download links from another source. <br>
@@ -24,8 +36,9 @@
 
 <br><br>
 Thanks for using FnMacAssistant!<br>
-If you'd like to support future development, maintenance, and updates like this one, consider using code ISACUCHO in the item shop or in the epic games store.]]></description>
-            <enclosure url="https://isacucho.github.io/FnMacAssistant/files/FnMacAssistant%20v2.1.zip" length="4660247" type="application/octet-stream" sparkle:edSignature="qKDXS7mX3AcfV29DdGKokzk+8zR5NiSGIwISRThcgmWD5ujHBzo1pdW7RzzJ9RmEabGLIXzeTXfDClLS/JPoAg=="/>
+If you'd like to support future development, maintenance, and updates like this one, consider using code ISACUCHO in the item shop or in the epic games store.
+]]></description>
+            <enclosure url="https://isacucho.github.io/FnMacAssistant/files/FnMacAssistant%20v2.1.1.zip" length="4664202" type="application/octet-stream" sparkle:edSignature="TROldqbj5apYhjnpFjdmTqCmTscT4ATdwm+kwNx7ZVSh14alQpXTRroecwYhw2DP9WIZupHv3LehSHAU1otSBQ=="/>
         </item>
     </channel>
 </rss>
