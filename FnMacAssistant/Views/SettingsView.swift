@@ -570,7 +570,7 @@ You can disable them at any time.
     }
 
     private func openReleasesPage() {
-        if let url = URL(string: "https://gitlab.com/Isacucho/fnmacassistant") {
+        if let url = URL(string: "https://github.com/isacucho/FnMacAssistant/releases/latest") {
             NSWorkspace.shared.open(url)
         }
     }

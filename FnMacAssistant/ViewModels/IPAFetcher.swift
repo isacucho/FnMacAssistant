@@ -84,7 +84,9 @@ final class IPAFetcher: ObservableObject {
 
     // MARK: - Remote Source Configuration
 
-    private let ipaListURL = "https://gitlab.com/-/snippets/5991232/raw/main/fortnite.json"
+    private let gistID = "fb6a16acae4e592603540249cbb7e08d"
+    private let gistFileName = "list.json"
+    private let fallbackIPAListURL = "https://gitlab.com/-/snippets/5991232/raw/main/fortnite.json"
     private let selectedIPAIDDefaultsKey = "selectedIPAID"
     private let cachedIPAListDataDefaultsKey = "cachedIPAListData"
 
@@ -100,7 +102,15 @@ final class IPAFetcher: ObservableObject {
         isLoading = true
         updateMacOSSupportStatus()
 
-        guard let payload = await fetchFromJSONSource(ipaListURL) ?? fetchCachedJSONSource() else {
+        var resolvedPayload = await fetchPrimaryJSONSource()
+        if resolvedPayload == nil {
+            resolvedPayload = await fetchFromJSONSource(fallbackIPAListURL)
+        }
+        if resolvedPayload == nil {
+            resolvedPayload = fetchCachedJSONSource()
+        }
+
+        guard let payload = resolvedPayload else {
             isLoading = false
             return
         }
@@ -125,6 +135,60 @@ final class IPAFetcher: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    // MARK: - GitHub Gist API
+
+    private func fetchPrimaryJSONSource() async -> (ipas: [IPAInfo], maximumSupportedMacOSVersion: String?)? {
+        guard let rawURL = await fetchLatestGistRawURL() else {
+            return nil
+        }
+
+        return await fetchFromJSONSource(rawURL)
+    }
+
+    private func fetchLatestGistRawURL() async -> String? {
+        let apiURL = URL(string: "https://api.github.com/gists/\(gistID)")!
+
+        do {
+            var request = URLRequest(url: apiURL)
+            request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+            request.setValue("FnMacAssistant/2.0 (macOS)", forHTTPHeaderField: "User-Agent")
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+
+            let config = URLSessionConfiguration.ephemeral
+            config.urlCache = nil
+
+            let session = URLSession(configuration: config)
+            let (data, response) = try await session.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                print("Gist metadata fetch failed:", (response as? HTTPURLResponse)?.statusCode ?? -1)
+                return nil
+            }
+
+            struct GistResponse: Decodable {
+                struct File: Decodable {
+                    let raw_url: String
+                }
+                let files: [String: File]
+            }
+
+            let gist = try JSONDecoder().decode(GistResponse.self, from: data)
+
+            guard let rawURL = gist.files[gistFileName]?.raw_url else {
+                print("\(gistFileName) not found in gist")
+                return nil
+            }
+
+            print("Latest Gist raw URL:", rawURL)
+            return rawURL
+
+        } catch {
+            print("Failed to fetch Gist metadata:", error)
+            return nil
+        }
     }
 
     // MARK: - JSON Fetch (cache disabled)
