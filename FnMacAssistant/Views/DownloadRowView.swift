@@ -99,6 +99,9 @@ private extension DownloadRowView {
         case .paused:
             return "Paused"
 
+        case .preparing:
+            return "Preparing IPA…"
+
         case .finished:
             if let path = item.localFileURL {
                 return "Saved to: \(path.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))"

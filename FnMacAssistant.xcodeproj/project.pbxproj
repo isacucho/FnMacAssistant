@@ -11,6 +11,7 @@
 		3008A9122EBD2FCC00647857 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3008A90B2EBD2FCC00647857 /* Assets.xcassets */; };
 		3008A9192EBD302D00647857 /* DownloadItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9182EBD302400647857 /* DownloadItem.swift */; };
 		3008A91B2EBD303A00647857 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A91A2EBD303300647857 /* DownloadManager.swift */; };
+		3008FA112EBD303A00647857 /* IPAMarketplaceKitStripper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008FA122EBD303300647857 /* IPAMarketplaceKitStripper.swift */; };
 		3008A91F2EBD308A00647857 /* DownloadRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A91E2EBD308200647857 /* DownloadRowView.swift */; };
 		3008A9212EBD30AE00647857 /* FileHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9202EBD309200647857 /* FileHelper.swift */; };
 		3008A9232EBD30D600647857 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3008A9222EBD30D600647857 /* ContentView.swift */; };
@@ -56,6 +57,7 @@
 		3008A90D2EBD2FCC00647857 /* FnMacAssistantApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FnMacAssistantApp.swift; sourceTree = "<group>"; };
 		3008A9182EBD302400647857 /* DownloadItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadItem.swift; sourceTree = "<group>"; };
 		3008A91A2EBD303300647857 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
+		3008FA122EBD303300647857 /* IPAMarketplaceKitStripper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPAMarketplaceKitStripper.swift; sourceTree = "<group>"; };
 		3008A91E2EBD308200647857 /* DownloadRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadRowView.swift; sourceTree = "<group>"; };
 		3008A9202EBD309200647857 /* FileHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHelper.swift; sourceTree = "<group>"; };
 		3008A9222EBD30D600647857 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 				3057B9B62F33E7C800C9B3E1 /* NotificationHelper.swift */,
 				3008A9202EBD309200647857 /* FileHelper.swift */,
 				3008A91A2EBD303300647857 /* DownloadManager.swift */,
+				3008FA122EBD303300647857 /* IPAMarketplaceKitStripper.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -272,6 +275,7 @@
 				30C9CF0C2F3BBF2900A7EE45 /* UpdateChecker.swift in Sources */,
 				30DCE0012F7E1002000D6758 /* DataManagementManager.swift in Sources */,
 				3008A91B2EBD303A00647857 /* DownloadManager.swift in Sources */,
+				3008FA112EBD303A00647857 /* IPAMarketplaceKitStripper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

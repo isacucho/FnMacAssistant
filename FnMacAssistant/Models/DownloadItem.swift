@@ -12,6 +12,7 @@ enum DownloadState: String, Codable {
     case idle
     case downloading
     case paused
+    case preparing
     case finished
     case failed
     case cancelled

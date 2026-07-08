@@ -289,6 +289,23 @@ extension DownloadManager: URLSessionDownloadDelegate {
 
         guard let item = taskToItem[downloadTask.taskIdentifier] else { return }
 
+        let bytesReceived = downloadTask.countOfBytesReceived
+        let bytesExpected = downloadTask.countOfBytesExpectedToReceive
+
+        // The download is complete; flip to .preparing so the UI stops offering
+        // Pause/Cancel while the file is moved and (on macOS 27) the crashing
+        // MarketplaceKitWrapper.framework is stripped from the IPA.
+        DispatchQueue.main.async {
+            item.progress = 1.0
+            item.totalBytesWritten = bytesReceived
+            item.totalBytesExpected = bytesExpected
+            item.state = .preparing
+            self.objectWillChange.send()
+        }
+
+        var stripped = false
+        var stripWarning: String? = nil
+
         do {
             let dest = try self.withDownloadFolderAccess { targetFolder throws -> URL in
                 let fm = FileManager.default
@@ -303,6 +320,18 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 }
 
                 try fm.moveItem(at: location, to: dest)
+
+                // Strip while still inside the security-scoped folder access so the
+                // rewrite works for IPAs saved to external volumes. A strip failure
+                // must NOT fail the download — the IPA is still usable, and on macOS
+                // below 27 the strip is a no-op anyway.
+                do {
+                    stripped = try IPAMarketplaceKitStripper.stripIfNeeded(at: dest)
+                } catch {
+                    stripWarning = "MarketplaceKit strip failed: \(error.localizedDescription)"
+                    print("⚠️ \(stripWarning!)")
+                }
+
                 return dest
             }
 
@@ -314,11 +343,17 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 item.localFileURL = dest
                 item.state = .finished
                 item.progress = 1.0
-                item.totalBytesWritten = downloadTask.countOfBytesReceived
-                item.totalBytesExpected = downloadTask.countOfBytesExpectedToReceive
+                item.totalBytesWritten = bytesReceived
+                item.totalBytesExpected = bytesExpected
                 item.taskIdentifier = nil
                 self.objectWillChange.send()
                 print("✅ Download finished and moved to: \(dest.path)")
+                if stripped {
+                    print("✅ Stripped MarketplaceKitWrapper.framework for macOS 27 compatibility.")
+                }
+                if let stripWarning {
+                    print("⚠️ \(stripWarning)")
+                }
             }
         } catch {
             DispatchQueue.main.async {

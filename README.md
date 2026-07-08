@@ -27,6 +27,8 @@ You can also support me through buy me a coffee!
 - MacOS 15.1 or later 
 > [!NOTE]
 > Fortnite on MacOS 26.4+ will not work on the clean IPA. Use regular or tweaked instead
+>
+> On macOS 27 (Tahoe) the app crashes ~2s after launch inside Epic's `MarketplaceKitWrapper.framework`. FnMacAssistant now strips that framework from the IPA automatically after download (macOS 27+ only), so the sideloaded app launches normally. This is safe — the framework only gates Apple's marketplace in-app purchase, which sideloaded clients never use.
 
 ## Guide
 
